@@ -1,0 +1,121 @@
+﻿using System;
+using System.IO;
+using System.Linq;
+using Apaf.NFSdb.Core;
+using Apaf.NFSdb.Core.Configuration;
+using Apaf.NFSdb.Core.Storage;
+using Apaf.NFSdb.TestModel.Model;
+
+namespace Apaf.NFSdb.TestShared
+{
+    public static class Utils
+    {
+        public static Journal<T> CreateJournal<T>(EFileAccess access = EFileAccess.Read, string subdir = null)
+        {
+            using (Stream dbXml = typeof(Quote).Assembly.GetManifestResourceStream(
+                "Apaf.NFSdb.TestModel.Resources.nfsdb.xml"))
+            {
+                var dbElement = new ConfigurationReader().ReadConfiguration(dbXml);
+                var jconf = dbElement.Journals.Single(j => j.Class.EndsWith(typeof(T).Name));
+                var journalDir = jconf.DefaultPath;
+                if (subdir != null)
+                {
+                    journalDir = Path.Combine(subdir, journalDir);
+                }
+                jconf.DefaultPath = Path.Combine(FindJournalsPath(), journalDir);
+
+                var meta = new JournalMetadata<T>(jconf);
+                var partMan = new PartitionManager<T>(meta, access, new CompositeFileFactory());
+                return new Journal<T>(meta, partMan);
+            }
+        }
+
+        public static JournalElement ReadConfig<T>()
+        {
+            using (Stream dbXml = typeof(Quote).Assembly.GetManifestResourceStream(
+                "Apaf.NFSdb.TestModel.Resources.nfsdb.xml"))
+            {
+                var dbElement = new ConfigurationReader().ReadConfiguration(dbXml);
+                var jconf = dbElement.Journals.Single(j => j.Class.Contains(typeof(T).Name));
+                jconf.DefaultPath = Path.Combine(FindJournalsPath(), jconf.DefaultPath);
+                return jconf;
+            }
+        }
+
+        public static Journal<T> CreateJournal<T>(JournalElement config, EFileAccess access = EFileAccess.Read)
+        {
+            var jconf = config;
+            jconf.DefaultPath = Path.Combine(FindJournalsPath(), jconf.DefaultPath);
+
+            var meta = new JournalMetadata<T>(jconf);
+            var partMan = new PartitionManager<T>(meta, access, new CompositeFileFactory());
+            return new Journal<T>(meta, partMan);
+        }
+
+        public static void ClearJournal<T>(string folderPath = null)
+        {
+            using (Stream dbXml = typeof (Quote).Assembly.GetManifestResourceStream(
+                "Apaf.NFSdb.TestModel.Resources.nfsdb.xml"))
+            {
+                if (folderPath == null)
+                {
+                    var dbElement = new ConfigurationReader().ReadConfiguration(dbXml);
+                    var jconf = dbElement.Journals.Single(j => j.Class.EndsWith(typeof(T).Name));
+                    folderPath = jconf.DefaultPath;
+                }
+
+                var path = Path.Combine(FindJournalsPath(), folderPath);
+                try
+                {
+                    Directory.Delete(path, true);
+                }
+                catch (IOException)
+                {
+                }
+            }
+        }
+
+        public static string FindJournalsPath()
+        {
+            var dirInfo = new DirectoryInfo(Environment.CurrentDirectory);
+            while (!dirInfo.EnumerateDirectories("journals").Any() 
+                && !dirInfo.Name.Equals("journal.net"))
+            {
+                dirInfo = dirInfo.Parent;
+            }
+            var path = Path.Combine(dirInfo.FullName, "journals");
+            return path;
+        }
+
+        public static PartitionData<T> CreatePartition<T>(int? recordHint = null, EFileAccess access = EFileAccess.Read)
+        {
+            var mmFactory = new CompositeFileFactory();
+            using (var dbXml = typeof(Quote).Assembly.GetManifestResourceStream(
+                "Apaf.NFSdb.TestModel.Resources.nfsdb.xml"))
+            {
+                var dbElement = new ConfigurationReader().ReadConfiguration(dbXml);
+                var jconf = dbElement.Journals.Single(j => j.Class.EndsWith(typeof(T).Name));
+                if (recordHint.HasValue)
+                {
+                    jconf.RecordHint = recordHint.Value;
+                }
+                var journalPath = Path.Combine(FindJournalsPath(), jconf.DefaultPath);
+                jconf.DefaultPath = journalPath;
+
+                var metadata = new JournalMetadata<T>(jconf);
+                var startDate = new DateTime(2013, 10, 1);
+                var journalStorage = new ColumnStorage(metadata.Settings, jconf.DefaultPath,
+                    access, 0, mmFactory);
+                metadata.InitializeSymbols(journalStorage);
+
+                var part = new Partition<T>(
+                    metadata, new CompositeFileFactory(),
+                    access, startDate, 0,
+                    Path.Combine(jconf.DefaultPath, "2013-10"));
+
+                return new PartitionData<T>(part, metadata, journalStorage, journalPath);
+            }
+        }
+
+    }
+}

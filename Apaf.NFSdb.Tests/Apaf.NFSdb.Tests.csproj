@@ -1,0 +1,170 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
+  <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
+    <ProjectGuid>{64C8148F-7143-45AC-B6E4-D245E557FD53}</ProjectGuid>
+    <OutputType>Library</OutputType>
+    <AppDesignerFolder>Properties</AppDesignerFolder>
+    <RootNamespace>Apaf.NFSdb.Tests</RootNamespace>
+    <AssemblyName>Apaf.NFSdb.Tests</AssemblyName>
+    <TargetFrameworkVersion>v4.0</TargetFrameworkVersion>
+    <FileAlignment>512</FileAlignment>
+    <SolutionDir Condition="$(SolutionDir) == '' Or $(SolutionDir) == '*Undefined*'">..\</SolutionDir>
+    <RestorePackages>true</RestorePackages>
+    <TargetFrameworkProfile>
+    </TargetFrameworkProfile>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+    <DebugSymbols>true</DebugSymbols>
+    <DebugType>full</DebugType>
+    <Optimize>false</Optimize>
+    <OutputPath>bin\Debug\</OutputPath>
+    <DefineConstants>DEBUG;TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
+    <DebugType>pdbonly</DebugType>
+    <Optimize>true</Optimize>
+    <OutputPath>bin\Release\</OutputPath>
+    <DefineConstants>TRACE;OPTIMIZE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|x64'">
+    <DebugSymbols>true</DebugSymbols>
+    <OutputPath>bin\x64\Debug\</OutputPath>
+    <DefineConstants>DEBUG;TRACE</DefineConstants>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <DebugType>full</DebugType>
+    <PlatformTarget>x64</PlatformTarget>
+    <ErrorReport>prompt</ErrorReport>
+    <CodeAnalysisRuleSet>MinimumRecommendedRules.ruleset</CodeAnalysisRuleSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|x64'">
+    <OutputPath>bin\x64\Release\</OutputPath>
+    <DefineConstants>TRACE</DefineConstants>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <Optimize>true</Optimize>
+    <DebugType>pdbonly</DebugType>
+    <PlatformTarget>x64</PlatformTarget>
+    <ErrorReport>prompt</ErrorReport>
+    <CodeAnalysisRuleSet>MinimumRecommendedRules.ruleset</CodeAnalysisRuleSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|x86'">
+    <DebugSymbols>true</DebugSymbols>
+    <OutputPath>bin\x86\Debug\</OutputPath>
+    <DefineConstants>DEBUG;TRACE</DefineConstants>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <DebugType>full</DebugType>
+    <PlatformTarget>x86</PlatformTarget>
+    <ErrorReport>prompt</ErrorReport>
+    <CodeAnalysisRuleSet>MinimumRecommendedRules.ruleset</CodeAnalysisRuleSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|x86'">
+    <OutputPath>bin\x86\Release\</OutputPath>
+    <DefineConstants>TRACE</DefineConstants>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <Optimize>true</Optimize>
+    <DebugType>pdbonly</DebugType>
+    <PlatformTarget>x86</PlatformTarget>
+    <ErrorReport>prompt</ErrorReport>
+    <CodeAnalysisRuleSet>MinimumRecommendedRules.ruleset</CodeAnalysisRuleSet>
+  </PropertyGroup>
+  <ItemGroup>
+    <Reference Include="LinqExtender">
+      <HintPath>..\packages\LinqExtender.3.0.1\lib\LinqExtender.dll</HintPath>
+    </Reference>
+    <Reference Include="Moq">
+      <HintPath>..\packages\Moq.4.2.1312.1622\lib\net40\Moq.dll</HintPath>
+    </Reference>
+    <Reference Include="nunit.framework">
+      <HintPath>..\packages\NUnit.2.6.3\lib\nunit.framework.dll</HintPath>
+    </Reference>
+    <Reference Include="System" />
+    <Reference Include="System.Core" />
+    <Reference Include="System.Xml.Linq" />
+    <Reference Include="System.Data.DataSetExtensions" />
+    <Reference Include="Microsoft.CSharp" />
+    <Reference Include="System.Data" />
+    <Reference Include="System.Xml" />
+    <Reference Include="Thrift">
+      <HintPath>..\packages\Thrift.0.9.0.0\lib\net35\Thrift.dll</HintPath>
+    </Reference>
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="Collections\ExpandableListTests.cs" />
+    <Compile Include="Columns\ByteArrayTests.cs" />
+    <Compile Include="Columns\ExpressionTests.cs" />
+    <Compile Include="Columns\FixedColumnTests.cs" />
+    <Compile Include="Columns\IndexColumnTests.cs" />
+    <Compile Include="Columns\NJournalTProtocolTests.cs" />
+    <Compile Include="Columns\ReflectionObjectSerializerTests.cs" />
+    <Compile Include="Columns\StringColumnTests.cs" />
+    <Compile Include="Columns\SymbolMapColumnTests.cs" />
+    <Compile Include="Columns\ThriftModel\ColumnsStub.cs" />
+    <Compile Include="Columns\ThriftModel\RawFileStub.cs" />
+    <Compile Include="Columns\ThriftModel\FieldTypes.cs" />
+    <Compile Include="Columns\ThriftModel\QuoteBitsetColumnStub.cs" />
+    <Compile Include="Columns\ThriftModel\Quote.cs" />
+    <Compile Include="Configuration\ConfigurationReaderTests.cs" />
+    <Compile Include="Core\CompositeFileFactoryStub.cs" />
+    <Compile Include="DefaultContext.cs" />
+    <Compile Include="ExpressionVisitor.cs" />
+    <Compile Include="Query\ColumnValueBinarySearchTests.cs" />
+    <Compile Include="Query\DateRangeTests.cs" />
+    <Compile Include="Query\IntersectPlanItemTests.cs" />
+    <Compile Include="Query\JournalQueriableContextTests.cs" />
+    <Compile Include="Query\PartitionIntervalIteratorTests.cs" />
+    <Compile Include="Query\QueryLatestByIdTests.cs" />
+    <Compile Include="Query\QueryTests.cs" />
+    <Compile Include="Query\ResultSetBuilderTests.cs" />
+    <Compile Include="Query\RowIDUtilTests.cs" />
+    <Compile Include="Core\PartitionManagerTests.cs" />
+    <Compile Include="Core\PartitionManagerUtilsTests.cs" />
+    <Compile Include="JournalMetadataTests.cs" />
+    <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="Query\UnionPlanItemTests.cs" />
+    <Compile Include="Reflection\ReflectionHelperTests.cs" />
+    <Compile Include="Storage\BufferBinaryReader.cs" />
+    <Compile Include="Storage\ByteOrder.cs" />
+    <Compile Include="Storage\CompositeRawFileTests.cs" />
+    <Compile Include="Storage\MemeoryMapReadWriteTests.cs" />
+    <Compile Include="Storage\MemoryFileTests.cs" />
+    <Compile Include="Tx\TestTxLog.cs" />
+    <Compile Include="Tx\TxLogTests.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="packages.config" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\Apaf.NFSdb.Core\Apaf.NFSdb.Core.csproj">
+      <Project>{94AA4DE7-BC16-46F4-B956-D732D6D265B4}</Project>
+      <Name>Apaf.NFSdb.Core</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\Apaf.NFSdb.TestShared\Apaf.NFSdb.TestShared.csproj">
+      <Project>{91b718cd-06c1-4863-a251-18f5e4d3fa49}</Project>
+      <Name>Apaf.NFSdb.TestShared</Name>
+    </ProjectReference>
+  </ItemGroup>
+  <ItemGroup>
+    <Service Include="{82A7F48D-3B50-4B1E-B82E-3ADA8210C358}" />
+  </ItemGroup>
+  <ItemGroup>
+    <Folder Include="BinaryCompatibility\" />
+    <Folder Include="Perfomance\" />
+  </ItemGroup>
+  <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
+  <Import Project="$(SolutionDir)\.nuget\nuget.targets" />
+  <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
+       Other similar extension points exist, see Microsoft.Common.targets.
+  <Target Name="BeforeBuild">
+  </Target>
+  <Target Name="AfterBuild">
+  </Target>
+  -->
+</Project>
