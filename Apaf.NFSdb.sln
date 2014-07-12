@@ -23,8 +23,6 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Apaf.NFSdb.TestRunner", "Ap
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{474D444F-2E9B-49A2-B732-4E23A56D9603}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Apaf.NFSdb.ConcurrencyTests", "Apaf.NFSdb.ConcurrencyTests\Apaf.NFSdb.ConcurrencyTests.csproj", "{92234FDD-0F38-4D68-98C5-5526AD92EFBA}"
-EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Apaf.NFSdb.TestShared", "Apaf.NFSdb.TestShared\Apaf.NFSdb.TestShared.csproj", "{91B718CD-06C1-4863-A251-18F5E4D3FA49}"
 EndProject
 Global
@@ -93,14 +91,6 @@ Global
 		{CB4E6E90-F1CA-4E4E-80E4-938B21F7DAAC}.Release|Any CPU.Build.0 = Release|Any CPU
 		{CB4E6E90-F1CA-4E4E-80E4-938B21F7DAAC}.Release|x64.ActiveCfg = Release|x64
 		{CB4E6E90-F1CA-4E4E-80E4-938B21F7DAAC}.Release|x86.ActiveCfg = Release|Any CPU
-		{92234FDD-0F38-4D68-98C5-5526AD92EFBA}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{92234FDD-0F38-4D68-98C5-5526AD92EFBA}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{92234FDD-0F38-4D68-98C5-5526AD92EFBA}.Debug|x64.ActiveCfg = Debug|Any CPU
-		{92234FDD-0F38-4D68-98C5-5526AD92EFBA}.Debug|x86.ActiveCfg = Debug|Any CPU
-		{92234FDD-0F38-4D68-98C5-5526AD92EFBA}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{92234FDD-0F38-4D68-98C5-5526AD92EFBA}.Release|Any CPU.Build.0 = Release|Any CPU
-		{92234FDD-0F38-4D68-98C5-5526AD92EFBA}.Release|x64.ActiveCfg = Release|Any CPU
-		{92234FDD-0F38-4D68-98C5-5526AD92EFBA}.Release|x86.ActiveCfg = Release|Any CPU
 		{91B718CD-06C1-4863-A251-18F5E4D3FA49}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{91B718CD-06C1-4863-A251-18F5E4D3FA49}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{91B718CD-06C1-4863-A251-18F5E4D3FA49}.Debug|x64.ActiveCfg = Debug|Any CPU
