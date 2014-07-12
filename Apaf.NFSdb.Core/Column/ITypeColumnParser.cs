@@ -1,5 +1,4 @@
-﻿#region copyright
-/*
+﻿/*
  * Copyright (c) 2014. APAF (Alex Pelagenko).
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -14,24 +13,15 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#endregion
-using System;
-using System.Linq;
-using System.Net;
-using NUnit.Framework;
 
-namespace Apaf.NFSdb.Tests.Storage
+using System;
+using System.Collections.Generic;
+using Apaf.NFSdb.Core.Configuration;
+
+namespace Apaf.NFSdb.Core.Column
 {
-    [TestFixture]
-    public class ByteOrder
+    public interface ITypeColumnParser
     {
-        [TestCase(124L)]
-        [TestCase(0x10000000000L)]
-        public void Int64(long value)
-        {
-            var rValue = BitConverter.ToInt64(
-                BitConverter.GetBytes(IPAddress.HostToNetworkOrder(value)).Reverse().ToArray(), 0);
-            Assert.That(rValue, Is.EqualTo(value));
-        }
+        IList<ColumnMetadata> ParseColumns(Type itemType, JournalElement config);
     }
 }

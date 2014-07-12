@@ -1,10 +1,24 @@
-﻿using System;
+﻿#region copyright
+/*
+ * Copyright (c) 2014. APAF (Alex Pelagenko).
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+#endregion
+
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Linq;
 using Apaf.NFSdb.Core.Column;
-using Apaf.NFSdb.Core.Storage;
-using Apaf.NFSdb.Core.Tx;
 using Apaf.NFSdb.Tests.Columns.ThriftModel;
 using Apaf.NFSdb.Tests.Tx;
 using NUnit.Framework;
@@ -238,16 +252,16 @@ namespace Apaf.NFSdb.Tests.Columns
         }
 #endif
 
-        private ReflectionObjectSerializer CreateReader(Quote t)
+        private ThriftObjectSerializer CreateReader(Quote t)
         {
             var columns = GetQuoteColumns(t);
-            return new ReflectionObjectSerializer(typeof(Quote), 
+            return new ThriftObjectSerializer(typeof(Quote), 
                 columns);
         }
 
-        private ReflectionObjectSerializer CreateWriter(IColumn[] columns)
+        private ThriftObjectSerializer CreateWriter(IColumn[] columns)
         {
-            return new ReflectionObjectSerializer(typeof(Quote), columns);
+            return new ThriftObjectSerializer(typeof(Quote), columns);
         }
 
         private static IColumn[] GetQuoteColumns(Quote t)

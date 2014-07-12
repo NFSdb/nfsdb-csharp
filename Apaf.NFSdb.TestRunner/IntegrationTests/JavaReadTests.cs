@@ -1,11 +1,12 @@
 ﻿using System.Globalization;
 using System.Linq;
 using Apaf.NFSdb.Core.Storage;
+using Apaf.NFSdb.IntegrationTests;
 using Apaf.NFSdb.TestModel.Model;
 using Apaf.NFSdb.TestShared;
 using NUnit.Framework;
 
-namespace Apaf.NFSdb.IntegrationTests.JavaIntegration
+namespace Apaf.NFSdb.TestRunner.IntegrationTests
 {
     [TestFixture]
     public class JavaReadTests
@@ -13,7 +14,7 @@ namespace Apaf.NFSdb.IntegrationTests.JavaIntegration
         [Test]
         public void Records_with_nulls()
         {
-            using (var j = Utils.CreateJournal<Quote>(EFileAccess.Read, 
+            using (var j = Utils.CreateJournal<Quote>(EFileAccess.Read,
                 IntegrationTestConstants.NULL_RECORD_FOLDER_NAME))
             {
                 var read = j.OpenReadTx();
@@ -54,7 +55,7 @@ namespace Apaf.NFSdb.IntegrationTests.JavaIntegration
 
                     if (q.__isset.bidSize)
                     {
-                        Assert.That(q.BidSize, Is.EqualTo(i*7), "BidSize failed for rec " + i);
+                        Assert.That(q.BidSize, Is.EqualTo(i * 7), "BidSize failed for rec " + i);
                     }
 
                     if (q.__isset.ex)
@@ -69,7 +70,7 @@ namespace Apaf.NFSdb.IntegrationTests.JavaIntegration
                             ), "Mode failed for rec " + i);
                     }
 
-                    Assert.That(q.Timestamp, Is.EqualTo(timestamp + timestampIncr * i), 
+                    Assert.That(q.Timestamp, Is.EqualTo(timestamp + timestampIncr * i),
                         "Timestamp failed for rec " + i);
                     i++;
                 }
@@ -81,7 +82,7 @@ namespace Apaf.NFSdb.IntegrationTests.JavaIntegration
         [Test]
         public void Records_with_nulls_indexes()
         {
-            using (var j = Utils.CreateJournal<Quote>(EFileAccess.Read, 
+            using (var j = Utils.CreateJournal<Quote>(EFileAccess.Read,
                 IntegrationTestConstants.NULL_RECORD_FOLDER_NAME))
             {
                 var read = j.OpenReadTx();
@@ -93,8 +94,8 @@ namespace Apaf.NFSdb.IntegrationTests.JavaIntegration
 
                     var rowIndex =
                         (from q in read.Items
-                            where q.Sym == symbols[symIndex]
-                            select q).AsEnumerable()
+                         where q.Sym == symbols[symIndex]
+                         select q).AsEnumerable()
                             .Select(q => (q.Timestamp - IntegrationTestConstants.NULL_RECORD_FIRST_TIMESTAMP)
                                          / IntegrationTestConstants.NULL_RECORD_TIMESTAMP_INCREMENT).ToArray();
 

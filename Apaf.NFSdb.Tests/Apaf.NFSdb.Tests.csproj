@@ -102,7 +102,6 @@
     <Compile Include="Columns\ExpressionTests.cs" />
     <Compile Include="Columns\FixedColumnTests.cs" />
     <Compile Include="Columns\IndexColumnTests.cs" />
-    <Compile Include="Columns\NJournalTProtocolTests.cs" />
     <Compile Include="Columns\ReflectionObjectSerializerTests.cs" />
     <Compile Include="Columns\StringColumnTests.cs" />
     <Compile Include="Columns\SymbolMapColumnTests.cs" />

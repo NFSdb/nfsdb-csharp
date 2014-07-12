@@ -9,9 +9,8 @@ using Apaf.NFSdb.Core.Tx;
 
 namespace Apaf.NFSdb.Core.Column
 {
-    public class ReflectionObjectSerializer : IFieldSerializer
+    public class ThriftObjectSerializer : IFieldSerializer
     {
-        public const int BITMAP_INDEX_ALWAYS_SET = -1;
         private readonly IColumn[] _allColumns;
         private readonly int _bitsetColSize;
 
@@ -26,8 +25,7 @@ namespace Apaf.NFSdb.Core.Column
         private readonly Action<object, ByteArray, IFixedWidthColumn[], long,
             IStringColumn[], ITransactionContext> _writeMethod;
 
-        public ReflectionObjectSerializer(Type objectType,
-            IEnumerable<IColumn> columns)
+        public ThriftObjectSerializer(Type objectType, IEnumerable<IColumn> columns)
         {
             IColumn[] allColumns = columns.ToArray();
             _allColumns = allColumns.Where(c => c.FieldType != EFieldType.BitSet).ToArray();
@@ -72,7 +70,8 @@ namespace Apaf.NFSdb.Core.Column
             _writeMethod(item, byteArray, _fixedColumns, rowID, _stringColumns, tx);
             _issetColumn.SetValue(rowID, bitSetAddress, tx);
         }
-        /*
+
+/*
 .method public hidebysig static void  WriteItem(object obj,
                                                 valuetype [Apaf.NFSdb.Core]Apaf.NFSdb.Core.Column.ByteArray bitset,
                                                 class [Apaf.NFSdb.Core]Apaf.NFSdb.Core.Column.IFixedWidthColumn[] fixedCols,
@@ -345,8 +344,6 @@ namespace Apaf.NFSdb.Core.Column
         {
             ConstructorInfo constructor = _objectType.GetConstructor(Type.EmptyTypes);
             MethodInfo isSet = typeof(ByteArray).GetMethod("IsSet");
-            var issetType = _objectType.GetNestedType("Isset");
-            var issetField = _objectType.GetField("__isset");
 
             if (constructor == null)
                 throw new NFSdbConfigurationException("No default contructor found on type " + _objectType);

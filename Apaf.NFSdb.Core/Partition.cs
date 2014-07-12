@@ -16,7 +16,6 @@ namespace Apaf.NFSdb.Core
         private readonly ColumnStorage _columnStorage;
         private readonly DateTime _endDate;
         private readonly FileTxSupport _txSupport;
-        private readonly ISymbolMapColumn[] _symbolColumns;
         private readonly IColumn[] _columns;
         private readonly IFixedWidthColumn _timestampColumn;
 
@@ -28,21 +27,19 @@ namespace Apaf.NFSdb.Core
         {
             _columnStorage = new ColumnStorage(metadata.Settings, startDate,
                 access, partitionID, memeorymMappedFileFactory);
+            
             _columns = metadata.GetPartitionColums(_columnStorage).ToArray();
-            _symbolColumns = 
-                _columns.Where(c => c.FieldType == EFieldType.Symbol)
-                .Cast<ISymbolMapColumn>().ToArray();
-
-            var timestampFieldID = metadata.TimestampFieldID;
-            if (timestampFieldID.HasValue)
+            if (metadata.TimestampFieldID.HasValue)
             {
-                _timestampColumn = (IFixedWidthColumn)_columns[timestampFieldID.Value];
+                _timestampColumn = 
+                    (IFixedWidthColumn)_columns[metadata.TimestampFieldID.Value];
             }
 
-            _fieldSerializer = new ReflectionObjectSerializer(typeof(T), _columns);
+            _fieldSerializer = new ThriftObjectSerializer(typeof(T), _columns);
             StartDate = startDate;
             _endDate = PartitionManagerUtils.GetPartitionEndDate(
                 startDate, metadata.Settings.PartitionType);
+            
             PartitionID = partitionID;
             DirectoryPath = path;
             _txSupport = new FileTxSupport(partitionID, _columnStorage, metadata);

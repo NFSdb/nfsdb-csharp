@@ -75,6 +75,7 @@
     <Compile Include="BigEndianTest.cs" />
     <Compile Include="IntegrationTests\IntegrationGenerateRecords.cs" />
     <Compile Include="IntegrationTests\IntegrationReadRecords.cs" />
+    <Compile Include="IntegrationTests\JavaReadTests.cs" />
     <Compile Include="ITask.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />

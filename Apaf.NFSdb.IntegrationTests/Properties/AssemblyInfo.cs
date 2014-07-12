@@ -11,7 +11,7 @@ using System.Runtime.InteropServices;
 [assembly: AssemblyCompany("Microsoft")]
 [assembly: AssemblyProduct("Apaf.NFSdb.IntegrationTests")]
 [assembly: AssemblyCopyright("Copyright © Microsoft 2014")]
-[assembly: AssemblyTrademark("")]
+[assembly: AssemblyTrademark("NFSdb")]
 [assembly: AssemblyCulture("")]
 
 // Setting ComVisible to false makes the types in this assembly not visible 

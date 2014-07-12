@@ -1,6 +1,4 @@
-﻿using Apaf.NFSdb.IntegrationTests.JavaIntegration;
-
-namespace Apaf.NFSdb.TestRunner.IntegrationTests
+﻿namespace Apaf.NFSdb.TestRunner.IntegrationTests
 {
     public class IntegrationReadRecords : ITask
     {
