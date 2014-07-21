@@ -1,6 +1,6 @@
 ﻿#region copyright
 /*
- * Copyright (c) 2014. APAF (Alex Pelagenko).
+ * Copyright (c) 2014. APAF http://apafltd.co.uk
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -74,6 +74,9 @@ namespace Apaf.NFSdb.Core.Configuration
 
         [XmlElement("string")]
         public List<StringElement> Strings { get; set; }
+
+        [XmlElement("serializerName")]
+        public string SerializerName { get; set; }
 
     }
 }

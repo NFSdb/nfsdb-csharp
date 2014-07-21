@@ -1,6 +1,6 @@
 ﻿#region copyright
 /*
- * Copyright (c) 2014. APAF (Alex Pelagenko).
+ * Copyright (c) 2014. APAF http://apafltd.co.uk
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -76,7 +76,7 @@ namespace Apaf.NFSdb.Core.Queries
             if (Journal.Metadata.TimestampFieldID.HasValue)
             {
                 var timestampName = Journal.Metadata
-                    .GetColumnById(Journal.Metadata.TimestampFieldID.Value).FieldName;
+                    .GetColumnById(Journal.Metadata.TimestampFieldID.Value).FileName;
 
                 Sort(Order.Asc, new[] { timestampName });
             }

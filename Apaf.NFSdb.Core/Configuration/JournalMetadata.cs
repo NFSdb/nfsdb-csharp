@@ -1,6 +1,7 @@
 ﻿#region copyright
+
 /*
- * Copyright (c) 2014. APAF (Alex Pelagenko).
+ * Copyright (c) 2014. APAF http://apafltd.co.uk
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,11 +15,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 #endregion
+
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Reflection;
 using Apaf.NFSdb.Core.Collections;
 using Apaf.NFSdb.Core.Column;
 using Apaf.NFSdb.Core.Exceptions;
@@ -39,13 +41,20 @@ namespace Apaf.NFSdb.Core.Configuration
 
         private readonly Func<T, long> _timestampDelegate;
         private IColumnStorage _symbolStorage;
+        private ISerializerFactory _serializerFactory;
 
         public JournalMetadata(JournalElement config)
         {
             var itemType = typeof (T);
 
+            _serializerFactory =
+                JournalSerializers.Instance.GetSerializer(config.SerializerName ??
+                                                          MetadataConstants.DEFAULT_SERIALIZER_NAME);
+            _serializerFactory.Initialize(itemType);
+            var columnsFields = _serializerFactory.ParseColumns().ToArray();
+            _columns = ParseColumns(columnsFields, config);
+
             // Parse.
-            _columns = ParseColumns(itemType, config);
             FileCount = CalcFilesCount(_columns);
 
             // Timestamp.
@@ -53,7 +62,7 @@ namespace Apaf.NFSdb.Core.Configuration
             {
                 _timestampDelegate = ReflectionHelper.CreateTimestampDelegate<T>(config.TimestampColumn);
                 TimestampFieldID = _columns.Single(
-                    c => c.FieldName.Equals(config.TimestampColumn,
+                    c => c.FileName.Equals(config.TimestampColumn,
                         StringComparison.OrdinalIgnoreCase)).FieldID;
             }
             else
@@ -110,6 +119,11 @@ namespace Apaf.NFSdb.Core.Configuration
             }
         }
 
+        public IFieldSerializer GetSerializer(IEnumerable<IColumn> columns)
+        {
+            return _serializerFactory.CreateFieldSerializer(columns);
+        }
+
         public IEnumerable<ColumnMetadata> Columns
         {
             get { return _columns; }
@@ -121,7 +135,7 @@ namespace Apaf.NFSdb.Core.Configuration
         }
 
         public int? TimestampFieldID { get; private set; }
-        
+
         public IEnumerable<IColumn> GetPartitionColums(IColumnStorage partitionStorage)
         {
             if (_symbolStorage == null)
@@ -147,7 +161,7 @@ namespace Apaf.NFSdb.Core.Configuration
             int i = 0;
             foreach (var col in _columns)
             {
-                if (string.Equals(arg, col.FieldName, StringComparison.OrdinalIgnoreCase))
+                if (string.Equals(arg, col.FileName, StringComparison.OrdinalIgnoreCase))
                 {
                     return i;
                 }
@@ -170,24 +184,24 @@ namespace Apaf.NFSdb.Core.Configuration
                 if (cType.FieldType == EFieldType.String)
                 {
                     // String.
-                    var data = columnStorage.GetFile(cType.FieldName, fileID++, cType.FieldID, EDataType.Data);
-                    var index = columnStorage.GetFile(cType.FieldName, fileID++, cType.FieldID, EDataType.Index);
-                    column = new StringColumn(data, index, cType.MaxSize, GetPropertyName(cType.FieldName));
+                    var data = columnStorage.GetFile(cType.FileName, fileID++, cType.FieldID, EDataType.Data);
+                    var index = columnStorage.GetFile(cType.FileName, fileID++, cType.FieldID, EDataType.Index);
+                    column = new StringColumn(data, index, cType.MaxSize, GetPropertyName(cType.FileName));
                 }
                 else if (cType.FieldType == EFieldType.BitSet)
                 {
-                    var data = columnStorage.GetFile(cType.FieldName, fileID++, cType.FieldID, EDataType.Data);
+                    var data = columnStorage.GetFile(cType.FileName, fileID++, cType.FieldID, EDataType.Data);
                     column = new BitsetColumn(data, _columns.Count);
                 }
                 else if (cType.FieldType == EFieldType.Symbol)
                 {
-                    var colData = columnStorage.GetFile(cType.FieldName, fileID++, cType.FieldID, EDataType.Data);
-                    var colDataK = columnStorage.GetFile(cType.FieldName, fileID++, cType.FieldID, EDataType.Datak);
-                    var colDataR = columnStorage.GetFile(cType.FieldName, fileID++, cType.FieldID, EDataType.Datar);
-                    var symData = _symbolStorage.GetFile(cType.FieldName, fileID++, cType.FieldID, EDataType.Symd);
-                    var symi = _symbolStorage.GetFile(cType.FieldName, fileID++, cType.FieldID, EDataType.Symi);
-                    var symk = _symbolStorage.GetFile(cType.FieldName, fileID++, cType.FieldID, EDataType.Symrk);
-                    var symr = _symbolStorage.GetFile(cType.FieldName, fileID++, cType.FieldID, EDataType.Symrr);
+                    var colData = columnStorage.GetFile(cType.FileName, fileID++, cType.FieldID, EDataType.Data);
+                    var colDataK = columnStorage.GetFile(cType.FileName, fileID++, cType.FieldID, EDataType.Datak);
+                    var colDataR = columnStorage.GetFile(cType.FileName, fileID++, cType.FieldID, EDataType.Datar);
+                    var symData = _symbolStorage.GetFile(cType.FileName, fileID++, cType.FieldID, EDataType.Symd);
+                    var symi = _symbolStorage.GetFile(cType.FileName, fileID++, cType.FieldID, EDataType.Symi);
+                    var symk = _symbolStorage.GetFile(cType.FileName, fileID++, cType.FieldID, EDataType.Symrk);
+                    var symr = _symbolStorage.GetFile(cType.FileName, fileID++, cType.FieldID, EDataType.Symrr);
                     int maxLen = cType.MaxSize;
                     int distinctHintCount = cType.HintDistinctCount;
                     column = new SymbolMapColumn(
@@ -198,7 +212,7 @@ namespace Apaf.NFSdb.Core.Configuration
                         symi: symi,
                         symk: symk,
                         symr: symr,
-                        propertyName: GetPropertyName(cType.FieldName),
+                        propertyName: GetPropertyName(cType.FileName),
                         capacity: distinctHintCount,
                         recordCountHint: _settings.RecordHint,
                         maxLen: maxLen,
@@ -207,89 +221,68 @@ namespace Apaf.NFSdb.Core.Configuration
                 else
                 {
                     // Fixed size.
-                    var data = columnStorage.GetFile(cType.FieldName, fileID++, cType.FieldID, EDataType.Data);
-                    column = new FixedColumn(data, cType.FieldType, GetPropertyName(cType.FieldName));
+                    var data = columnStorage.GetFile(cType.FileName, fileID++, cType.FieldID, EDataType.Data);
+                    column = new FixedColumn(data, cType.FieldType, GetPropertyName(cType.FileName));
                 }
 
                 yield return column;
             }
         }
 
-        private IList<ColumnMetadata> ParseColumns(Type itemType, JournalElement config)
+        private IList<ColumnMetadata> ParseColumns(FieldData[] fields, JournalElement config)
         {
-            // Properties.
-            // Public.
-            IEnumerable<PropertyInfo> properties =
-                itemType.GetProperties(BindingFlags.Instance | BindingFlags.Public);
-
             // Build.
             var cols = new List<ColumnMetadata>();
 
-            foreach (PropertyInfo property in properties)
+            foreach (FieldData field in fields)
             {
-                var fieldName = GetFieldName(property.Name);
+                var fieldName = GetFileName(field.PropertyName);
 
                 // Type.
-                if (property.PropertyType == typeof (byte))
+                switch (field.DataType)
                 {
-                    cols.Add(ColumnMetadata.FromFixedField(EFieldType.Byte, fieldName, cols.Count));
-                }
-                else if (property.PropertyType == typeof (bool))
-                {
-                    cols.Add(ColumnMetadata.FromFixedField(EFieldType.Bool, fieldName, cols.Count));
-                }
-                else if (property.PropertyType == typeof (short))
-                {
-                    cols.Add(ColumnMetadata.FromFixedField(EFieldType.Int16, fieldName, cols.Count));
-                }
-                else if (property.PropertyType == typeof (int))
-                {
-                    cols.Add(ColumnMetadata.FromFixedField(EFieldType.Int32, fieldName, cols.Count));
-                }
-                else if (property.PropertyType == typeof (long))
-                {
-                    cols.Add(ColumnMetadata.FromFixedField(EFieldType.Int64, fieldName, cols.Count));
-                }
-                else if (property.PropertyType == typeof (double))
-                {
-                    cols.Add(ColumnMetadata.FromFixedField(EFieldType.Double, fieldName, cols.Count));
-                }
-                else if (property.PropertyType == typeof (string))
-                {
-                    // Check config.
-                    var stringConfig = ((IEnumerable<ColumnElement>) (config.Strings))
-                        .Concat(config.Symbols)
-                        .FirstOrDefault(c => c.Name.Equals(fieldName,
-                            StringComparison.OrdinalIgnoreCase));
+                    case EFieldType.Byte:
+                    case EFieldType.Bool:
+                    case EFieldType.Int16:
+                    case EFieldType.Int32:
+                    case EFieldType.Int64:
+                    case EFieldType.Double:
+                        cols.Add(ColumnMetadata.FromFixedField(field.DataType, fieldName, cols.Count));
+                        break;
+                    case EFieldType.Symbol:
+                    case EFieldType.String:
+                        // Check config.
+                        var stringConfig = ((IEnumerable<ColumnElement>) (config.Strings))
+                            .Concat(config.Symbols)
+                            .FirstOrDefault(c => c.Name.Equals(fieldName,
+                                StringComparison.OrdinalIgnoreCase));
 
-                    if (stringConfig != null)
-                    {
-                        cols.Add(ColumnMetadata.FromColumnElement(stringConfig, cols.Count));
-                    }
-                    else
-                    {
-                        // No config.
-                        cols.Add(ColumnMetadata.FromStringField(fieldName,
-                            MetadataConstants.DEFAULT_STRING_AVG_SIZE,
-                            MetadataConstants.DEFAULT_STRING_MAX_SIZE,
-                            cols.Count));
-                    }
+                        if (stringConfig != null)
+                        {
+                            cols.Add(ColumnMetadata.FromColumnElement(stringConfig, cols.Count));
+                        }
+                        else
+                        {
+                            // No config.
+                            cols.Add(ColumnMetadata.FromStringField(fieldName,
+                                MetadataConstants.DEFAULT_STRING_AVG_SIZE,
+                                MetadataConstants.DEFAULT_STRING_MAX_SIZE,
+                                cols.Count));
+                        }
+                        break;
+
+                    case EFieldType.BitSet:
+                        var fieldSize = BitsetColumn.CalculateSize(fields.Length);
+                        cols.Add(ColumnMetadata.FromBitsetField(ISSET_COLUMN_NAME, fieldSize, cols.Count));
+                        break;
+                    default:
+                        throw new ArgumentOutOfRangeException();
                 }
-                else
-                {
-                    throw new NFSdbConfigurationException("Unsupported property type " + property.PropertyType);
-                }
-            }
-            var issetField = itemType.GetField(MetadataConstants.ISSET_FIELD_NAME);
-            if (issetField.FieldType.Name.EndsWith("Isset"))
-            {
-                var fieldSize = BitsetColumn.CalculateSize(cols.Count);
-                cols.Add(ColumnMetadata.FromBitsetField(ISSET_COLUMN_NAME, fieldSize, cols.Count));
             }
             return cols;
         }
 
-        private static string GetFieldName(string properyName)
+        private static string GetFileName(string properyName)
         {
             return properyName.Substring(0, 1).ToLower()
                    + properyName.Substring(1, properyName.Length - 1);

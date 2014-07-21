@@ -1,6 +1,7 @@
 ﻿#region copyright
+
 /*
- * Copyright (c) 2014. APAF (Alex Pelagenko).
+ * Copyright (c) 2014. APAF http://apafltd.co.uk
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,11 +15,20 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 #endregion
-namespace Apaf.NFSdb.Core.Collections
+
+namespace Apaf.NFSdb.Core.Column
 {
-    public interface IWritableArray<T> : IArray<T>
+    public class FieldData
     {
-        void GetArray(out T[] array, out int index, out int count);
+        public FieldData(EFieldType type, string propertyName)
+        {
+            DataType = type;
+            PropertyName = propertyName;
+        }
+
+        public EFieldType DataType { get; private set; }
+        public string PropertyName { get; private set; }
     }
 }

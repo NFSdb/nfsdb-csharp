@@ -92,14 +92,16 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Collections\ExpandableList.cs" />
-    <Compile Include="Collections\IWritableArray.cs" />
     <Compile Include="Column\BitsetColumn.cs" />
     <Compile Include="Column\ByteArray.cs" />
+    <Compile Include="Column\FieldData.cs" />
     <Compile Include="Column\ColumnMetadata.cs" />
     <Compile Include="Column\IndexAddressColumn.cs" />
     <Compile Include="Column\IndexColumn.cs" />
+    <Compile Include="Column\ISerializerFactory.cs" />
     <Compile Include="Column\ITypeColumnParser.cs" />
     <Compile Include="Column\SymbolCache.cs" />
+    <Compile Include="Column\ThriftSerializerFactory.cs" />
     <Compile Include="Configuration\ColumnElement.cs" />
     <Compile Include="Configuration\ColumnStaticMetadata.cs" />
     <Compile Include="Column\IColumnUpdateDelegate.cs" />
@@ -127,6 +129,7 @@
     <Compile Include="Exceptions\NJournalUnsafeDebugCheckException.cs" />
     <Compile Include="IJournalCore.cs" />
     <Compile Include="IQueryStatistics.cs" />
+    <Compile Include="JournalSerializers.cs" />
     <Compile Include="Queries\JournalStatistics.cs" />
     <Compile Include="Queries\LatestBySymbolFilter.cs" />
     <Compile Include="Queries\Queryable\DateRange.cs" />
@@ -174,7 +177,6 @@
     <Compile Include="Storage\ArrayAddress.cs" />
     <Compile Include="Storage\CharArrayAddress.cs" />
     <Compile Include="Storage\EFileAccess.cs" />
-    <Compile Include="Storage\IBufferManager.cs" />
     <Compile Include="Storage\ICompositeFile.cs" />
     <Compile Include="Storage\ICompositeFileFactory.cs" />
     <Compile Include="Storage\IRawFilePart.cs" />
@@ -183,10 +185,8 @@
     <Compile Include="Storage\MemoryFile.cs" />
     <Compile Include="Storage\IColumnStorage.cs" />
     <Compile Include="Column\FixedWidthColumn.cs" />
-    <Compile Include="Column\IBinaryReader.cs" />
     <Compile Include="Column\IBitArray.cs" />
     <Compile Include="Column\IBitsetColumn.cs" />
-    <Compile Include="Collections\IArray.cs" />
     <Compile Include="Column\IColumn.cs" />
     <Compile Include="Column\EFieldType.cs" />
     <Compile Include="Column\EFieldTypeExtensions.cs" />
@@ -199,7 +199,7 @@
     <Compile Include="EPartitionType.cs" />
     <Compile Include="Exceptions\NJournalConfigurationException.cs" />
     <Compile Include="IDirectory.cs" />
-    <Compile Include="IFieldSerializer.cs" />
+    <Compile Include="Column\IFieldSerializer.cs" />
     <Compile Include="IJournal.cs" />
     <Compile Include="IJournalMetadata.cs" />
     <Compile Include="IPartition.cs" />

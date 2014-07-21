@@ -1,6 +1,6 @@
 ﻿#region copyright
 /*
- * Copyright (c) 2014. APAF (Alex Pelagenko).
+ * Copyright (c) 2014. APAF http://apafltd.co.uk
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -40,7 +40,7 @@ namespace Apaf.NFSdb.Tests
         {
             var meta = CreateMetadata<FieldTypes>();
             return meta.Columns
-                .First(c => c.FieldName.Equals(colName, StringComparison.OrdinalIgnoreCase))
+                .First(c => c.FileName.Equals(colName, StringComparison.OrdinalIgnoreCase))
                 .FieldType;
         }
 

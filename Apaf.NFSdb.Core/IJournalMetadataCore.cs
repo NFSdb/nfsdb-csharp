@@ -1,6 +1,6 @@
 ﻿#region copyright
 /*
- * Copyright (c) 2014. APAF (Alex Pelagenko).
+ * Copyright (c) 2014. APAF http://apafltd.co.uk
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,6 +23,7 @@ namespace Apaf.NFSdb.Core
 {
     public interface IJournalMetadataCore
     {
+        IFieldSerializer GetSerializer(IEnumerable<IColumn> columns);
         IEnumerable<ColumnMetadata> Columns { get; }
         JournalSettings Settings { get; }
         int? TimestampFieldID { get; }

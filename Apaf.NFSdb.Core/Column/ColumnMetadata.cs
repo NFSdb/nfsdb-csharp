@@ -1,6 +1,6 @@
 ﻿#region copyright
 /*
- * Copyright (c) 2014. APAF (Alex Pelagenko).
+ * Copyright (c) 2014. APAF http://apafltd.co.uk
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -41,15 +41,15 @@ namespace Apaf.NFSdb.Core.Column
             FieldType = configElement.ColumnType;
             AvgSize = GetStringAvgSize(configElement.AvgSize);
             MaxSize = configElement.MaxSize;
-            FieldName = configElement.Name;
+            FileName = configElement.Name;
             PropertyName = GetPropertyName(configElement.Name);
         }
 
-        private ColumnMetadata(EFieldType filedType, string fieldName, int avgSize, int maxSize, int fieldID)
+        private ColumnMetadata(EFieldType filedType, string fileName, int avgSize, int maxSize, int fieldID)
         {
             FieldType = filedType;
-            FieldName = fieldName;
-            PropertyName = GetPropertyName(fieldName);
+            FileName = fileName;
+            PropertyName = GetPropertyName(fileName);
             AvgSize = avgSize;
             MaxSize = maxSize;
             FieldID = fieldID;
@@ -59,7 +59,7 @@ namespace Apaf.NFSdb.Core.Column
         public string SameAs { get; private set; }
         public bool Indexed { get; private set; }
         public EFieldType FieldType { get; private set; }
-        public string FieldName { get; private set; }
+        public string FileName { get; private set; }
         public string PropertyName { get; private set; }
         public int HintDistinctCount { get; private set; }
         public int AvgSize { get; private set; }

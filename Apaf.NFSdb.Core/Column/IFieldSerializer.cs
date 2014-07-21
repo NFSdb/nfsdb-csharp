@@ -1,6 +1,6 @@
 ﻿#region copyright
 /*
- * Copyright (c) 2014. APAF (Alex Pelagenko).
+ * Copyright (c) 2014. APAF http://apafltd.co.uk
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,20 +15,15 @@
  * limitations under the License.
  */
 #endregion
-using Apaf.NFSdb.Core.Collections;
+
+using Apaf.NFSdb.Core.Storage;
+using Apaf.NFSdb.Core.Tx;
 
 namespace Apaf.NFSdb.Core.Column
 {
-    public interface IBinaryReader
+    public interface IFieldSerializer 
     {
-        IArray<byte> ReadBytes(int sizeBytes);
-        int ReadInt32();
-        char ReadChar();
-        byte ReadByte();
-        long ReadInt64();
-        bool ReadBool();
-        double ReadDouble();
-        short ReadInt16();
-        ushort ReadUInt16();
+        object Read(long rowID, IReadContext readContext);
+        void Write(object item, long rowID, ITransactionContext readContext);
     }
 }

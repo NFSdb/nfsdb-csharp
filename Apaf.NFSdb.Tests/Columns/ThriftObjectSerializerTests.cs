@@ -1,6 +1,6 @@
 ﻿#region copyright
 /*
- * Copyright (c) 2014. APAF (Alex Pelagenko).
+ * Copyright (c) 2014. APAF http://apafltd.co.uk
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,7 +26,7 @@ using NUnit.Framework;
 namespace Apaf.NFSdb.Tests.Columns
 {
     [TestFixture]
-    public class ReflectionObjectSerializerTests
+    public class ThriftObjectSerializerTests
     {
         [TestCase("timestamp", ExpectedResult = true)]
         [TestCase("ask", ExpectedResult = true)]
@@ -254,14 +254,19 @@ namespace Apaf.NFSdb.Tests.Columns
 
         private ThriftObjectSerializer CreateReader(Quote t)
         {
+            var serializerFactory = new ThriftSerializerFactory();
+            serializerFactory.Initialize(typeof(Quote));
+
             var columns = GetQuoteColumns(t);
-            return new ThriftObjectSerializer(typeof(Quote), 
-                columns);
+            return (ThriftObjectSerializer)serializerFactory.CreateFieldSerializer(columns);
         }
 
         private ThriftObjectSerializer CreateWriter(IColumn[] columns)
         {
-            return new ThriftObjectSerializer(typeof(Quote), columns);
+            var serializerFactory = new ThriftSerializerFactory();
+            serializerFactory.Initialize(typeof(Quote));
+
+            return (ThriftObjectSerializer)serializerFactory.CreateFieldSerializer(columns);
         }
 
         private static IColumn[] GetQuoteColumns(Quote t)

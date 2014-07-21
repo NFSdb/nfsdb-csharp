@@ -1,6 +1,6 @@
 ﻿#region copyright
 /*
- * Copyright (c) 2014. APAF (Alex Pelagenko).
+ * Copyright (c) 2014. APAF http://apafltd.co.uk
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -31,7 +31,8 @@ namespace Apaf.NFSdb.Core.Column
         public static readonly string NULLS_FILE_NAME = "_nulls";
         public static readonly string DEFAULT_PARTITION_DIR = "default";
         public static readonly int ISSET_HEADER_LENGTH = 0; //4;
-        public static readonly string ISSET_FIELD_NAME = "__isset";
+        public static readonly string THRIFT_ISSET_FIELD_NAME = "__isset";
+        public static readonly string THRIFT_ISSET_FIELD_TYPE_SUFFIX = "Isset";
 
         public static readonly int DEFAULT_AVG_RECORD_SIZE = 0xff;
         public static readonly int DEFAULT_DISTINCT_HINT_COUNT = 255;
@@ -63,6 +64,7 @@ namespace Apaf.NFSdb.Core.Column
         public static readonly int PIPE_BIT_HINT = 16;
         public static readonly int TX_LOG_FILE_ID = -1;
         public static readonly string TX_FILE_NAME = "_tx";
+        public static readonly string DEFAULT_SERIALIZER_NAME = "thrift";
         public const int K_FILE_KEY_BLOCK_HEADER_SIZE = 16;
         public const int K_FILE_KEY_BLOCK_OFFSET = 8;
         public const int K_FILE_ROW_BLOCK_LEN_OFFSET = 0;
