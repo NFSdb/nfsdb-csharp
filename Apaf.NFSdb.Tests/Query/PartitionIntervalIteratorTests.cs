@@ -21,6 +21,7 @@ using System.Globalization;
 using System.Linq;
 using Apaf.NFSdb.Core;
 using Apaf.NFSdb.Core.Queries;
+using Apaf.NFSdb.Core.Storage;
 using Apaf.NFSdb.Core.Tx;
 using Apaf.NFSdb.Core.Writes;
 using Apaf.NFSdb.Tests.Tx;

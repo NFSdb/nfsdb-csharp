@@ -23,11 +23,11 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using System.Reflection.Emit;
+using Apaf.NFSdb.Core.Column;
 using Apaf.NFSdb.Core.Exceptions;
-using Apaf.NFSdb.Core.Storage;
 using Apaf.NFSdb.Core.Tx;
 
-namespace Apaf.NFSdb.Core.Column
+namespace Apaf.NFSdb.Core.Storage.Serializer
 {
     public class ThriftSerializerFactory : ISerializerFactory
     {
@@ -140,7 +140,7 @@ namespace Apaf.NFSdb.Core.Column
 
         public IFieldSerializer CreateFieldSerializer(IEnumerable<IColumn> columns)
         {
-            return new ThriftObjectSerializer(columns, _readMethod, _writeMethod);
+            return new ObjectSerializer(columns, _readMethod, _writeMethod);
         }
 
         /*
@@ -263,7 +263,7 @@ namespace Apaf.NFSdb.Core.Column
                         il.Emit(OpCodes.Ldc_I4, i);
                         il.Emit(OpCodes.Ldloc_0);
                         il.Emit(OpCodes.Ldflda, issetField);
-                        il.Emit(OpCodes.Ldfld, GetIssetFieldInfo(issetType, fixedCol.PropertyName));
+                        il.Emit(OpCodes.Ldfld, GetIssetFieldInfo(issetType, fixedCol));
                         il.Emit(OpCodes.Ldc_I4_0);
                         il.Emit(OpCodes.Ceq);
                         il.Emit(OpCodes.Call, methodSet);
@@ -293,7 +293,7 @@ namespace Apaf.NFSdb.Core.Column
                         il.Emit(OpCodes.Ldc_I4, i);
                         il.Emit(OpCodes.Ldloc_0);
                         il.Emit(OpCodes.Ldflda, issetField);
-                        il.Emit(OpCodes.Ldfld, GetIssetFieldInfo(issetType, stringColumn.PropertyName));
+                        il.Emit(OpCodes.Ldfld, GetIssetFieldInfo(issetType, stringColumn));
                         il.Emit(OpCodes.Ldc_I4_0);
                         il.Emit(OpCodes.Ceq);
                         il.Emit(OpCodes.Call, methodSet);
@@ -494,27 +494,14 @@ IL_006f:  ret
                     typeof(Func<ByteArray, IFixedWidthColumn[], long, IStringColumn[], IReadContext, object>));
         }
 
-
-        private MethodInfo GetGetMethod(FieldData column)
+        private static MethodInfo GetGetMethod(FieldData column)
         {
-            if (column.DataType == EFieldType.String
-                || column.DataType == EFieldType.Symbol)
-            {
-                return typeof(IStringColumn).GetMethod("GetString");
-            }
-            EFieldType fieldType = column.DataType;
-            return typeof(IFixedWidthColumn).GetMethod("Get" + fieldType);
+            return column.GetGetMethod();
         }
 
-        private FieldInfo GetIssetFieldInfo(Type issetType, string propertyName)
+        private static FieldInfo GetIssetFieldInfo(Type issetType, FieldData field)
         {
-            return issetType.GetField(GetFieldName(propertyName), BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+            return issetType.GetField(field.GetFieldName(), BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
         }
-
-        private string GetFieldName(string propertyName)
-        {
-            return propertyName.Substring(0, 1).ToLower() + propertyName.Substring(1);
-        }
-
     }
 }

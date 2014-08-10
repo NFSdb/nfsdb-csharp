@@ -21,10 +21,9 @@
 using System;
 using System.Collections.Concurrent;
 using System.Threading;
-
 using Apaf.NFSdb.Core.Column;
 
-namespace Apaf.NFSdb.Core
+namespace Apaf.NFSdb.Core.Storage.Serializer
 {
     public class JournalSerializers
     {

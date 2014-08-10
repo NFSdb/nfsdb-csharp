@@ -16,6 +16,7 @@
  */
 #endregion
 using System.Collections.Generic;
+using Apaf.NFSdb.Core.Storage;
 
 namespace Apaf.NFSdb.Core
 {

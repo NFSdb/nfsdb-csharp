@@ -22,6 +22,7 @@ using System.Reflection;
 using System.Reflection.Emit;
 using Apaf.NFSdb.Core.Column;
 using Apaf.NFSdb.Core.Storage;
+using Apaf.NFSdb.Core.Storage.Serializer;
 using Apaf.NFSdb.Core.Tx;
 using Apaf.NFSdb.Tests.Columns.ThriftModel;
 using NUnit.Framework;
@@ -31,6 +32,18 @@ namespace Apaf.NFSdb.Tests.Columns
     [TestFixture]
     public class ExpressionTests
     {
+        public class QuotePoco
+        {
+            public long Timestamp { get; set; }
+            public string Sym { get; set; }
+            public double? Bid { get; set; }
+            public double? Ask { get; set; }
+            public int BidSize { get; set; }
+            public int AskSize { get; set; }
+            public string Mode { get; set; }
+            public string Ex { get; set; }
+        }
+
         private const int LOOP_NUM = (int) 1E3;
 
         [Test]
@@ -176,6 +189,34 @@ namespace Apaf.NFSdb.Tests.Columns
             return q;
         }
 
+        public static object ReadItemPoco(ByteArray bitset,
+            IFixedWidthColumn[] fixedCols,
+            FixedColumnNullableWrapper[] nullableCols,
+            long rowid, IStringColumn[] stringColumns, IReadContext readContext)
+        {
+            var q = new QuotePoco();
+            q.Timestamp = fixedCols[0].GetInt64(rowid);
+            q.Sym = stringColumns[0].GetString(rowid, readContext);
+
+            if (!bitset.IsSet(0))
+            {
+                q.Ask = fixedCols[1].GetDouble(rowid);
+            }
+
+            if (!bitset.IsSet(1))
+            {
+                q.Bid = fixedCols[2].GetDouble(rowid);
+            }
+
+            q.BidSize = fixedCols[2].GetInt32(rowid);
+            q.AskSize = fixedCols[3].GetInt32(rowid);
+
+            q.Mode = stringColumns[1].GetString(rowid, readContext);
+            q.Ex = stringColumns[2].GetString(rowid, readContext);
+
+            return q;
+        }
+
         public static void WriteItem(object obj, 
             ByteArray bitset, 
             IFixedWidthColumn[] fixedCols, long rowid, 
@@ -190,6 +231,27 @@ namespace Apaf.NFSdb.Tests.Columns
 
             bitset.Set(2, !q.__isset.bid);
             stringColumns[0].SetString(rowid, q.Mode, readContext);
+        }
+
+        public static void WriteItemPoco(object obj,
+            ByteArray bitset,
+            IFixedWidthColumn[] fixedCols, 
+            FixedColumnNullableWrapper[] nullableCols, long rowid,
+            IStringColumn[] stringColumns, ITransactionContext readContext)
+        {
+            var q = (QuotePoco)obj;
+            fixedCols[0].SetInt64(rowid, q.Timestamp, readContext);
+            
+            stringColumns[0].SetString(rowid, q.Sym, readContext);
+
+            nullableCols[0].SetNullableDouble(rowid, q.Bid, bitset, readContext);
+            nullableCols[1].SetNullableDouble(rowid, q.Ask, bitset, readContext);
+
+            fixedCols[0].SetInt32(rowid, q.BidSize, readContext);
+            fixedCols[1].SetInt32(rowid, q.AskSize, readContext);
+
+            stringColumns[1].SetString(rowid, q.Mode, readContext);
+            stringColumns[1].SetString(rowid, q.Ex, readContext);
         }
 
         public void Set(Quote q, double val)

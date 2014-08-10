@@ -17,6 +17,7 @@
 #endregion
 using System;
 using System.Threading;
+using Apaf.NFSdb.Core.Storage;
 using Apaf.NFSdb.Core.Tx;
 using log4net;
 

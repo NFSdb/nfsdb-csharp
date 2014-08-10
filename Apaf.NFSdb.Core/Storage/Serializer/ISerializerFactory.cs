@@ -17,10 +17,12 @@
  */
 
 #endregion
+
 using System;
 using System.Collections.Generic;
+using Apaf.NFSdb.Core.Column;
 
-namespace Apaf.NFSdb.Core.Column
+namespace Apaf.NFSdb.Core.Storage.Serializer
 {
     public interface ISerializerFactory
     {

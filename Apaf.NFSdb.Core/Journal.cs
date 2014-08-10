@@ -19,6 +19,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
+using Apaf.NFSdb.Core.Configuration;
 using Apaf.NFSdb.Core.Queries;
 using Apaf.NFSdb.Core.Storage;
 using Apaf.NFSdb.Core.Writes;

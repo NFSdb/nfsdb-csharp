@@ -16,14 +16,18 @@
  */
 #endregion
 
+using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using Apaf.NFSdb.Core.Column;
+using Apaf.NFSdb.Core.Storage;
+using Apaf.NFSdb.Core.Storage.Serializer;
 using Apaf.NFSdb.Tests.Columns.ThriftModel;
 using Apaf.NFSdb.Tests.Tx;
 using NUnit.Framework;
 
-namespace Apaf.NFSdb.Tests.Columns
+namespace Apaf.NFSdb.Tests.Serializer
 {
     [TestFixture]
     public class ThriftObjectSerializerTests
@@ -203,6 +207,7 @@ namespace Apaf.NFSdb.Tests.Columns
             {
                 Timestamp = 12345,
                 Bid = 2.4,
+                Ask = double.MaxValue,
                 BidSize = 0,
                 Ex = "qwerty",
                 Mode = ""
@@ -231,7 +236,7 @@ namespace Apaf.NFSdb.Tests.Columns
             {
                 Timestamp = 12345,
                 Ask = 2.3,
-                Bid = 2.4,
+                Bid = double.MaxValue,
                 BidSize = 0,
                 AskSize = 34,
                 Ex = "qwerty",
@@ -252,21 +257,21 @@ namespace Apaf.NFSdb.Tests.Columns
         }
 #endif
 
-        private ThriftObjectSerializer CreateReader(Quote t)
+        private ObjectSerializer CreateReader(Quote t)
         {
             var serializerFactory = new ThriftSerializerFactory();
             serializerFactory.Initialize(typeof(Quote));
 
             var columns = GetQuoteColumns(t);
-            return (ThriftObjectSerializer)serializerFactory.CreateFieldSerializer(columns);
+            return (ObjectSerializer)serializerFactory.CreateFieldSerializer(columns);
         }
 
-        private ThriftObjectSerializer CreateWriter(IColumn[] columns)
+        private ObjectSerializer CreateWriter(IColumn[] columns)
         {
             var serializerFactory = new ThriftSerializerFactory();
             serializerFactory.Initialize(typeof(Quote));
 
-            return (ThriftObjectSerializer)serializerFactory.CreateFieldSerializer(columns);
+            return (ObjectSerializer)serializerFactory.CreateFieldSerializer(columns);
         }
 
         private static IColumn[] GetQuoteColumns(Quote t)
@@ -284,13 +289,7 @@ namespace Apaf.NFSdb.Tests.Columns
             };
             var bitset = new QuoteBitsetColumnStub(columns, GetNullsColumn(t).ToArray());
             return columns.Concat(new[] {bitset}).ToArray();
-        }
-
-        private static void ReadQuoteIl()
-        {
-            var qu = new Quote();
-
-        }
+        } 
 
         private static IEnumerable<int> GetNullsColumn(Quote quote)
         {

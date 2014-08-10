@@ -80,7 +80,8 @@
     <Reference Include="IQToolkit">
       <HintPath>..\Lib\IQTookit\IQToolkit.dll</HintPath>
     </Reference>
-    <Reference Include="IQToolkit.Data">
+    <Reference Include="IQToolkit.Data, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
       <HintPath>..\Lib\IQTookit\IQToolkit.Data.dll</HintPath>
     </Reference>
     <Reference Include="log4net">
@@ -98,17 +99,20 @@
     <Compile Include="Column\ColumnMetadata.cs" />
     <Compile Include="Column\IndexAddressColumn.cs" />
     <Compile Include="Column\IndexColumn.cs" />
-    <Compile Include="Column\ISerializerFactory.cs" />
+    <Compile Include="Storage\Serializer\FixedColumnNullableWrapper.cs" />
+    <Compile Include="Storage\Serializer\ISerializerFactory.cs" />
     <Compile Include="Column\ITypeColumnParser.cs" />
     <Compile Include="Column\SymbolCache.cs" />
-    <Compile Include="Column\ThriftSerializerFactory.cs" />
+    <Compile Include="Storage\Serializer\PocoObjectSerializer.cs" />
+    <Compile Include="Storage\Serializer\PocoSerializerFactory.cs" />
+    <Compile Include="Storage\Serializer\ThriftSerializerFactory.cs" />
     <Compile Include="Configuration\ColumnElement.cs" />
     <Compile Include="Configuration\ColumnStaticMetadata.cs" />
     <Compile Include="Column\IColumnUpdateDelegate.cs" />
     <Compile Include="Column\IFixedWidthColumn.cs" />
     <Compile Include="Column\IStringColumn.cs" />
     <Compile Include="Column\ISymbolMapColumn.cs" />
-    <Compile Include="Column\ThriftObjectSerializer.cs" />
+    <Compile Include="Storage\Serializer\ObjectSerializer.cs" />
     <Compile Include="Column\SymbolMapColumn.cs" />
     <Compile Include="Configuration\ConfigurationReader.cs" />
     <Compile Include="Configuration\DbElement.cs" />
@@ -128,8 +132,8 @@
     <Compile Include="Exceptions\NJournalTransactionStateExcepton.cs" />
     <Compile Include="Exceptions\NJournalUnsafeDebugCheckException.cs" />
     <Compile Include="IJournalCore.cs" />
-    <Compile Include="IQueryStatistics.cs" />
-    <Compile Include="JournalSerializers.cs" />
+    <Compile Include="Queries\IQueryStatistics.cs" />
+    <Compile Include="Storage\Serializer\JournalSerializers.cs" />
     <Compile Include="Queries\JournalStatistics.cs" />
     <Compile Include="Queries\LatestBySymbolFilter.cs" />
     <Compile Include="Queries\Queryable\DateRange.cs" />
@@ -139,11 +143,11 @@
     <Compile Include="Queries\Queryable\PlanItem\IntersectPlanItem.cs" />
     <Compile Include="Queries\Queryable\JournalExpressionType.cs" />
     <Compile Include="Queries\Queryable\NJournalQuaryableNotSupportedException.cs" />
-    <Compile Include="IJournalMetadataCore.cs" />
-    <Compile Include="IPartitionCore.cs" />
-    <Compile Include="IPartitionManager.cs" />
-    <Compile Include="IPartitionManagerFactory.cs" />
-    <Compile Include="PartitionExtensions.cs" />
+    <Compile Include="Storage\IJournalMetadataCore.cs" />
+    <Compile Include="Storage\IPartitionCore.cs" />
+    <Compile Include="Storage\IPartitionManager.cs" />
+    <Compile Include="Storage\IPartitionManagerFactory.cs" />
+    <Compile Include="Storage\PartitionExtensions.cs" />
     <Compile Include="Queries\ColumnValueBinarySearch.cs" />
     <Compile Include="Queries\DateInterval.cs" />
     <Compile Include="Queries\IPartitionFilter.cs" />
@@ -166,8 +170,8 @@
     <Compile Include="Storage\IFileTxSupport.cs" />
     <Compile Include="Tx\IReadTransactionContext.cs" />
     <Compile Include="Tx\ITransactionContext.cs" />
-    <Compile Include="PartitionManager.cs" />
-    <Compile Include="PartitionManagerUtils.cs" />
+    <Compile Include="Storage\PartitionManager.cs" />
+    <Compile Include="Storage\PartitionManagerUtils.cs" />
     <Compile Include="Queries\IQuery.cs" />
     <Compile Include="Queries\RowIDUtil.cs" />
     <Compile Include="Queries\Query.cs" />
@@ -198,15 +202,14 @@
     <Compile Include="Column\StringColumn.cs" />
     <Compile Include="EPartitionType.cs" />
     <Compile Include="Exceptions\NJournalConfigurationException.cs" />
-    <Compile Include="IDirectory.cs" />
     <Compile Include="Column\IFieldSerializer.cs" />
     <Compile Include="IJournal.cs" />
-    <Compile Include="IJournalMetadata.cs" />
-    <Compile Include="IPartition.cs" />
+    <Compile Include="Configuration\IJournalMetadata.cs" />
+    <Compile Include="Storage\IPartition.cs" />
     <Compile Include="Journal.cs" />
     <Compile Include="Configuration\JournalMetadata.cs" />
     <Compile Include="Configuration\JournalSettings.cs" />
-    <Compile Include="Partition.cs" />
+    <Compile Include="Storage\Partition.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Reflection\ReflectionHelper.cs" />
     <Compile Include="Storage\ReadContext.cs" />

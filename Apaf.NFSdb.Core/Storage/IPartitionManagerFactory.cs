@@ -15,15 +15,14 @@
  * limitations under the License.
  */
 #endregion
-using System;
 
-namespace Apaf.NFSdb.Core
+using Apaf.NFSdb.Core.Configuration;
+
+namespace Apaf.NFSdb.Core.Storage
 {
-    public static class PartitionExtensions
+    public interface IPartitionManagerFactory<T>
     {
-        public static bool IsInsidePartition(this IPartitionCore partition, DateTime timestamp)
-        {
-            return timestamp >= partition.StartDate && timestamp < partition.EndDate;
-        }
+        IPartitionManager<T> Create(IJournalMetadata<T> metadata,
+            JournalSettings settings, EFileAccess access);
     }
 }

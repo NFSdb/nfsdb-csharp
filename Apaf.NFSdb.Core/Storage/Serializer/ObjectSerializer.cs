@@ -21,13 +21,13 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using Apaf.NFSdb.Core.Column;
 using Apaf.NFSdb.Core.Exceptions;
-using Apaf.NFSdb.Core.Storage;
 using Apaf.NFSdb.Core.Tx;
 
-namespace Apaf.NFSdb.Core.Column
+namespace Apaf.NFSdb.Core.Storage.Serializer
 {
-    public class ThriftObjectSerializer : IFieldSerializer
+    public class ObjectSerializer : IFieldSerializer
     {
         private readonly int _bitsetColSize;
 
@@ -41,7 +41,7 @@ namespace Apaf.NFSdb.Core.Column
         private readonly Action<object, ByteArray, IFixedWidthColumn[], long,
             IStringColumn[], ITransactionContext> _writeMethod;
 
-        public ThriftObjectSerializer(IEnumerable<IColumn> columns, 
+        public ObjectSerializer(IEnumerable<IColumn> columns, 
             Func<ByteArray, IFixedWidthColumn[], long, IStringColumn[], IReadContext, object> readMethod,
             Action<object, ByteArray, IFixedWidthColumn[], long, IStringColumn[], ITransactionContext> writeMethod)
         {

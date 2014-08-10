@@ -15,12 +15,12 @@
  * limitations under the License.
  */
 #endregion
+
 using System;
 using System.Collections.Generic;
-using Apaf.NFSdb.Core.Storage;
 using Apaf.NFSdb.Core.Tx;
 
-namespace Apaf.NFSdb.Core
+namespace Apaf.NFSdb.Core.Storage
 {
     public interface IPartitionCore
     {

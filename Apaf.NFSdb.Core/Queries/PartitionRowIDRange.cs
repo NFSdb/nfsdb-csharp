@@ -15,6 +15,9 @@
  * limitations under the License.
  */
 #endregion
+
+using Apaf.NFSdb.Core.Storage;
+
 namespace Apaf.NFSdb.Core.Queries
 {
     public class PartitionRowIDRange

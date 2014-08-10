@@ -15,14 +15,21 @@
  * limitations under the License.
  */
 #endregion
-using Apaf.NFSdb.Core.Configuration;
-using Apaf.NFSdb.Core.Storage;
 
-namespace Apaf.NFSdb.Core
+using System.Collections.Generic;
+using Apaf.NFSdb.Core.Column;
+
+namespace Apaf.NFSdb.Core.Configuration
 {
-    public interface IPartitionManagerFactory<T>
+    public interface IJournalMetadataCore
     {
-        IPartitionManager<T> Create(IJournalMetadata<T> metadata,
-            JournalSettings settings, EFileAccess access);
+        IFieldSerializer GetSerializer(IEnumerable<IColumn> columns);
+        IEnumerable<ColumnMetadata> Columns { get; }
+        JournalSettings Settings { get; }
+        int? TimestampFieldID { get; }
+        ColumnMetadata GetColumnById(int columndID);
+        int GetFieldID(string arg);
+        string KeySymbol { get; }
+        int FileCount { get; }
     }
 }

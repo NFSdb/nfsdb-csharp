@@ -30,7 +30,7 @@
     <DebugType>pdbonly</DebugType>
     <Optimize>true</Optimize>
     <OutputPath>bin\Release\</OutputPath>
-    <DefineConstants>TRACE;OPTIMIZE</DefineConstants>
+    <DefineConstants>TRACE;OPTIMIZE RELEASE</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
@@ -102,7 +102,9 @@
     <Compile Include="Columns\ExpressionTests.cs" />
     <Compile Include="Columns\FixedColumnTests.cs" />
     <Compile Include="Columns\IndexColumnTests.cs" />
-    <Compile Include="Columns\ThriftObjectSerializerTests.cs" />
+    <Compile Include="Columns\PocoModel\Quote.cs" />
+    <Compile Include="Columns\PocoModel\Trade.cs" />
+    <Compile Include="Serializer\ThriftObjectSerializerTests.cs" />
     <Compile Include="Columns\StringColumnTests.cs" />
     <Compile Include="Columns\SymbolMapColumnTests.cs" />
     <Compile Include="Columns\ThriftModel\ColumnsStub.cs" />
@@ -129,6 +131,7 @@
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Query\UnionPlanItemTests.cs" />
     <Compile Include="Reflection\ReflectionHelperTests.cs" />
+    <Compile Include="Serializer\PocoSerializerFactoryTests.cs" />
     <Compile Include="Storage\BufferBinaryReader.cs" />
     <Compile Include="Storage\ByteOrder.cs" />
     <Compile Include="Storage\CompositeRawFileTests.cs" />

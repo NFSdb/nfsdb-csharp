@@ -15,13 +15,14 @@
  * limitations under the License.
  */
 #endregion
+
 using System;
 using System.Diagnostics;
 using System.Globalization;
 using Apaf.NFSdb.Core.Column;
 using Apaf.NFSdb.Core.Exceptions;
 
-namespace Apaf.NFSdb.Core
+namespace Apaf.NFSdb.Core.Storage
 {
     public static class PartitionManagerUtils
     {

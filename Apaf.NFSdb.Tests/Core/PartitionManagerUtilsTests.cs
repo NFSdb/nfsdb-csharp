@@ -18,6 +18,7 @@
 using System;
 using System.Globalization;
 using Apaf.NFSdb.Core;
+using Apaf.NFSdb.Core.Storage;
 using NUnit.Framework;
 
 namespace Apaf.NFSdb.Tests.Core

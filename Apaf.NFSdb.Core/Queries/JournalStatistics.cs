@@ -17,6 +17,7 @@
 #endregion
 using System.Linq;
 using Apaf.NFSdb.Core.Column;
+using Apaf.NFSdb.Core.Configuration;
 using Apaf.NFSdb.Core.Storage;
 using Apaf.NFSdb.Core.Tx;
 

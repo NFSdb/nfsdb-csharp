@@ -16,6 +16,7 @@
  */
 #endregion
 using System;
+using Apaf.NFSdb.Core.Configuration;
 
 namespace Apaf.NFSdb.Core.Writes
 {

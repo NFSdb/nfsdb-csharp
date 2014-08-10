@@ -15,6 +15,7 @@
  * limitations under the License.
  */
 #endregion
+
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -24,12 +25,11 @@ using Apaf.NFSdb.Core.Column;
 using Apaf.NFSdb.Core.Configuration;
 using Apaf.NFSdb.Core.Exceptions;
 using Apaf.NFSdb.Core.Queries;
-using Apaf.NFSdb.Core.Storage;
 using Apaf.NFSdb.Core.Tx;
 using Apaf.NFSdb.Core.Writes;
 using log4net;
 
-namespace Apaf.NFSdb.Core
+namespace Apaf.NFSdb.Core.Storage
 {
     public class PartitionManager<T> : IPartitionManager<T>
     {

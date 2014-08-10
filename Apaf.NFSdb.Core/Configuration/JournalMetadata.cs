@@ -26,6 +26,7 @@ using Apaf.NFSdb.Core.Column;
 using Apaf.NFSdb.Core.Exceptions;
 using Apaf.NFSdb.Core.Reflection;
 using Apaf.NFSdb.Core.Storage;
+using Apaf.NFSdb.Core.Storage.Serializer;
 
 namespace Apaf.NFSdb.Core.Configuration
 {
@@ -191,7 +192,7 @@ namespace Apaf.NFSdb.Core.Configuration
                 else if (cType.FieldType == EFieldType.BitSet)
                 {
                     var data = columnStorage.GetFile(cType.FileName, fileID++, cType.FieldID, EDataType.Data);
-                    column = new BitsetColumn(data, _columns.Count);
+                    column = new BitsetColumn(data, cType.MaxSize);
                 }
                 else if (cType.FieldType == EFieldType.Symbol)
                 {
@@ -272,7 +273,7 @@ namespace Apaf.NFSdb.Core.Configuration
                         break;
 
                     case EFieldType.BitSet:
-                        var fieldSize = BitsetColumn.CalculateSize(fields.Length);
+                        var fieldSize = BitsetColumn.CalculateSize(field.Size);
                         cols.Add(ColumnMetadata.FromBitsetField(ISSET_COLUMN_NAME, fieldSize, cols.Count));
                         break;
                     default:

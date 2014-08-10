@@ -18,17 +18,50 @@
 
 #endregion
 
+using System.Reflection;
+
 namespace Apaf.NFSdb.Core.Column
 {
     public class FieldData
     {
-        public FieldData(EFieldType type, string propertyName)
+        public FieldData(EFieldType type, string propertyName, bool nullable = false, int size = 0)
         {
             DataType = type;
             PropertyName = propertyName;
+            Size = size;
+            Nulllable = nullable;
         }
 
         public EFieldType DataType { get; private set; }
         public string PropertyName { get; private set; }
+        public int Size { get; private set; }
+        public bool Nulllable { get; private set; }
+
+        public MethodInfo GetGetMethod()
+        {
+            if (DataType == EFieldType.String
+                || DataType == EFieldType.Symbol)
+            {
+                return typeof(IStringColumn).GetMethod("GetString");
+            }
+            EFieldType fieldType = DataType;
+            return typeof(IFixedWidthColumn).GetMethod("Get" + fieldType);
+        }
+
+        public string GetFieldName()
+        {
+            return PropertyName.Substring(0, 1).ToLower() + PropertyName.Substring(1);
+        }
+
+        public MethodInfo GetSetMethod()
+        {
+            if (DataType == EFieldType.String
+                || DataType == EFieldType.Symbol)
+            {
+                return typeof(IStringColumn).GetMethod("SetString");
+            }
+            EFieldType fieldType = DataType;
+            return typeof(IFixedWidthColumn).GetMethod("Set" + fieldType);
+        }
     }
 }
