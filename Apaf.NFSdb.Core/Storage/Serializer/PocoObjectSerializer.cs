@@ -31,13 +31,14 @@ namespace Apaf.NFSdb.Core.Storage.Serializer
             {
                 var field = allDataColumns[i];
                 var column = allColumns[i];
-                if (field.Nulllable)
-                {
-                    _nullableFixedColumns[bitIndex] = new FixedColumnNullableWrapper(
-                        (IFixedWidthColumn)column, bitIndex);
-                    bitIndex++;
-                }
-                else if (field.DataType != EFieldType.BitSet
+                //if (field.Nulllable)
+                //{
+                //    _nullableFixedColumns[bitIndex] = new FixedColumnNullableWrapper(
+                //        (IFixedWidthColumn)column, bitIndex);
+                //    bitIndex++;
+                //}
+                //else 
+                if (field.DataType != EFieldType.BitSet
                             && field.DataType != EFieldType.String
                             && field.DataType != EFieldType.Symbol)
                 {

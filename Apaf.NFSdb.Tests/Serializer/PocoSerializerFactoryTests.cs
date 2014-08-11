@@ -269,8 +269,8 @@ namespace Apaf.NFSdb.Tests.Serializer
             var s = new Quote
             {
                 Timestamp = 12345,
-                Ask = 2.3,
-                Bid = 2.4,
+                Ask = 0.0,
+                Bid = null,
                 BidSize = 0,
                 AskSize = 34,
                 Ex = "qwerty",

@@ -31,88 +31,93 @@ namespace Apaf.NFSdb.Core.Storage.Serializer
         }
 
         /*
-        .method public hidebysig static object  ReadItemPoco(valuetype [Apaf.NFSdb.Core]Apaf.NFSdb.Core.Column.ByteArray bitset,
-                                                             class [Apaf.NFSdb.Core]Apaf.NFSdb.Core.Column.IFixedWidthColumn[] fixedCols,
-                                                             class [Apaf.NFSdb.Core]Apaf.NFSdb.Core.Storage.Serializer.FixedColumnNullableWrapper[] nullableCols,
-                                                             int64 rowid,
-                                                             class [Apaf.NFSdb.Core]Apaf.NFSdb.Core.Column.IStringColumn[] stringColumns,
-                                                             class [Apaf.NFSdb.Core]Apaf.NFSdb.Core.Storage.IReadContext readContext) cil managed
-        {
-          // Code size       139 (0x8b)
-          .maxstack  4
-          .locals init ([0] class Apaf.NFSdb.Tests.Columns.ExpressionTests/QuotePoco q)
-          IL_0000:  newobj     instance void Apaf.NFSdb.Tests.Columns.ExpressionTests/QuotePoco::.ctor()
-          IL_0005:  stloc.0
-          IL_0006:  ldloc.0
-          IL_0007:  ldarg.1
-          IL_0008:  ldc.i4.0
-          IL_0009:  ldelem.ref
-          IL_000a:  ldarg.3
-          IL_000b:  callvirt   instance int64 [Apaf.NFSdb.Core]Apaf.NFSdb.Core.Column.IFixedWidthColumn::GetInt64(int64)
-          IL_0010:  callvirt   instance void Apaf.NFSdb.Tests.Columns.ExpressionTests/QuotePoco::set_Timestamp(int64)
-          IL_0015:  ldloc.0
-          IL_0016:  ldarg.s    stringColumns
-          IL_0018:  ldc.i4.0
-          IL_0019:  ldelem.ref
-          IL_001a:  ldarg.3
-          IL_001b:  ldarg.s    readContext
-          IL_001d:  callvirt   instance string [Apaf.NFSdb.Core]Apaf.NFSdb.Core.Column.IStringColumn::GetString(int64,
-                                                                                                                class [Apaf.NFSdb.Core]Apaf.NFSdb.Core.Storage.IReadContext)
-          IL_0022:  callvirt   instance void Apaf.NFSdb.Tests.Columns.ExpressionTests/QuotePoco::set_Sym(string)
-          IL_0027:  ldloc.0
-          IL_0028:  ldarg.2
-          IL_0029:  ldc.i4.0
-          IL_002a:  ldelem.ref
-          IL_002b:  ldarg.3
-          IL_002c:  ldarg.0
-          IL_002d:  callvirt   instance valuetype [mscorlib]System.Nullable`1<float64> [Apaf.NFSdb.Core]Apaf.NFSdb.Core.Storage.Serializer.FixedColumnNullableWrapper::GetNullableDouble(int64,
-                                                                                                                                                                                         valuetype [Apaf.NFSdb.Core]Apaf.NFSdb.Core.Column.ByteArray)
-          IL_0032:  callvirt   instance void Apaf.NFSdb.Tests.Columns.ExpressionTests/QuotePoco::set_Ask(valuetype [mscorlib]System.Nullable`1<float64>)
-          IL_0037:  ldloc.0
-          IL_0038:  ldarg.2
-          IL_0039:  ldc.i4.1
-          IL_003a:  ldelem.ref
-          IL_003b:  ldarg.3
-          IL_003c:  ldarg.0
-          IL_003d:  callvirt   instance valuetype [mscorlib]System.Nullable`1<float64> [Apaf.NFSdb.Core]Apaf.NFSdb.Core.Storage.Serializer.FixedColumnNullableWrapper::GetNullableDouble(int64,
-                                                                                                                                                                                         valuetype [Apaf.NFSdb.Core]Apaf.NFSdb.Core.Column.ByteArray)
-          IL_0042:  callvirt   instance void Apaf.NFSdb.Tests.Columns.ExpressionTests/QuotePoco::set_Bid(valuetype [mscorlib]System.Nullable`1<float64>)
-          IL_0047:  ldloc.0
-          IL_0048:  ldarg.1
-          IL_0049:  ldc.i4.2
-          IL_004a:  ldelem.ref
-          IL_004b:  ldarg.3
-          IL_004c:  callvirt   instance int32 [Apaf.NFSdb.Core]Apaf.NFSdb.Core.Column.IFixedWidthColumn::GetInt32(int64)
-          IL_0051:  callvirt   instance void Apaf.NFSdb.Tests.Columns.ExpressionTests/QuotePoco::set_BidSize(int32)
-          IL_0056:  ldloc.0
-          IL_0057:  ldarg.1
-          IL_0058:  ldc.i4.3
-          IL_0059:  ldelem.ref
-          IL_005a:  ldarg.3
-          IL_005b:  callvirt   instance int32 [Apaf.NFSdb.Core]Apaf.NFSdb.Core.Column.IFixedWidthColumn::GetInt32(int64)
-          IL_0060:  callvirt   instance void Apaf.NFSdb.Tests.Columns.ExpressionTests/QuotePoco::set_AskSize(int32)
-          IL_0065:  ldloc.0
-          IL_0066:  ldarg.s    stringColumns
-          IL_0068:  ldc.i4.1
-          IL_0069:  ldelem.ref
-          IL_006a:  ldarg.3
-          IL_006b:  ldarg.s    readContext
-          IL_006d:  callvirt   instance string [Apaf.NFSdb.Core]Apaf.NFSdb.Core.Column.IStringColumn::GetString(int64,
-                                                                                                                class [Apaf.NFSdb.Core]Apaf.NFSdb.Core.Storage.IReadContext)
-          IL_0072:  callvirt   instance void Apaf.NFSdb.Tests.Columns.ExpressionTests/QuotePoco::set_Mode(string)
-          IL_0077:  ldloc.0
-          IL_0078:  ldarg.s    stringColumns
-          IL_007a:  ldc.i4.2
-          IL_007b:  ldelem.ref
-          IL_007c:  ldarg.3
-          IL_007d:  ldarg.s    readContext
-          IL_007f:  callvirt   instance string [Apaf.NFSdb.Core]Apaf.NFSdb.Core.Column.IStringColumn::GetString(int64,
-                                                                                                                class [Apaf.NFSdb.Core]Apaf.NFSdb.Core.Storage.IReadContext)
-          IL_0084:  callvirt   instance void Apaf.NFSdb.Tests.Columns.ExpressionTests/QuotePoco::set_Ex(string)
-          IL_0089:  ldloc.0
-          IL_008a:  ret
-        } // end of method ExpressionTests::ReadItemPoco
-
+  .method public hidebysig static object  ReadItemPoco(valuetype [Apaf.NFSdb.Core]Apaf.NFSdb.Core.Column.ByteArray bitset,
+                                                     class [Apaf.NFSdb.Core]Apaf.NFSdb.Core.Column.IFixedWidthColumn[] fixedCols,
+                                                     class [Apaf.NFSdb.Core]Apaf.NFSdb.Core.Storage.Serializer.FixedColumnNullableWrapper[] nullableCols,
+                                                     int64 rowid,
+                                                     class [Apaf.NFSdb.Core]Apaf.NFSdb.Core.Column.IStringColumn[] stringColumns,
+                                                     class [Apaf.NFSdb.Core]Apaf.NFSdb.Core.Storage.IReadContext readContext) cil managed
+{
+  // Code size       167 (0xa7)
+  .maxstack  4
+  .locals init ([0] class Apaf.NFSdb.Tests.Columns.ExpressionTests/QuotePoco q)
+  IL_0000:  newobj     instance void Apaf.NFSdb.Tests.Columns.ExpressionTests/QuotePoco::.ctor()
+  IL_0005:  stloc.0
+  IL_0006:  ldloc.0
+  IL_0007:  ldarg.1
+  IL_0008:  ldc.i4.0
+  IL_0009:  ldelem.ref
+  IL_000a:  ldarg.3
+  IL_000b:  callvirt   instance int64 [Apaf.NFSdb.Core]Apaf.NFSdb.Core.Column.IFixedWidthColumn::GetInt64(int64)
+  IL_0010:  callvirt   instance void Apaf.NFSdb.Tests.Columns.ExpressionTests/QuotePoco::set_Timestamp(int64)
+  IL_0015:  ldloc.0
+  IL_0016:  ldarg.s    stringColumns
+  IL_0018:  ldc.i4.0
+  IL_0019:  ldelem.ref
+  IL_001a:  ldarg.3
+  IL_001b:  ldarg.s    readContext
+  IL_001d:  callvirt   instance string [Apaf.NFSdb.Core]Apaf.NFSdb.Core.Column.IStringColumn::GetString(int64,
+                                                                                                        class [Apaf.NFSdb.Core]Apaf.NFSdb.Core.Storage.IReadContext)
+  IL_0022:  callvirt   instance void Apaf.NFSdb.Tests.Columns.ExpressionTests/QuotePoco::set_Sym(string)
+  IL_0027:  ldarga.s   bitset
+  IL_0029:  ldc.i4.0
+  IL_002a:  call       instance bool [Apaf.NFSdb.Core]Apaf.NFSdb.Core.Column.ByteArray::IsSet(int32)
+  IL_002f:  brtrue.s   IL_0045
+  IL_0031:  ldloc.0
+  IL_0032:  ldarg.1
+  IL_0033:  ldc.i4.1
+  IL_0034:  ldelem.ref
+  IL_0035:  ldarg.3
+  IL_0036:  callvirt   instance float64 [Apaf.NFSdb.Core]Apaf.NFSdb.Core.Column.IFixedWidthColumn::GetDouble(int64)
+  IL_003b:  newobj     instance void valuetype [mscorlib]System.Nullable`1<float64>::.ctor(!0)
+  IL_0040:  callvirt   instance void Apaf.NFSdb.Tests.Columns.ExpressionTests/QuotePoco::set_Ask(valuetype [mscorlib]System.Nullable`1<float64>)
+  IL_0045:  ldarga.s   bitset
+  IL_0047:  ldc.i4.1
+  IL_0048:  call       instance bool [Apaf.NFSdb.Core]Apaf.NFSdb.Core.Column.ByteArray::IsSet(int32)
+  IL_004d:  brtrue.s   IL_0063
+  IL_004f:  ldloc.0
+  IL_0050:  ldarg.1
+  IL_0051:  ldc.i4.2
+  IL_0052:  ldelem.ref
+  IL_0053:  ldarg.3
+  IL_0054:  callvirt   instance float64 [Apaf.NFSdb.Core]Apaf.NFSdb.Core.Column.IFixedWidthColumn::GetDouble(int64)
+  IL_0059:  newobj     instance void valuetype [mscorlib]System.Nullable`1<float64>::.ctor(!0)
+  IL_005e:  callvirt   instance void Apaf.NFSdb.Tests.Columns.ExpressionTests/QuotePoco::set_Bid(valuetype [mscorlib]System.Nullable`1<float64>)
+  IL_0063:  ldloc.0
+  IL_0064:  ldarg.1
+  IL_0065:  ldc.i4.2
+  IL_0066:  ldelem.ref
+  IL_0067:  ldarg.3
+  IL_0068:  callvirt   instance int32 [Apaf.NFSdb.Core]Apaf.NFSdb.Core.Column.IFixedWidthColumn::GetInt32(int64)
+  IL_006d:  callvirt   instance void Apaf.NFSdb.Tests.Columns.ExpressionTests/QuotePoco::set_BidSize(int32)
+  IL_0072:  ldloc.0
+  IL_0073:  ldarg.1
+  IL_0074:  ldc.i4.3
+  IL_0075:  ldelem.ref
+  IL_0076:  ldarg.3
+  IL_0077:  callvirt   instance int32 [Apaf.NFSdb.Core]Apaf.NFSdb.Core.Column.IFixedWidthColumn::GetInt32(int64)
+  IL_007c:  callvirt   instance void Apaf.NFSdb.Tests.Columns.ExpressionTests/QuotePoco::set_AskSize(int32)
+  IL_0081:  ldloc.0
+  IL_0082:  ldarg.s    stringColumns
+  IL_0084:  ldc.i4.1
+  IL_0085:  ldelem.ref
+  IL_0086:  ldarg.3
+  IL_0087:  ldarg.s    readContext
+  IL_0089:  callvirt   instance string [Apaf.NFSdb.Core]Apaf.NFSdb.Core.Column.IStringColumn::GetString(int64,
+                                                                                                        class [Apaf.NFSdb.Core]Apaf.NFSdb.Core.Storage.IReadContext)
+  IL_008e:  callvirt   instance void Apaf.NFSdb.Tests.Columns.ExpressionTests/QuotePoco::set_Mode(string)
+  IL_0093:  ldloc.0
+  IL_0094:  ldarg.s    stringColumns
+  IL_0096:  ldc.i4.2
+  IL_0097:  ldelem.ref
+  IL_0098:  ldarg.3
+  IL_0099:  ldarg.s    readContext
+  IL_009b:  callvirt   instance string [Apaf.NFSdb.Core]Apaf.NFSdb.Core.Column.IStringColumn::GetString(int64,
+                                                                                                        class [Apaf.NFSdb.Core]Apaf.NFSdb.Core.Storage.IReadContext)
+  IL_00a0:  callvirt   instance void Apaf.NFSdb.Tests.Columns.ExpressionTests/QuotePoco::set_Ex(string)
+  IL_00a5:  ldloc.0
+  IL_00a6:  ret
+} // end of method ExpressionTests::ReadItemPoco
 
          * */
         private Func<ByteArray, IFixedWidthColumn[], FixedColumnNullableWrapper[],
@@ -125,6 +130,7 @@ namespace Apaf.NFSdb.Core.Storage.Serializer
                 throw new NFSdbConfigurationException("No default constructor found on type " + _objectType);
             }
 
+            var isSetMethod = typeof (ByteArray).GetMethod("IsSet");
             var argTypes = new[]
             {
                 typeof (ByteArray), typeof (IFixedWidthColumn[]), typeof(FixedColumnNullableWrapper[]),
@@ -139,6 +145,7 @@ namespace Apaf.NFSdb.Core.Storage.Serializer
             il.DeclareLocal(_objectType);
             il.Emit(OpCodes.Newobj, constructor);
             il.Emit(OpCodes.Stloc_0);
+            Label[] notSetLabels = _allDataColumns.Select(c => il.DefineLabel()).ToArray();
 
             int fci = 0;
             int sci = 0;
@@ -149,43 +156,54 @@ namespace Apaf.NFSdb.Core.Storage.Serializer
                 var column = _allDataColumns[i];
                 bool isString = column.DataType == EFieldType.String
                                 || column.DataType == EFieldType.Symbol;
-                
+
                 if (column.DataType != EFieldType.BitSet)
                 {
                     // Start.
-                    il.Emit(OpCodes.Ldloc_0);
 
                     if (isString)
                     {
                         // Use IStringColumn[].
+                        il.Emit(OpCodes.Ldloc_0);
                         il.Emit(OpCodes.Ldarg_S, (byte)4);
                         il.Emit(OpCodes.Ldc_I4, sci++);
                         il.Emit(OpCodes.Ldelem_Ref);
                         il.Emit(OpCodes.Ldarg_3);
-                        il.Emit(OpCodes.Ldarg_S, (byte)5);
+                        il.Emit(OpCodes.Ldarg_S, (byte) 5);
                         il.Emit(OpCodes.Callvirt, column.GetGetMethod());
+                        il.Emit(OpCodes.Callvirt, _objectType.GetProperty(column.PropertyName).GetSetMethod());
                     }
                     else if (!column.Nulllable)
                     {
                         // Use IFixedWidthColumn[].
+                        il.Emit(OpCodes.Ldloc_0);
                         il.Emit(OpCodes.Ldarg_1);
                         il.Emit(OpCodes.Ldc_I4, fci++);
                         il.Emit(OpCodes.Ldelem_Ref);
                         il.Emit(OpCodes.Ldarg_3);
                         il.Emit(OpCodes.Callvirt, column.GetGetMethod());
+                        il.Emit(OpCodes.Callvirt, _objectType.GetProperty(column.PropertyName).GetSetMethod());
                     }
                     else
                     {
                         // Use FixedColumnNullableWrapper[].
-                        il.Emit(OpCodes.Ldarg_2);
-                        il.Emit(OpCodes.Ldc_I4, nulli++);
+                        il.Emit(OpCodes.Ldarga_S, (byte)0);
+                        il.Emit(OpCodes.Ldc_I4, nulli);
+                        il.Emit(OpCodes.Call, isSetMethod);
+                        il.Emit(OpCodes.Brtrue_S, notSetLabels[i]);
+                        il.Emit(OpCodes.Ldloc_0);
+                        il.Emit(OpCodes.Ldarg_1);
+                        il.Emit(OpCodes.Ldc_I4, fci++);
                         il.Emit(OpCodes.Ldelem_Ref);
                         il.Emit(OpCodes.Ldarg_3);
-                        il.Emit(OpCodes.Ldarg_0);
-                        il.Emit(OpCodes.Callvirt, GetNullableGetMethod(column));
+                        il.Emit(OpCodes.Callvirt, column.GetGetMethod());
+                        il.Emit(OpCodes.Newobj, GetNullableConstructor(column));
+                        il.Emit(OpCodes.Callvirt, _objectType.GetProperty(column.PropertyName).GetSetMethod());
+                        il.MarkLabel(notSetLabels[i]);
+
+                        nulli++;
                     }
 
-                    il.Emit(OpCodes.Callvirt, _objectType.GetProperty(column.PropertyName).GetSetMethod());
                 }
             }
             il.Emit(OpCodes.Ldloc_0);
@@ -196,6 +214,28 @@ namespace Apaf.NFSdb.Core.Storage.Serializer
                 method.CreateDelegate(
                     typeof(Func<ByteArray, IFixedWidthColumn[], FixedColumnNullableWrapper[],
                     long, IStringColumn[], IReadContext, object>));
+        }
+
+        private ConstructorInfo GetNullableConstructor(FieldData column)
+        {
+            switch (column.DataType)
+            {
+                case EFieldType.Byte:
+                    return typeof(byte?).GetConstructor(new [] { typeof(byte)});
+                case EFieldType.Bool:
+                    return typeof (bool?).GetConstructor(new[] {typeof (bool)});
+                case EFieldType.Int16:
+                    return typeof(short?).GetConstructor(new[] { typeof(short) });
+                case EFieldType.Int32:
+                    return typeof(int?).GetConstructor(new[] { typeof(int) });
+                case EFieldType.Int64:
+                    return typeof(long?).GetConstructor(new[] { typeof(long) });
+                case EFieldType.Double:
+                    return typeof(double?).GetConstructor(new[] { typeof(double) });
+
+                default:
+                    throw new ArgumentOutOfRangeException();
+            }
         }
 
         /*

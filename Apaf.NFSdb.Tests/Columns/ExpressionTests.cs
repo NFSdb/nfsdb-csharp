@@ -163,6 +163,45 @@ namespace Apaf.NFSdb.Tests.Columns
 
         }
 
+        [Test]
+        public void SetBilliionNullableDoubles()
+        {
+            double? val = null;
+            var rand = new RandomDouble();
+            var ss = new Stopwatch();
+            ss.Start();
+            for (int i = 0; i < (int) 2E9; i++)
+            {
+                val = rand.Next();
+            }
+            ss.Stop();
+            Console.WriteLine(ss.Elapsed);
+        }
+
+        [Test]
+        public void SetBilliionDoubles()
+        {
+            double val = 0.0;
+            var rand = new RandomDouble();
+            var ss = new Stopwatch();
+            ss.Start();
+            for (int i = 0; i < (int)2E9; i++)
+            {
+                val = rand.Next();
+            }
+            ss.Stop();
+            Console.WriteLine(ss.Elapsed);
+        }
+
+        public class RandomDouble
+        {
+            private Random _r = new Random();
+            public double Next()
+            {
+                return _r.NextDouble();
+            }
+        }
+
         public static object GenerateItem(ByteArray bitset, IFixedWidthColumn[] fixdCols,
             long rowid, IStringColumn[] stringColumns, IReadContext readContext)
         {
