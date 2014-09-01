@@ -20,11 +20,13 @@ using System.Diagnostics;
 using System.Linq.Expressions;
 using System.Reflection;
 using System.Reflection.Emit;
+using System.Runtime.Serialization;
 using Apaf.NFSdb.Core.Column;
 using Apaf.NFSdb.Core.Storage;
 using Apaf.NFSdb.Core.Storage.Serializer;
 using Apaf.NFSdb.Core.Tx;
 using Apaf.NFSdb.Tests.Columns.ThriftModel;
+using LinqExtender;
 using NUnit.Framework;
 
 namespace Apaf.NFSdb.Tests.Columns
@@ -34,14 +36,138 @@ namespace Apaf.NFSdb.Tests.Columns
     {
         public class QuotePoco
         {
-            public long Timestamp { get; set; }
-            public string Sym { get; set; }
-            public double? Bid { get; set; }
-            public double? Ask { get; set; }
-            public int BidSize { get; set; }
-            public int AskSize { get; set; }
-            public string Mode { get; set; }
-            public string Ex { get; set; }
+            private long _timestamp;
+            private string _sym;
+            private MyNullable<double> _bid;
+            private MyNullable<double> _ask;
+            private int _bidSize;
+            private int _askSize;
+            private string _mode;
+            private string _ex;
+
+            public long Timestamp
+            {
+                get { return _timestamp; }
+                set { _timestamp = value; }
+            }
+
+            public string Sym
+            {
+                get { return _sym; }
+                set { _sym = value; }
+            }
+
+            public MyNullable<double> Bid
+            {
+                get { return _bid; }
+                set { _bid = value; }
+            }
+
+            public MyNullable<double> Ask
+            {
+                get { return _ask; }
+                set { _ask = value; }
+            }
+
+            public int BidSize
+            {
+                get { return _bidSize; }
+                set { _bidSize = value; }
+            }
+
+            public int AskSize
+            {
+                get { return _askSize; }
+                set { _askSize = value; }
+            }
+
+            public string Mode
+            {
+                get { return _mode; }
+                set { _mode = value; }
+            }
+
+            public string Ex
+            {
+                get { return _ex; }
+                set { _ex = value; }
+            }
+
+            public static object ReadItemPoco(ByteArray bitset,
+                IFixedWidthColumn[] fixedCols,
+                long rowid, IStringColumn[] stringColumns, IReadContext readContext)
+            {
+                var q = (QuotePoco)FormatterServices.GetUninitializedObject(typeof(QuotePoco));
+                q._timestamp = fixedCols[0].GetInt64(rowid);
+
+                if (!bitset.IsSet(0))
+                {
+                    q._sym = stringColumns[0].GetString(rowid, readContext);
+                }
+
+                if (!bitset.IsSet(1))
+                {
+                    q._ask.value = fixedCols[0].GetDouble(rowid);
+                    q._ask.hasValue = true;
+                }
+
+                if (!bitset.IsSet(2))
+                {
+                    q._bid.value = fixedCols[1].GetDouble(rowid);
+                    q._bid.hasValue = true;
+                }
+
+                q._bidSize = fixedCols[2].GetInt32(rowid);
+                q._askSize = fixedCols[3].GetInt32(rowid);
+
+                if (!bitset.IsSet(3))
+                {
+                    q._mode = stringColumns[1].GetString(rowid, readContext);
+                }
+                if (!bitset.IsSet(4))
+                {
+                    q._ex = stringColumns[2].GetString(rowid, readContext);
+                }
+                return q;
+            }
+
+            public static void WriteItemPoco(
+                object obj,
+                ByteArray bitset,
+                IFixedWidthColumn[] fixedCols,
+                long rowid, 
+                IStringColumn[] stringColumns, 
+                ITransactionContext readContext)
+            {
+                var q = (QuotePoco)obj;
+                fixedCols[0].SetInt64(rowid, q._timestamp, readContext);
+
+                bitset.Set(0, q._sym == null);
+                stringColumns[0].SetString(rowid, q._sym, readContext);
+
+                bool isnull = !q._ask.hasValue;
+                bitset.Set(1, isnull);
+                if (!isnull)
+                {
+                    fixedCols[0].SetDouble(rowid, q._ask.value, readContext);
+                }
+
+                isnull = !q._bid.hasValue;
+                bitset.Set(2, isnull);
+                if (!isnull)
+                {
+                    fixedCols[1].SetDouble(rowid, q._bid.value, readContext);
+                }
+
+                fixedCols[2].SetInt32(rowid, q._bidSize, readContext);
+                fixedCols[3].SetInt32(rowid, q._askSize, readContext);
+
+                bitset.Set(2, q._mode == null);
+                stringColumns[1].SetString(rowid, q._mode, readContext);
+
+                bitset.Set(3, q._ex == null);
+                stringColumns[1].SetString(rowid, q._ex, readContext);
+            }
         }
 
         private const int LOOP_NUM = (int) 1E3;
@@ -160,7 +286,6 @@ namespace Apaf.NFSdb.Tests.Columns
         {
             var mi = GetType().GetMethod("Set");
             byte[] bd = mi.GetMethodBody().GetILAsByteArray();
-
         }
 
         [Test]
@@ -191,6 +316,15 @@ namespace Apaf.NFSdb.Tests.Columns
             }
             ss.Stop();
             Console.WriteLine(ss.Elapsed);
+        }
+
+        [Test]
+        public void TypedRefTest()
+        {
+            var n = new MyNullable<double>();
+            MyNullable<double>.SetValue(__makeref(n), 4.0);
+
+            Assert.That(n.value, Is.EqualTo(4.0));
         }
 
         public class RandomDouble
@@ -228,34 +362,6 @@ namespace Apaf.NFSdb.Tests.Columns
             return q;
         }
 
-        public static object ReadItemPoco(ByteArray bitset,
-            IFixedWidthColumn[] fixedCols,
-            FixedColumnNullableWrapper[] nullableCols,
-            long rowid, IStringColumn[] stringColumns, IReadContext readContext)
-        {
-            var q = new QuotePoco();
-            q.Timestamp = fixedCols[0].GetInt64(rowid);
-            q.Sym = stringColumns[0].GetString(rowid, readContext);
-
-            if (!bitset.IsSet(0))
-            {
-                q.Ask = fixedCols[1].GetDouble(rowid);
-            }
-
-            if (!bitset.IsSet(1))
-            {
-                q.Bid = fixedCols[2].GetDouble(rowid);
-            }
-
-            q.BidSize = fixedCols[2].GetInt32(rowid);
-            q.AskSize = fixedCols[3].GetInt32(rowid);
-
-            q.Mode = stringColumns[1].GetString(rowid, readContext);
-            q.Ex = stringColumns[2].GetString(rowid, readContext);
-
-            return q;
-        }
-
         public static void WriteItem(object obj, 
             ByteArray bitset, 
             IFixedWidthColumn[] fixedCols, long rowid, 
@@ -272,30 +378,27 @@ namespace Apaf.NFSdb.Tests.Columns
             stringColumns[0].SetString(rowid, q.Mode, readContext);
         }
 
-        public static void WriteItemPoco(object obj,
-            ByteArray bitset,
-            IFixedWidthColumn[] fixedCols, 
-            FixedColumnNullableWrapper[] nullableCols, long rowid,
-            IStringColumn[] stringColumns, ITransactionContext readContext)
-        {
-            var q = (QuotePoco)obj;
-            fixedCols[0].SetInt64(rowid, q.Timestamp, readContext);
-            
-            stringColumns[0].SetString(rowid, q.Sym, readContext);
-
-            nullableCols[0].SetNullableDouble(rowid, q.Bid, bitset, readContext);
-            nullableCols[1].SetNullableDouble(rowid, q.Ask, bitset, readContext);
-
-            fixedCols[0].SetInt32(rowid, q.BidSize, readContext);
-            fixedCols[1].SetInt32(rowid, q.AskSize, readContext);
-
-            stringColumns[1].SetString(rowid, q.Mode, readContext);
-            stringColumns[1].SetString(rowid, q.Ex, readContext);
-        }
-
         public void Set(Quote q, double val)
         {
             q.Bid = val;
+        }
+
+        public struct MyNullable<T> where T : struct
+        {
+            public bool hasValue;
+            public T value;
+
+            public void SetNull()
+            {
+                hasValue = false;
+                value = default(T);
+            }
+
+            public static void SetValue(TypedReference reference, T newValue)
+            {
+                __refvalue(reference, MyNullable<T>).value = newValue;
+                __refvalue(reference, MyNullable<T>).hasValue = true;
+            }
         }
     }
 }

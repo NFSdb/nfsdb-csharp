@@ -8,15 +8,17 @@ namespace Apaf.NFSdb.Core.Storage.Serializer
 {
     public class PocoObjectSerializer : IFieldSerializer
     {
-        private readonly Func<ByteArray, IFixedWidthColumn[], FixedColumnNullableWrapper[], long, IStringColumn[], IReadContext, object> _readMethod;
-        private readonly Action<object, ByteArray, IFixedWidthColumn[], FixedColumnNullableWrapper[], long, IStringColumn[], ITransactionContext> _writeMethod;
+        private readonly Func<ByteArray, IFixedWidthColumn[], long, IStringColumn[], IReadContext, object> _readMethod;
+        private readonly Action<object, ByteArray, IFixedWidthColumn[], long, IStringColumn[], ITransactionContext> _writeMethod;
         private readonly IFixedWidthColumn[] _fixedColumns;
         private readonly FixedColumnNullableWrapper[] _nullableFixedColumns;
         private readonly IStringColumn[] _stringColumns;
         private readonly IBitsetColumn _issetColumn;
         private readonly int _bitsetColSize;
 
-        public PocoObjectSerializer(IEnumerable<IColumn> columns, FieldData[] allDataColumns, Func<ByteArray, IFixedWidthColumn[], FixedColumnNullableWrapper[], long, IStringColumn[], IReadContext, object> readMethod, Action<object, ByteArray, IFixedWidthColumn[], FixedColumnNullableWrapper[], long, IStringColumn[], ITransactionContext> writeMethod)
+        public PocoObjectSerializer(IEnumerable<IColumn> columns, FieldData[] allDataColumns, 
+            Func<ByteArray, IFixedWidthColumn[], long, IStringColumn[], IReadContext, object> readMethod, 
+            Action<object, ByteArray, IFixedWidthColumn[], long, IStringColumn[], ITransactionContext> writeMethod)
         {
             var allColumns = columns.ToArray();
 
@@ -72,12 +74,12 @@ namespace Apaf.NFSdb.Core.Storage.Serializer
             {
                 var bitSetAddress = _issetColumn.GetValue(rowID, readContext);
                 var byteArray = new ByteArray(bitSetAddress);
-                return _readMethod(byteArray, _fixedColumns, _nullableFixedColumns, rowID, _stringColumns, readContext);
+                return _readMethod(byteArray, _fixedColumns, rowID, _stringColumns, readContext);
             }
             else
             {
                 var byteArray = new ByteArray();
-                return _readMethod(byteArray, _fixedColumns, _nullableFixedColumns, rowID, _stringColumns, readContext);
+                return _readMethod(byteArray, _fixedColumns, rowID, _stringColumns, readContext);
             }
         }
 
@@ -88,13 +90,13 @@ namespace Apaf.NFSdb.Core.Storage.Serializer
             {
                 var bitSetAddress = readCache.AllocateByteArray(_bitsetColSize);
                 var byteArray = new ByteArray(bitSetAddress);
-                _writeMethod(item, byteArray, _fixedColumns, _nullableFixedColumns, rowID, _stringColumns, tx);
+                _writeMethod(item, byteArray, _fixedColumns, rowID, _stringColumns, tx);
                 _issetColumn.SetValue(rowID, bitSetAddress, tx);
             }
             else
             {
                 var byteArray = new ByteArray();
-                _writeMethod(item, byteArray, _fixedColumns, _nullableFixedColumns, rowID, _stringColumns, tx);
+                _writeMethod(item, byteArray, _fixedColumns, rowID, _stringColumns, tx);
             }
         }
     }

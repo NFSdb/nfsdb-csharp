@@ -103,6 +103,7 @@
     <Compile Include="Storage\Serializer\ISerializerFactory.cs" />
     <Compile Include="Column\ITypeColumnParser.cs" />
     <Compile Include="Column\SymbolCache.cs" />
+    <Compile Include="Storage\Serializer\NullableExtension.cs" />
     <Compile Include="Storage\Serializer\PocoObjectSerializer.cs" />
     <Compile Include="Storage\Serializer\PocoSerializerFactory.cs" />
     <Compile Include="Storage\Serializer\ThriftSerializerFactory.cs" />

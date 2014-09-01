@@ -104,6 +104,7 @@
     <Compile Include="Columns\IndexColumnTests.cs" />
     <Compile Include="Columns\PocoModel\Quote.cs" />
     <Compile Include="Columns\PocoModel\Trade.cs" />
+    <Compile Include="Serializer\NullableExtensionTests.cs" />
     <Compile Include="Serializer\ThriftObjectSerializerTests.cs" />
     <Compile Include="Columns\StringColumnTests.cs" />
     <Compile Include="Columns\SymbolMapColumnTests.cs" />
