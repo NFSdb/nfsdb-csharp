@@ -36,7 +36,8 @@ namespace Apaf.NFSdb.Core.Storage.Serializer
         private static JournalSerializers CreateSigleton()
         {
             var instance = new JournalSerializers();
-            instance.AddFactory("thrift", () => new ThriftSerializerFactory());
+            instance.AddFactory(MetadataConstants.THRIFT_SERIALIZER_NAME, () => new ThriftSerializerFactory());
+            instance.AddFactory(MetadataConstants.POCO_SERIALIZER_NAME, () => new PocoSerializerFactory());
             return instance;
         }
 

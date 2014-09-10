@@ -23,10 +23,8 @@ using System.Reflection.Emit;
 using System.Runtime.Serialization;
 using Apaf.NFSdb.Core.Column;
 using Apaf.NFSdb.Core.Storage;
-using Apaf.NFSdb.Core.Storage.Serializer;
 using Apaf.NFSdb.Core.Tx;
 using Apaf.NFSdb.Tests.Columns.ThriftModel;
-using LinqExtender;
 using NUnit.Framework;
 
 namespace Apaf.NFSdb.Tests.Columns
@@ -287,37 +285,7 @@ namespace Apaf.NFSdb.Tests.Columns
             var mi = GetType().GetMethod("Set");
             byte[] bd = mi.GetMethodBody().GetILAsByteArray();
         }
-
-        [Test]
-        public void SetBilliionNullableDoubles()
-        {
-            double? val = null;
-            var rand = new RandomDouble();
-            var ss = new Stopwatch();
-            ss.Start();
-            for (int i = 0; i < (int) 2E9; i++)
-            {
-                val = rand.Next();
-            }
-            ss.Stop();
-            Console.WriteLine(ss.Elapsed);
-        }
-
-        [Test]
-        public void SetBilliionDoubles()
-        {
-            double val = 0.0;
-            var rand = new RandomDouble();
-            var ss = new Stopwatch();
-            ss.Start();
-            for (int i = 0; i < (int)2E9; i++)
-            {
-                val = rand.Next();
-            }
-            ss.Stop();
-            Console.WriteLine(ss.Elapsed);
-        }
-
+        
         [Test]
         public void TypedRefTest()
         {

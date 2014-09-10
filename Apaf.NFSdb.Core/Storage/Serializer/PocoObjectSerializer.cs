@@ -8,45 +8,27 @@ namespace Apaf.NFSdb.Core.Storage.Serializer
 {
     public class PocoObjectSerializer : IFieldSerializer
     {
-        private readonly Func<ByteArray, IFixedWidthColumn[], long, IStringColumn[], IReadContext, object> _readMethod;
-        private readonly Action<object, ByteArray, IFixedWidthColumn[], long, IStringColumn[], ITransactionContext> _writeMethod;
-        private readonly IFixedWidthColumn[] _fixedColumns;
-        private readonly FixedColumnNullableWrapper[] _nullableFixedColumns;
-        private readonly IStringColumn[] _stringColumns;
-        private readonly IBitsetColumn _issetColumn;
         private readonly int _bitsetColSize;
+        private readonly IFixedWidthColumn[] _fixedColumns;
+        private readonly IBitsetColumn _issetColumn;
+        private readonly IStringColumn[] _stringColumns;
 
-        public PocoObjectSerializer(IEnumerable<IColumn> columns, FieldData[] allDataColumns, 
-            Func<ByteArray, IFixedWidthColumn[], long, IStringColumn[], IReadContext, object> readMethod, 
+        private readonly Func<ByteArray, IFixedWidthColumn[], long, IStringColumn[], IReadContext, object> _readMethod;
+        private readonly Action<object, ByteArray, IFixedWidthColumn[], long, IStringColumn[], ITransactionContext>
+            _writeMethod;
+
+        public PocoObjectSerializer(IEnumerable<IColumn> columns, 
+            Func<ByteArray, IFixedWidthColumn[], long, IStringColumn[], IReadContext, object> readMethod,
             Action<object, ByteArray, IFixedWidthColumn[], long, IStringColumn[], ITransactionContext> writeMethod)
         {
-            var allColumns = columns.ToArray();
+            IColumn[] allColumns = columns.ToArray();
 
             // IFixedWidthColumn array.
-            _fixedColumns = new IFixedWidthColumn[allDataColumns.Length];
-
-            // FixedColumnNullableWrapper array.
-            _nullableFixedColumns = new FixedColumnNullableWrapper[allColumns.Length];
-            int bitIndex = 0;
-            int fci = 0;
-            for (int i = 0; i < allDataColumns.Length; i++)
-            {
-                var field = allDataColumns[i];
-                var column = allColumns[i];
-                //if (field.Nulllable)
-                //{
-                //    _nullableFixedColumns[bitIndex] = new FixedColumnNullableWrapper(
-                //        (IFixedWidthColumn)column, bitIndex);
-                //    bitIndex++;
-                //}
-                //else 
-                if (field.DataType != EFieldType.BitSet
-                            && field.DataType != EFieldType.String
-                            && field.DataType != EFieldType.Symbol)
-                {
-                    _fixedColumns[fci++] = (IFixedWidthColumn)column;
-                }
-            }
+            _fixedColumns = allColumns
+                        .Where(c => c.FieldType != EFieldType.BitSet
+                                    && c.FieldType != EFieldType.String
+                                    && c.FieldType != EFieldType.Symbol)
+                        .Cast<IFixedWidthColumn>().ToArray();
 
             // IStringColumn array.
             _stringColumns = allColumns
@@ -55,7 +37,7 @@ namespace Apaf.NFSdb.Core.Storage.Serializer
                 .Cast<IStringColumn>().ToArray();
 
             // IBitsetColumn.
-            _issetColumn = (IBitsetColumn)allColumns
+            _issetColumn = (IBitsetColumn) allColumns
                 .FirstOrDefault(c => c.FieldType == EFieldType.BitSet);
 
             if (_issetColumn != null)
@@ -72,7 +54,7 @@ namespace Apaf.NFSdb.Core.Storage.Serializer
         {
             if (_issetColumn != null)
             {
-                var bitSetAddress = _issetColumn.GetValue(rowID, readContext);
+                byte[] bitSetAddress = _issetColumn.GetValue(rowID, readContext);
                 var byteArray = new ByteArray(bitSetAddress);
                 return _readMethod(byteArray, _fixedColumns, rowID, _stringColumns, readContext);
             }
@@ -85,10 +67,10 @@ namespace Apaf.NFSdb.Core.Storage.Serializer
 
         public void Write(object item, long rowID, ITransactionContext tx)
         {
-            var readCache = tx.ReadCache;
+            IReadContext readCache = tx.ReadCache;
             if (_issetColumn != null)
             {
-                var bitSetAddress = readCache.AllocateByteArray(_bitsetColSize);
+                byte[] bitSetAddress = readCache.AllocateByteArray(_bitsetColSize);
                 var byteArray = new ByteArray(bitSetAddress);
                 _writeMethod(item, byteArray, _fixedColumns, rowID, _stringColumns, tx);
                 _issetColumn.SetValue(rowID, bitSetAddress, tx);

@@ -37,8 +37,7 @@ namespace Apaf.NFSdb.IntegrationTests.Reading
         private static readonly DateTime START = new DateTime(DateTime.Now.AddYears(-1).Year, 
             DateTime.Now.AddYears(-1).Month, 1);
 
-        private static readonly long START_TIMESTAMP =
-            DateUtils.DateTimeToUnixTimeStamp(START);
+        private static readonly long START_TIMESTAMP = DateUtils.DateTimeToUnixTimeStamp(START);
 
         public static readonly string[] SYMBOLS = new[]
         {"AGK.L", "BP.L", "TLW.L", "ABF.L", "LLOY.L", "BT-A.L", "WTB.L", "RRS.L", "ADM.L", "GKN.L", "HSBA.L"};
@@ -72,6 +71,7 @@ namespace Apaf.NFSdb.IntegrationTests.Reading
                 Assert.That(count, Is.EqualTo(totalCount));
             }
         }
+
 
         [Test]
         public void Opens_partitions_for_empty_journal()

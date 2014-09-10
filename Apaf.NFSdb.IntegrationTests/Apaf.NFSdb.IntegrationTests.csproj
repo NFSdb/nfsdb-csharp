@@ -85,6 +85,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="IntegrationTestConstants.cs" />
+    <Compile Include="Reading\PocoQuoteJournalTests.cs" />
     <Compile Include="Reading\QuoteJournalTests.cs" />
     <Compile Include="Reading\QuotePartitionTests.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />

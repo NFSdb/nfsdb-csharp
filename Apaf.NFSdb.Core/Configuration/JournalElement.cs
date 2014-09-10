@@ -19,6 +19,7 @@ using System.Collections.Generic;
 using System.Runtime.Serialization;
 using System.Xml.Serialization;
 using Apaf.NFSdb.Core.Column;
+using Apaf.NFSdb.Core.Storage.Serializer;
 
 namespace Apaf.NFSdb.Core.Configuration
 {
@@ -40,6 +41,7 @@ namespace Apaf.NFSdb.Core.Configuration
             MaxOpenPartitions = MetadataConstants.DEFAULT_MAX_OPEN_PARTITIONS;
             Strings = new List<StringElement>();
             Symbols = new List<SymbolElement>();
+            SerializerName = MetadataConstants.THRIFT_SERIALIZER_NAME;
         }
 
         [XmlAttribute("class")]
@@ -78,5 +80,7 @@ namespace Apaf.NFSdb.Core.Configuration
         [XmlElement("serializerName")]
         public string SerializerName { get; set; }
 
+        [XmlIgnore]
+        public ISerializerFactory SerializerInstace { get; set; }
     }
 }

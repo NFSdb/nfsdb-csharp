@@ -1,11 +1,27 @@
-﻿using System;
+﻿#region copyright
+/*
+ * Copyright (c) 2014. APAF http://apafltd.co.uk
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+#endregion
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using System.Reflection.Emit;
 using System.Runtime.CompilerServices;
 using System.Runtime.Serialization;
-using System.Runtime.Serialization.Formatters;
 using Apaf.NFSdb.Core.Column;
 using Apaf.NFSdb.Core.Exceptions;
 using Apaf.NFSdb.Core.Tx;
@@ -34,6 +50,16 @@ namespace Apaf.NFSdb.Core.Storage.Serializer
 
             _readMethod = GenerateReadMethod();
             _writeMethod = GenerateWriteMethod();
+        }
+
+        public IList<FieldData> ParseColumns()
+        {
+            return _allColumns;
+        }
+
+        public IFieldSerializer CreateFieldSerializer(IEnumerable<IColumn> columns)
+        {
+            return new PocoObjectSerializer(columns, _readMethod, _writeMethod);
         }
 
         /*
@@ -303,28 +329,6 @@ namespace Apaf.NFSdb.Core.Storage.Serializer
             return _objectType.GetField(fieldName, BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
         }
 
-        private ConstructorInfo GetNullableConstructor(FieldData column)
-        {
-            switch (column.DataType)
-            {
-                case EFieldType.Byte:
-                    return typeof(byte?).GetConstructor(new [] { typeof(byte)});
-                case EFieldType.Bool:
-                    return typeof (bool?).GetConstructor(new[] {typeof (bool)});
-                case EFieldType.Int16:
-                    return typeof(short?).GetConstructor(new[] { typeof(short) });
-                case EFieldType.Int32:
-                    return typeof(int?).GetConstructor(new[] { typeof(int) });
-                case EFieldType.Int64:
-                    return typeof(long?).GetConstructor(new[] { typeof(long) });
-                case EFieldType.Double:
-                    return typeof(double?).GetConstructor(new[] { typeof(double) });
-
-                default:
-                    throw new ArgumentOutOfRangeException();
-            }
-        }
-
         /*
 .method public hidebysig static void  WriteItemPoco(object obj,
                                                     valuetype [Apaf.NFSdb.Core]Apaf.NFSdb.Core.Column.ByteArray bitset,
@@ -573,21 +577,6 @@ namespace Apaf.NFSdb.Core.Storage.Serializer
 
         }
 
-        private static MethodInfo GetNullableSetMethod(FieldData column)
-        {
-            return typeof (FixedColumnNullableWrapper).GetMethod("SetNullable" + column.DataType.ToString());
-        }
-
-        private static MethodInfo GetNullableGetMethod(FieldData column)
-        {
-            return typeof(FixedColumnNullableWrapper).GetMethod("GetNullable" + column.DataType.ToString());
-        }
-
-        public IList<FieldData> ParseColumns()
-        {
-            return _allColumns;
-        }
-
         private IList<FieldData> ParseColumnsImpl()
         {
             _propertyToFields = new Dictionary<string, string>();
@@ -645,6 +634,7 @@ namespace Apaf.NFSdb.Core.Storage.Serializer
                 {
                     // ReSharper disable once RedundantArgumentDefaultValue
                     cols.Add(new FieldData(EFieldType.String, propertyName, true));
+                    nullableCount++;
                 }
                 else
                 {
@@ -698,17 +688,11 @@ namespace Apaf.NFSdb.Core.Storage.Serializer
                 .Select((c,i) => i == 0 ? Char.ToUpper(c) : c).ToArray());
         }
 
-        public IFieldSerializer CreateFieldSerializer(IEnumerable<IColumn> columns)
-        {
-            return new PocoObjectSerializer(columns,_allDataColumns, _readMethod, _writeMethod);
-        }
-
         private static bool CheckIfAnonymousType(Type type)
         {
             if (type == null)
                 throw new ArgumentNullException("type");
 
-            // HACK: The only way to detect anonymous types right now.
             return Attribute.IsDefined(type, typeof(CompilerGeneratedAttribute), false)
                 && type.IsGenericType && type.Name.Contains("AnonymousType")
                 && (type.Name.StartsWith("<>") || type.Name.StartsWith("VB$"))

@@ -19,7 +19,7 @@ using System;
 
 namespace Apaf.NFSdb.Core.Writes
 {
-    public interface IWriter<T> : IDisposable
+    public interface IWriter<in T> : IDisposable
     {
         void Append(T item);
         void Commit();

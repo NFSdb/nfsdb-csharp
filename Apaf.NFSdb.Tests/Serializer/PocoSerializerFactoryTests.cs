@@ -106,7 +106,7 @@ namespace Apaf.NFSdb.Tests.Serializer
             fact.Initialize(ojbType.GetType());
 
             var bitset = fact.ParseColumns().Single(c => c.DataType == EFieldType.BitSet);
-            Assert.That(bitset.Size, Is.EqualTo(6));
+            Assert.That(bitset.Size, Is.EqualTo(7));
         }
 
         [TestCase("Timestamp", ExpectedResult = 1309L)]
@@ -165,6 +165,52 @@ namespace Apaf.NFSdb.Tests.Serializer
             return resultCol.Value;
         }
 
+
+        [TestCase("Timestamp", ExpectedResult = 1309L)]
+        [TestCase("Ask", ExpectedResult = null)]
+        [TestCase("Bid", ExpectedResult = 56.89)]
+        [TestCase("AskSize", ExpectedResult = 134)]
+        [TestCase("BidSize", ExpectedResult = 10)]
+        [TestCase("Ex", ExpectedResult = "Ex1")]
+        [TestCase("Mode", ExpectedResult = "")]
+        [TestCase("Sym", ExpectedResult = null)]
+        public object Should_read_anonymous_object(string propertyName)
+        {
+            var t = new 
+            {
+                Timestamp = 1309L,
+                Sym = (string)null,
+                Bid = (double?)56.89,
+                Ask = (double?)null,
+                BidSize = 10,
+                AskSize = 134,
+                Mode = "",
+                Ex = "Ex1",
+            };
+
+            var columns = new[]
+            {
+                ColumnsStub.CreateColumn(t.Timestamp, EFieldType.Int64, 1, "Timestamp"),
+                ColumnsStub.CreateColumn(t.Sym, EFieldType.String, 2, "Sym"),
+                ColumnsStub.CreateColumn(t.Bid ?? 0.0, EFieldType.Double, 3, "Bid"),
+                ColumnsStub.CreateColumn(t.Ask ?? 0.0, EFieldType.Double, 4, "Ask"),
+                ColumnsStub.CreateColumn(t.BidSize, EFieldType.Int32, 5, "BidSize"),
+                ColumnsStub.CreateColumn(t.AskSize, EFieldType.Int32, 6, "AskSize"),
+                ColumnsStub.CreateColumn(t.Mode, EFieldType.String, 7, "Mode"),
+                ColumnsStub.CreateColumn(t.Ex, EFieldType.String, 8, "Ex")
+            };
+            var bitset = new QuoteBitsetColumnStub(columns, new[] {0, 2 });
+            columns = columns.Concat(new[] { bitset }).ToArray();
+
+            var reader = CreateReader<Quote>(columns);
+
+            // Act.
+            var resultQuote = reader.Read(0, null);
+
+            // Verify.
+            return typeof(Quote).GetProperty(propertyName).GetGetMethod()
+                .Invoke(resultQuote, null);
+        }
 
         [TestCase("Timestamp", ExpectedResult = 1309L)]
         [TestCase("Ask", ExpectedResult = null)]
@@ -398,12 +444,17 @@ namespace Apaf.NFSdb.Tests.Serializer
             return (PocoObjectSerializer)serializerFactory.CreateFieldSerializer(columns);
         }
 
-        private PocoObjectSerializer CreateReader<T>(IColumn[] columns)
+        private PocoObjectSerializer CreateReader(Type t, IColumn[] columns)
         {
             var serializerFactory = new PocoSerializerFactory();
-            serializerFactory.Initialize(typeof(T));
+            serializerFactory.Initialize(t);
 
             return (PocoObjectSerializer)serializerFactory.CreateFieldSerializer(columns);
+        }
+
+        private PocoObjectSerializer CreateReader<T>(IColumn[] columns)
+        {
+            return CreateReader(typeof (T), columns);
         }
 
         private static IColumn[] GetQuoteColumns(Quote t)

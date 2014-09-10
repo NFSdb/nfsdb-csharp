@@ -143,7 +143,7 @@ namespace Apaf.NFSdb.Core.Storage
 
                 case EDataType.Symrr:
                     recordCount = columnDistinctCount * MetadataConstants.HASH_FUNCTION_GROUPING_RATE;
-                    avgRecSize = Math.Max(recordCount / columnDistinctCount / 2, 1);
+                    avgRecSize = (int)Math.Max(recordCount / columnDistinctCount / 2, 1);
                     break;
                 case EDataType.Datar:
                     avgRecSize = 8;
@@ -159,7 +159,7 @@ namespace Apaf.NFSdb.Core.Storage
             return CalculateHint(avgRecSize, recordCount);
         }
 
-        private static int CalculateHint(int avgSize, int recordHint)
+        private static int CalculateHint(int avgSize, long recordHint)
         {
             return (int)Math.Ceiling(Math.Log(checked(avgSize * recordHint), 2));
         }

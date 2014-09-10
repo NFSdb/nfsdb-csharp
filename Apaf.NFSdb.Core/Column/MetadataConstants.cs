@@ -64,6 +64,8 @@ namespace Apaf.NFSdb.Core.Column
         public static readonly int PIPE_BIT_HINT = 16;
         public static readonly int TX_LOG_FILE_ID = -1;
         public static readonly string TX_FILE_NAME = "_tx";
+        public static readonly string THRIFT_SERIALIZER_NAME = "thrift";
+        public static readonly string POCO_SERIALIZER_NAME = "poco";
         public static readonly string DEFAULT_SERIALIZER_NAME = "thrift";
         public const int K_FILE_KEY_BLOCK_HEADER_SIZE = 16;
         public const int K_FILE_KEY_BLOCK_OFFSET = 8;
