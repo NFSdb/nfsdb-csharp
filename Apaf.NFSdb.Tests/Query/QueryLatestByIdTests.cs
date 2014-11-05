@@ -110,7 +110,6 @@ namespace Apaf.NFSdb.Tests.Query
 
         private string ExecuteLambda(Func<IQueryable<Quote>, IQueryable<Quote>> lambda, int increment = 2)
         {
-
             Utils.ClearJournal<Quote>();
             var config = Utils.ReadConfig<Quote>();
 

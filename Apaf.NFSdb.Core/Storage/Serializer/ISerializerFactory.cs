@@ -27,7 +27,7 @@ namespace Apaf.NFSdb.Core.Storage.Serializer
     public interface ISerializerFactory
     {
         void Initialize(Type objectType);
-        IList<FieldData> ParseColumns();
-        IFieldSerializer CreateFieldSerializer(IEnumerable<IColumn> columns);
+        IList<IColumnSerializerMetadata> ParseColumns();
+        IFieldSerializer CreateFieldSerializer(IEnumerable<ColumnSource> columns);
     }
 }

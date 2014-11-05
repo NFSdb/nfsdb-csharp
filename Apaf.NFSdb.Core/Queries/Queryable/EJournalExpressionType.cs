@@ -17,8 +17,11 @@
 #endregion
 namespace Apaf.NFSdb.Core.Queries.Queryable
 {
-    public enum JournalExpressionType
+    public enum EJournalExpressionType
     {
         Contains = 50000,
+        Single = 50001,
+        First = 50002,
+        Last = 50003
     }
 }

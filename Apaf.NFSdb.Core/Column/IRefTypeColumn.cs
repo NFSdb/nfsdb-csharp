@@ -15,18 +15,14 @@
  * limitations under the License.
  */
 #endregion
-
-using System;
-using System.Collections.Generic;
-using Apaf.NFSdb.Core.Column;
 using Apaf.NFSdb.Core.Storage;
+using Apaf.NFSdb.Core.Tx;
 
-namespace Apaf.NFSdb.Core.Configuration
+namespace Apaf.NFSdb.Core.Column
 {
-    public interface IJournalMetadata<T> : IJournalMetadataCore
+    public interface IRefTypeColumn : IColumn
     {
-        void InitializeSymbols(IColumnStorage symbolStorage);
-        IEnumerable<ColumnSource> GetPartitionColums(IColumnStorage partitionStorage);
-        Func<T, long> GetTimestampReader();
+        object GetValue(long rowID, IReadContext readContext);
+        void SetValue(long rowID, object value, ITransactionContext readContext);
     }
 }

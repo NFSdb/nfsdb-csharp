@@ -42,7 +42,7 @@ namespace Apaf.NFSdb.Core.Configuration
 
         private readonly Func<T, long> _timestampDelegate;
         private IColumnStorage _symbolStorage;
-        private ISerializerFactory _serializerFactory;
+        private readonly ISerializerFactory _serializerFactory;
 
         public JournalMetadata(JournalElement config)
         {
@@ -95,6 +95,10 @@ namespace Apaf.NFSdb.Core.Configuration
                 {
                     fileID += 7;
                 }
+                if (cType.FieldType == EFieldType.Binary)
+                {
+                    fileID += 2;
+                }
                 else
                 {
                     fileID++;
@@ -120,7 +124,7 @@ namespace Apaf.NFSdb.Core.Configuration
             }
         }
 
-        public IFieldSerializer GetSerializer(IEnumerable<IColumn> columns)
+        public IFieldSerializer GetSerializer(IEnumerable<ColumnSource> columns)
         {
             return _serializerFactory.CreateFieldSerializer(columns);
         }
@@ -137,7 +141,7 @@ namespace Apaf.NFSdb.Core.Configuration
 
         public int? TimestampFieldID { get; private set; }
 
-        public IEnumerable<IColumn> GetPartitionColums(IColumnStorage partitionStorage)
+        public IEnumerable<ColumnSource> GetPartitionColums(IColumnStorage partitionStorage)
         {
             if (_symbolStorage == null)
             {
@@ -174,7 +178,7 @@ namespace Apaf.NFSdb.Core.Configuration
         public string KeySymbol { get; private set; }
         public int FileCount { get; private set; }
 
-        private IEnumerable<IColumn> CreateColumnsFromColumnMetadata(IEnumerable<ColumnMetadata> columns,
+        private IEnumerable<ColumnSource> CreateColumnsFromColumnMetadata(IEnumerable<ColumnMetadata> columns,
             IColumnStorage columnStorage)
         {
             int fileID = 0;
@@ -219,6 +223,14 @@ namespace Apaf.NFSdb.Core.Configuration
                         maxLen: maxLen,
                         symbolCache: _symbolCaches[colData.FileID]);
                 }
+                else if (cType.FieldType == EFieldType.Binary)
+                {
+                    // Byte array.
+                    var data = columnStorage.GetFile(cType.FileName, fileID++, cType.FieldID, EDataType.Data);
+                    var index = columnStorage.GetFile(cType.FileName, fileID++, cType.FieldID, EDataType.Index);
+                    column = new BinaryColumn(data, index, cType.MaxSize, GetPropertyName(cType.FileName));
+                    
+                }
                 else
                 {
                     // Fixed size.
@@ -226,16 +238,16 @@ namespace Apaf.NFSdb.Core.Configuration
                     column = new FixedColumn(data, cType.FieldType, GetPropertyName(cType.FileName));
                 }
 
-                yield return column;
+                yield return new ColumnSource(cType.SerializerMetadata, column);
             }
         }
 
-        private IList<ColumnMetadata> ParseColumns(FieldData[] fields, JournalElement config)
+        private IList<ColumnMetadata> ParseColumns(IEnumerable<IColumnSerializerMetadata> fields, JournalElement config)
         {
             // Build.
             var cols = new List<ColumnMetadata>();
 
-            foreach (FieldData field in fields)
+            foreach (IColumnSerializerMetadata field in fields)
             {
                 var fieldName = GetFileName(field.PropertyName);
 
@@ -248,7 +260,7 @@ namespace Apaf.NFSdb.Core.Configuration
                     case EFieldType.Int32:
                     case EFieldType.Int64:
                     case EFieldType.Double:
-                        cols.Add(ColumnMetadata.FromFixedField(field.DataType, fieldName, cols.Count));
+                        cols.Add(ColumnMetadata.FromFixedField(field, cols.Count));
                         break;
                     case EFieldType.Symbol:
                     case EFieldType.String:
@@ -260,21 +272,38 @@ namespace Apaf.NFSdb.Core.Configuration
 
                         if (stringConfig != null)
                         {
-                            cols.Add(ColumnMetadata.FromColumnElement(stringConfig, cols.Count));
+                            cols.Add(ColumnMetadata.FromColumnElement(field, stringConfig, cols.Count));
                         }
                         else
                         {
                             // No config.
-                            cols.Add(ColumnMetadata.FromStringField(fieldName,
+                            cols.Add(ColumnMetadata.FromStringField(field,
                                 MetadataConstants.DEFAULT_STRING_AVG_SIZE,
                                 MetadataConstants.DEFAULT_STRING_MAX_SIZE,
                                 cols.Count));
                         }
                         break;
+                    case EFieldType.Binary:
+                        var binaryConfig = ((IEnumerable<ColumnElement>) (config.Binaries))
+                            .FirstOrDefault(c => c.Name.Equals(fieldName,
+                                StringComparison.OrdinalIgnoreCase));
 
+                        if (binaryConfig != null)
+                        {
+                            cols.Add(ColumnMetadata.FromColumnElement(field, binaryConfig, cols.Count));
+                        }
+                        else
+                        {
+                            // No config.
+                            cols.Add(ColumnMetadata.FromBinaryField(field, 
+                                MetadataConstants.DEFAULT_BINARY_AVG_SIZE,
+                                MetadataConstants.DEFAULT_BINARY_MAX_SIZE,
+                                cols.Count));
+                        }
+                        break;
                     case EFieldType.BitSet:
                         var fieldSize = BitsetColumn.CalculateSize(field.Size);
-                        cols.Add(ColumnMetadata.FromBitsetField(ISSET_COLUMN_NAME, fieldSize, cols.Count));
+                        cols.Add(ColumnMetadata.FromBitsetField(field, fieldSize, cols.Count));
                         break;
                     default:
                         throw new ArgumentOutOfRangeException();

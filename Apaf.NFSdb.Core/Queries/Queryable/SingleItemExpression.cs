@@ -15,40 +15,34 @@
  * limitations under the License.
  */
 #endregion
-using System;
 using System.Linq.Expressions;
 
 namespace Apaf.NFSdb.Core.Queries.Queryable
 {
-    public class SymbolContainsExpression : Expression
+    public class SingleItemExpression : Expression
     {
-        private readonly Expression _match;
-        private readonly string[] _values;
+        private readonly Expression _body;
+        private readonly EJournalExpressionType _operation;
 
-        public SymbolContainsExpression(Expression match, string[] values)
+        public SingleItemExpression(Expression body, EJournalExpressionType operation)
         {
-            _match = match;
-            _values = values;
+            _body = body;
+            _operation = operation;
+        }
+
+        public EJournalExpressionType Operation
+        {
+            get { return _operation; }
         }
 
         public override ExpressionType NodeType
         {
-            get { return (ExpressionType)EJournalExpressionType.Contains; }
+            get { return (ExpressionType)_operation; }
         }
 
-        public override Type Type
+        public Expression Body
         {
-            get { return typeof(bool); }
-        }
-
-        public Expression Match
-        {
-            get { return _match; }
-        }
-
-        public string[] Values
-        {
-            get { return _values; }
+            get { return _body; }
         }
     }
 }

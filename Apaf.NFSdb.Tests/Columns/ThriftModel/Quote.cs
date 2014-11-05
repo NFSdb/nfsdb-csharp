@@ -45,38 +45,6 @@ namespace Apaf.NFSdb.Tests.Columns.ThriftModel
     private string _mode;
     private string _ex;
 
-
-    public static object GenerateItem(ByteArray bitset, IFixedWidthColumn[] fixdCols,
-        long rowid, IStringColumn[] stringColumns, IReadContext readContext)
-    {
-        var q = new Quote();
-        string strVal;
-        if (bitset.IsSet(0))
-        {
-            q._askSize = fixdCols[0].GetInt32(rowid);
-            q.__isset.askSize = true;
-        }
-
-        strVal = stringColumns[0].GetString(rowid, readContext);
-        if (strVal != null)
-        {
-            q.Mode = strVal;
-        }
-
-        if (bitset.IsSet(2))
-        {
-            q._timestamp = fixdCols[1].GetInt64(rowid);
-            q.__isset.timestamp = true;
-        }
-
-        strVal = stringColumns[1].GetString(rowid, readContext);
-        if (strVal != null)
-        {
-            q.Sym = strVal;
-        }
-        return q;
-    }
-
     public long Timestamp
     {
       get

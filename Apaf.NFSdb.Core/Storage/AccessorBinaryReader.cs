@@ -97,6 +97,12 @@ namespace Apaf.NFSdb.Core.Storage
             }
         }
 
+        public unsafe void ReadBytes(long offset, byte* array, int arrayOffset, int sizeBytes)
+        {
+            var readPtr = _memoryPtr + offset - _bufferOffset;
+            AccessorHelper.Memcpy(array + arrayOffset, readPtr, sizeBytes);
+        }
+
         public int ReadInt32(long offset)
         {
             var readPtr = (int*) (_memoryPtr + offset - _bufferOffset);

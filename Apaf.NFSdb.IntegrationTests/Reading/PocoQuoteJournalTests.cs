@@ -5,7 +5,6 @@ using Apaf.NFSdb.Core;
 using Apaf.NFSdb.Core.Configuration;
 using Apaf.NFSdb.Core.Storage;
 using Apaf.NFSdb.Core.Writes;
-using Apaf.NFSdb.TestModel.Model;
 using Apaf.NFSdb.TestShared;
 using NUnit.Framework;
 
@@ -14,7 +13,7 @@ namespace Apaf.NFSdb.IntegrationTests.Reading
     [TestFixture]
     public class PocoQuoteJournalTests
     {
-        private const int GENERATE_RECORDS_COUNT = (int)1E6;
+        private const int GENERATE_RECORDS_COUNT = TestUtils.GENERATE_RECORDS_COUNT;
         private const string FolderPath = "PocoQuote";
 
         private static readonly DateTime START = new DateTime(DateTime.Now.AddYears(-1).Year,

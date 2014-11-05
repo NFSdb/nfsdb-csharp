@@ -29,6 +29,7 @@ namespace Apaf.NFSdb.Core.Storage
         EFileAccess Access { get; }
 
         void ReadBytes(long offset, byte[] array, int arrayOffset, int sizeBytes);
+        unsafe void ReadBytes(long offset, byte* array, int arrayOffset, int sizeBytes);
         int ReadInt32(long offset);
         byte ReadByte(long offset);
         long ReadInt64(long offset);

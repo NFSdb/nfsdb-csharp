@@ -41,6 +41,7 @@ namespace Apaf.NFSdb.Core.Configuration
             MaxOpenPartitions = MetadataConstants.DEFAULT_MAX_OPEN_PARTITIONS;
             Strings = new List<StringElement>();
             Symbols = new List<SymbolElement>();
+            Binaries = new List<BinaryElement>();
             SerializerName = MetadataConstants.THRIFT_SERIALIZER_NAME;
         }
 
@@ -76,6 +77,9 @@ namespace Apaf.NFSdb.Core.Configuration
 
         [XmlElement("string")]
         public List<StringElement> Strings { get; set; }
+
+        [XmlElement("binary")]
+        public List<BinaryElement> Binaries { get; set; }
 
         [XmlElement("serializerName")]
         public string SerializerName { get; set; }

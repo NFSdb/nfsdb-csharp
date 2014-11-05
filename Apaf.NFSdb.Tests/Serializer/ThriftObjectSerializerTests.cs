@@ -159,7 +159,9 @@ namespace Apaf.NFSdb.Tests.Serializer
             serializer.Write(s, 0, TestTxLog.TestContext());
             
             // Verify.
-            var resultCol = (IColumnStub)columns.First(c => c.PropertyName == propertyName);
+            var resultCol = (IColumnStub)columns
+                .Select(c => c.Column)
+                .First(c => c.PropertyName == propertyName);
             return resultCol.Value;
         }
 
@@ -189,11 +191,11 @@ namespace Apaf.NFSdb.Tests.Serializer
 
             // Verify.
             // Probed column.
-            var searchCol = columns.First(c => c.PropertyName == propertyName);
+            var searchCol = columns.Select(c => c.Column).First(c => c.PropertyName == propertyName);
             // Bitset.
-            var resultCol = (QuoteBitsetColumnStub)columns.First(c => c.FieldType == EFieldType.BitSet);
+            var resultCol = (QuoteBitsetColumnStub)columns.Select(c => c.Column).First(c => c.FieldType == EFieldType.BitSet);
             // Non-bitset.
-            var columnList = new List<IColumn>(columns.Where(c => c.FieldType != EFieldType.BitSet));
+            var columnList = new List<IColumn>(columns.Select(c => c.Column).Where(c => c.FieldType != EFieldType.BitSet));
             return resultCol.SetColumnIndecies.Contains(columnList.IndexOf(searchCol));
         }
 
@@ -266,7 +268,7 @@ namespace Apaf.NFSdb.Tests.Serializer
             return (ObjectSerializer)serializerFactory.CreateFieldSerializer(columns);
         }
 
-        private ObjectSerializer CreateWriter(IColumn[] columns)
+        private ObjectSerializer CreateWriter(ColumnSource[] columns)
         {
             var serializerFactory = new ThriftSerializerFactory();
             serializerFactory.Initialize(typeof(Quote));
@@ -274,20 +276,30 @@ namespace Apaf.NFSdb.Tests.Serializer
             return (ObjectSerializer)serializerFactory.CreateFieldSerializer(columns);
         }
 
-        private static IColumn[] GetQuoteColumns(Quote t)
+        private static ColumnSource[] GetQuoteColumns(Quote t)
         {
             var columns = new[]
             {
-                ColumnsStub.CreateColumn(t.Timestamp, EFieldType.Int64, 1, "Timestamp"),
-                ColumnsStub.CreateColumn(t.Sym, EFieldType.String, 2, "Sym"),
-                ColumnsStub.CreateColumn(t.Bid, EFieldType.Double, 3, "Bid"),
-                ColumnsStub.CreateColumn(t.Ask, EFieldType.Double, 4, "Ask"),
-                ColumnsStub.CreateColumn(t.BidSize, EFieldType.Int32, 5, "BidSize"),
-                ColumnsStub.CreateColumn(t.AskSize, EFieldType.Int32, 6, "AskSize"),
-                ColumnsStub.CreateColumn(t.Mode, EFieldType.String, 7, "Mode"),
-                ColumnsStub.CreateColumn(t.Ex, EFieldType.String, 8, "Ex")
+                new ColumnSource(new ColumnSerializerMetadata(EFieldType.Int64, "Timestamp"), 
+                    ColumnsStub.CreateColumn(t.Timestamp, EFieldType.Int64, 1, "Timestamp")),
+                new ColumnSource(new ColumnSerializerMetadata(EFieldType.Symbol, "Sym"), 
+                    ColumnsStub.CreateColumn(t.Sym, EFieldType.String, 2, "Sym")),
+                new ColumnSource(new ColumnSerializerMetadata(EFieldType.Double, "Bid"), 
+                    ColumnsStub.CreateColumn(t.Bid, EFieldType.Double, 3, "Bid")),
+                new ColumnSource(new ColumnSerializerMetadata(EFieldType.Double, "Ask"), 
+                    ColumnsStub.CreateColumn(t.Ask, EFieldType.Double, 4, "Ask")),
+                new ColumnSource(new ColumnSerializerMetadata(EFieldType.Int32, "BidSize"), 
+                    ColumnsStub.CreateColumn(t.BidSize, EFieldType.Int32, 5, "BidSize")),
+                new ColumnSource(new ColumnSerializerMetadata(EFieldType.Int32, "AskSize"), 
+                    ColumnsStub.CreateColumn(t.AskSize, EFieldType.Int32, 6, "AskSize")),
+                new ColumnSource(new ColumnSerializerMetadata(EFieldType.String, "Mode"), 
+                    ColumnsStub.CreateColumn(t.Mode, EFieldType.String, 7, "Mode")),
+                new ColumnSource(new ColumnSerializerMetadata(EFieldType.String, "Ex"), 
+                    ColumnsStub.CreateColumn(t.Ex, EFieldType.String, 8, "Ex"))
             };
-            var bitset = new QuoteBitsetColumnStub(columns, GetNullsColumn(t).ToArray());
+            var bitset = new ColumnSource(new ColumnSerializerMetadata(EFieldType.BitSet, "_isset"),
+                new QuoteBitsetColumnStub(columns.Select(c => c.Column).ToArray(), GetNullsColumn(t).ToArray()));
+
             return columns.Concat(new[] {bitset}).ToArray();
         } 
 

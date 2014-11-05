@@ -1,4 +1,5 @@
 ﻿#region copyright
+
 /*
  * Copyright (c) 2014. APAF http://apafltd.co.uk
  *
@@ -14,20 +15,22 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#endregion
 
+#endregion
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Linq;
 using System.Reflection;
 using Apaf.NFSdb.Core.Column;
-using Apaf.NFSdb.Core.Storage;
 using Apaf.NFSdb.Core.Storage.Serializer;
 using Apaf.NFSdb.Tests.Columns.ThriftModel;
 using Apaf.NFSdb.Tests.Tx;
 using NUnit.Framework;
 using Quote = Apaf.NFSdb.Tests.Columns.PocoModel.Quote;
+// ReSharper disable RedundantUsingDirective
+using Apaf.NFSdb.Core.Storage;
+using System.Diagnostics;
+// ReSharper restore RedundantUsingDirective
 
 namespace Apaf.NFSdb.Tests.Serializer
 {
@@ -54,10 +57,10 @@ namespace Apaf.NFSdb.Tests.Serializer
                 Int16 = (Int16) 987
             };
 
-            var fact = CreatePocoSerializerFactory();
+            PocoSerializerFactory fact = CreatePocoSerializerFactory();
             fact.Initialize(ojbType.GetType());
 
-            var cols = fact.ParseColumns();
+            IList<IColumnSerializerMetadata> cols = fact.ParseColumns();
             return cols.Single(c => c.DataType == fType).PropertyName;
         }
 
@@ -71,18 +74,18 @@ namespace Apaf.NFSdb.Tests.Serializer
         {
             var ojbType = new
             {
-                Bl = (bool?)true,
-                Bt = (byte?)3,
-                Int = (int?)33,
-                Lng = (long?)430L,
-                Dbl = (double?)34.56,
-                Int16 = (Int16?)987
+                Bl = (bool?) true,
+                Bt = (byte?) 3,
+                Int = (int?) 33,
+                Lng = (long?) 430L,
+                Dbl = (double?) 34.56,
+                Int16 = (Int16?) 987
             };
 
-            var fact = CreatePocoSerializerFactory();
+            PocoSerializerFactory fact = CreatePocoSerializerFactory();
             fact.Initialize(ojbType.GetType());
 
-            var cols = fact.ParseColumns();
+            IList<IColumnSerializerMetadata> cols = fact.ParseColumns();
             return cols.Single(c => c.DataType == fType).PropertyName;
         }
 
@@ -92,20 +95,20 @@ namespace Apaf.NFSdb.Tests.Serializer
             var ojbType = new
             {
                 Str = "string",
-                Bl = (bool?)true,
-                Bt = (byte?)3,
-                Bt2 = (byte)3,
-                Int = (int?)33,
-                Lng = (long?)430L,
-                Dbl = (double?)34.56,
+                Bl = (bool?) true,
+                Bt = (byte?) 3,
+                Bt2 = (byte) 3,
+                Int = (int?) 33,
+                Lng = (long?) 430L,
+                Dbl = (double?) 34.56,
                 Dbl2 = 34.56,
-                Int16 = (Int16?)987
+                Int16 = (Int16?) 987
             };
 
-            var fact = CreatePocoSerializerFactory();
+            PocoSerializerFactory fact = CreatePocoSerializerFactory();
             fact.Initialize(ojbType.GetType());
 
-            var bitset = fact.ParseColumns().Single(c => c.DataType == EFieldType.BitSet);
+            IColumnSerializerMetadata bitset = fact.ParseColumns().Single(c => c.DataType == EFieldType.BitSet);
             Assert.That(bitset.Size, Is.EqualTo(7));
         }
 
@@ -130,14 +133,15 @@ namespace Apaf.NFSdb.Tests.Serializer
                 Mode = ""
             };
 
-            var quoteColumns = GetQuoteColumns(new Quote());
-            var writer = CreateWriter<Quote>(quoteColumns);
+            ColumnSource[] quoteColumns = GetQuoteColumns(new Quote());
+            PocoObjectSerializer writer = CreateWriter<Quote>(quoteColumns);
 
             // Act.
             writer.Write(testQuote, 0, TestTxLog.TestContext());
 
             // Verify.
-            var resultCol = (IColumnStub)quoteColumns.First(c => c.PropertyName == propertyName);
+            var resultCol = (IColumnStub) quoteColumns.Select(c => c.Column)
+                .First(c => c.PropertyName == propertyName);
             return resultCol.Value;
         }
 
@@ -154,14 +158,15 @@ namespace Apaf.NFSdb.Tests.Serializer
                 Mode = null
             };
 
-            var quoteColumns = GetQuoteColumns(new Quote());
-            var writer = CreateWriter<Quote>(quoteColumns);
+            ColumnSource[] quoteColumns = GetQuoteColumns(new Quote());
+            PocoObjectSerializer writer = CreateWriter<Quote>(quoteColumns);
 
             // Act.
             writer.Write(testQuote, 0, TestTxLog.TestContext());
 
             // Verify.
-            var resultCol = (IColumnStub)quoteColumns.First(c => c.FieldType == EFieldType.BitSet);
+            var resultCol = (IColumnStub) quoteColumns.Select(c => c.Column)
+                .First(c => c.FieldType == EFieldType.BitSet);
             return resultCol.Value;
         }
 
@@ -176,12 +181,12 @@ namespace Apaf.NFSdb.Tests.Serializer
         [TestCase("Sym", ExpectedResult = null)]
         public object Should_read_anonymous_object(string propertyName)
         {
-            var t = new 
+            var t = new
             {
                 Timestamp = 1309L,
-                Sym = (string)null,
-                Bid = (double?)56.89,
-                Ask = (double?)null,
+                Sym = (string) null,
+                Bid = (double?) 56.89,
+                Ask = (double?) null,
                 BidSize = 10,
                 AskSize = 134,
                 Mode = "",
@@ -190,25 +195,38 @@ namespace Apaf.NFSdb.Tests.Serializer
 
             var columns = new[]
             {
-                ColumnsStub.CreateColumn(t.Timestamp, EFieldType.Int64, 1, "Timestamp"),
-                ColumnsStub.CreateColumn(t.Sym, EFieldType.String, 2, "Sym"),
-                ColumnsStub.CreateColumn(t.Bid ?? 0.0, EFieldType.Double, 3, "Bid"),
-                ColumnsStub.CreateColumn(t.Ask ?? 0.0, EFieldType.Double, 4, "Ask"),
-                ColumnsStub.CreateColumn(t.BidSize, EFieldType.Int32, 5, "BidSize"),
-                ColumnsStub.CreateColumn(t.AskSize, EFieldType.Int32, 6, "AskSize"),
-                ColumnsStub.CreateColumn(t.Mode, EFieldType.String, 7, "Mode"),
-                ColumnsStub.CreateColumn(t.Ex, EFieldType.String, 8, "Ex")
+                
+                new ColumnSource(new ColumnSerializerMetadata(EFieldType.Int64, "Timestamp"),
+                    ColumnsStub.CreateColumn(t.Timestamp, EFieldType.Int64, 1, "Timestamp")),
+                new ColumnSource(new ColumnSerializerMetadata(EFieldType.Symbol, "Sym"),
+                    ColumnsStub.CreateColumn(t.Sym, EFieldType.String, 2, "Sym")),
+                new ColumnSource(new ColumnSerializerMetadata(EFieldType.Double, "Bid"),
+                    ColumnsStub.CreateColumn(t.Bid ?? 0.0, EFieldType.Double, 3, "Bid")),
+                new ColumnSource(new ColumnSerializerMetadata(EFieldType.Double, "Ask"),
+                    ColumnsStub.CreateColumn(t.Ask ?? 0.0, EFieldType.Double, 4, "Ask")),
+                new ColumnSource(new ColumnSerializerMetadata(EFieldType.Int32, "BidSize"),
+                    ColumnsStub.CreateColumn(t.BidSize, EFieldType.Int32, 5, "BidSize")),
+                new ColumnSource(new ColumnSerializerMetadata(EFieldType.Int32, "AskSize"),
+                    ColumnsStub.CreateColumn(t.AskSize, EFieldType.Int32, 6, "AskSize")),
+                new ColumnSource(new ColumnSerializerMetadata(EFieldType.String, "Mode"),
+                    ColumnsStub.CreateColumn(t.Mode, EFieldType.String, 7, "Mode")),
+                new ColumnSource(new ColumnSerializerMetadata(EFieldType.String, "Ex"),
+                    ColumnsStub.CreateColumn(t.Ex, EFieldType.String, 8, "Ex"))
             };
-            var bitset = new QuoteBitsetColumnStub(columns, new[] {0, 2 });
-            columns = columns.Concat(new[] { bitset }).ToArray();
+            var bitset =
+                new ColumnSource(new ColumnSerializerMetadata(EFieldType.BitSet, MetadataConstants.NULLS_FILE_NAME),
+                    new QuoteBitsetColumnStub(
+                        columns.Select(c => c.Column).ToArray(), new[] {0, 2}));
 
-            var reader = CreateReader<Quote>(columns);
+            columns = columns.Concat(new[] {bitset}).ToArray();
+
+            PocoObjectSerializer reader = CreateReader<Quote>(columns);
 
             // Act.
-            var resultQuote = reader.Read(0, null);
+            object resultQuote = reader.Read(0, null);
 
             // Verify.
-            return typeof(Quote).GetProperty(propertyName).GetGetMethod()
+            return typeof (Quote).GetProperty(propertyName).GetGetMethod()
                 .Invoke(resultQuote, null);
         }
 
@@ -233,11 +251,11 @@ namespace Apaf.NFSdb.Tests.Serializer
                 Mode = ""
             };
 
-            var columns = GetQuoteColumns(testQuote);
-            var reader = CreateReader<Quote>(columns);
+            ColumnSource[] columns = GetQuoteColumns(testQuote);
+            PocoObjectSerializer reader = CreateReader<Quote>(columns);
 
             // Act.
-            var resultQuote = reader.Read(0, null);
+            object resultQuote = reader.Read(0, null);
 
             // Verify.
             return typeof (Quote).GetProperty(propertyName).GetGetMethod()
@@ -259,14 +277,15 @@ namespace Apaf.NFSdb.Tests.Serializer
                 Ex = "Ex1",
             };
 
-            var quoteColumns = GetQuoteColumns(new Quote());
-            var writer = CreateWriter<Quote>(quoteColumns);
+            ColumnSource[] quoteColumns = GetQuoteColumns(new Quote());
+            PocoObjectSerializer writer = CreateWriter<Quote>(quoteColumns);
 
             // Act.
             writer.Write(testQuote, 0, TestTxLog.TestContext());
 
             // Verify.
-            var bitsetCol = (QuoteBitsetColumnStub)quoteColumns.First(c => c.FieldType == EFieldType.BitSet);
+            var bitsetCol = (QuoteBitsetColumnStub) quoteColumns.Select(c => c.Column)
+                .First(c => c.FieldType == EFieldType.BitSet);
             Assert.That(string.Join("|", bitsetCol.SetColumnIndecies), Is.EqualTo(
                 "0|1|3"));
         }
@@ -284,15 +303,15 @@ namespace Apaf.NFSdb.Tests.Serializer
                 Mode = ""
             };
 
-            var quoteColumns = GetQuoteColumns(new Quote());
-            var writer = CreateWriter<Quote>(quoteColumns);
-            var reader = CreateReader<Quote>(quoteColumns);
+            ColumnSource[] quoteColumns = GetQuoteColumns(new Quote());
+            PocoObjectSerializer writer = CreateWriter<Quote>(quoteColumns);
+            PocoObjectSerializer reader = CreateReader<Quote>(quoteColumns);
 
             // Act.
             writer.Write(testQuote, 0, TestTxLog.TestContext());
-            var resultQuote = reader.Read(0, null);
+            object resultQuote = reader.Read(0, null);
 
-            var getProperty = typeof (Quote).GetProperty(propertyName).GetGetMethod();
+            MethodInfo getProperty = typeof (Quote).GetProperty(propertyName).GetGetMethod();
             // Verify.
             Assert.That(getProperty.Invoke(resultQuote, null), Is.EqualTo(
                 getProperty.Invoke(testQuote, null)));
@@ -359,20 +378,21 @@ namespace Apaf.NFSdb.Tests.Serializer
         }
 
 #endif
+
         [Test]
         public void ShouldGetPropertyByFieldNameAnonymousType()
         {
             var anType = new {Name = "one", Doub = 1.0, Int = 1};
-            var fact = CreatePocoSerializerFactory();
+            PocoSerializerFactory fact = CreatePocoSerializerFactory();
             fact.Initialize(anType.GetType());
 
-            var fields = string.Join(",", anType.GetType().GetFields(BindingFlags.Instance
-                                                                | BindingFlags.NonPublic)
-                                                                .Select(f => fact.GetPropertyName(f.Name)));
+            string fields = string.Join(",", anType.GetType().GetFields(BindingFlags.Instance
+                                                                        | BindingFlags.NonPublic)
+                .Select(f => fact.GetPropertyName(f.Name)));
             Assert.That(fields, Is.EqualTo("Name,Doub,Int"));
         }
 
-        class MyClass
+        private class MyClass
         {
             public string Name { get; set; }
             public double Doub { get; set; }
@@ -382,52 +402,36 @@ namespace Apaf.NFSdb.Tests.Serializer
         [Test]
         public void ShouldGetPropertyByFieldNameAutoField()
         {
-            var anType = new MyClass { Name = "one", Doub = 1.0, Int = 1 };
-            var fact = CreatePocoSerializerFactory();
+            var anType = new MyClass {Name = "one", Doub = 1.0, Int = 1};
+            PocoSerializerFactory fact = CreatePocoSerializerFactory();
             fact.Initialize(anType.GetType());
 
-            var fields = string.Join(",", anType.GetType().GetFields(BindingFlags.Instance
-                                                                | BindingFlags.NonPublic)
-                                                                .Select(f => fact.GetPropertyName(f.Name)));
+            string fields = string.Join(",", anType.GetType().GetFields(BindingFlags.Instance
+                                                                        | BindingFlags.NonPublic)
+                .Select(f => fact.GetPropertyName(f.Name)));
             Assert.That(fields, Is.EqualTo("Name,Doub,Int"));
         }
 
 
-        class MyClass2
+        private class MyClass2
         {
-            private string _name;
-            private double _doub;
-            private int _int;
+            public string Name { get; set; }
 
-            public string Name
-            {
-                get { return _name; }
-                set { _name = value; }
-            }
+            public double Doub { get; set; }
 
-            public double Doub
-            {
-                get { return _doub; }
-                set { _doub = value; }
-            }
-
-            public int Int
-            {
-                get { return _int; }
-                set { _int = value; }
-            }
+            public int Int { get; set; }
         }
 
         [Test]
         public void ShouldGetPropertyByFieldNameNormalField()
         {
-            var anType = new MyClass2 { Name = "one", Doub = 1.0, Int = 1 };
-            var fact = CreatePocoSerializerFactory();
+            var anType = new MyClass2 {Name = "one", Doub = 1.0, Int = 1};
+            PocoSerializerFactory fact = CreatePocoSerializerFactory();
             fact.Initialize(anType.GetType());
 
-            var fields = string.Join(",", anType.GetType().GetFields(BindingFlags.Instance
-                                                                | BindingFlags.NonPublic)
-                                                                .Select(f => fact.GetPropertyName(f.Name)));
+            string fields = string.Join(",", anType.GetType().GetFields(BindingFlags.Instance
+                                                                        | BindingFlags.NonPublic)
+                .Select(f => fact.GetPropertyName(f.Name)));
             Assert.That(fields, Is.EqualTo("Name,Doub,Int"));
         }
 
@@ -436,42 +440,52 @@ namespace Apaf.NFSdb.Tests.Serializer
             return new PocoSerializerFactory();
         }
 
-        private PocoObjectSerializer CreateWriter<T>(IColumn[] columns)
+        private PocoObjectSerializer CreateWriter<T>(ColumnSource[] columns)
         {
             var serializerFactory = new PocoSerializerFactory();
-            serializerFactory.Initialize(typeof(T));
+            serializerFactory.Initialize(typeof (T));
 
-            return (PocoObjectSerializer)serializerFactory.CreateFieldSerializer(columns);
+            return (PocoObjectSerializer) serializerFactory.CreateFieldSerializer(columns);
         }
 
-        private PocoObjectSerializer CreateReader(Type t, IColumn[] columns)
+        private PocoObjectSerializer CreateReader(Type t, ColumnSource[] columns)
         {
             var serializerFactory = new PocoSerializerFactory();
             serializerFactory.Initialize(t);
 
-            return (PocoObjectSerializer)serializerFactory.CreateFieldSerializer(columns);
+            return (PocoObjectSerializer) serializerFactory.CreateFieldSerializer(columns);
         }
 
-        private PocoObjectSerializer CreateReader<T>(IColumn[] columns)
+        private PocoObjectSerializer CreateReader<T>(ColumnSource[] columns)
         {
             return CreateReader(typeof (T), columns);
         }
 
-        private static IColumn[] GetQuoteColumns(Quote t)
+        private static ColumnSource[] GetQuoteColumns(Quote t)
         {
             var columns = new[]
             {
-                ColumnsStub.CreateColumn(t.Timestamp, EFieldType.Int64, 1, "Timestamp"),
-                ColumnsStub.CreateColumn(t.Sym, EFieldType.String, 2, "Sym"),
-                ColumnsStub.CreateColumn(t.Bid ?? 0.0, EFieldType.Double, 3, "Bid"),
-                ColumnsStub.CreateColumn(t.Ask ?? 0.0, EFieldType.Double, 4, "Ask"),
-                ColumnsStub.CreateColumn(t.BidSize, EFieldType.Int32, 5, "BidSize"),
-                ColumnsStub.CreateColumn(t.AskSize, EFieldType.Int32, 6, "AskSize"),
-                ColumnsStub.CreateColumn(t.Mode, EFieldType.String, 7, "Mode"),
-                ColumnsStub.CreateColumn(t.Ex, EFieldType.String, 8, "Ex")
+                new ColumnSource(new ColumnSerializerMetadata(EFieldType.Int64, "Timestamp"),
+                    ColumnsStub.CreateColumn(t.Timestamp, EFieldType.Int64, 1, "Timestamp")),
+                new ColumnSource(new ColumnSerializerMetadata(EFieldType.Symbol, "Sym"),
+                    ColumnsStub.CreateColumn(t.Sym, EFieldType.String, 2, "Sym")),
+                new ColumnSource(new ColumnSerializerMetadata(EFieldType.Double, "Bid"),
+                    ColumnsStub.CreateColumn(t.Bid ?? 0.0, EFieldType.Double, 3, "Bid")),
+                new ColumnSource(new ColumnSerializerMetadata(EFieldType.Double, "Ask"),
+                    ColumnsStub.CreateColumn(t.Ask ?? 0.0, EFieldType.Double, 4, "Ask")),
+                new ColumnSource(new ColumnSerializerMetadata(EFieldType.Int32, "BidSize"),
+                    ColumnsStub.CreateColumn(t.BidSize, EFieldType.Int32, 5, "BidSize")),
+                new ColumnSource(new ColumnSerializerMetadata(EFieldType.Int32, "AskSize"),
+                    ColumnsStub.CreateColumn(t.AskSize, EFieldType.Int32, 6, "AskSize")),
+                new ColumnSource(new ColumnSerializerMetadata(EFieldType.String, "Mode"),
+                    ColumnsStub.CreateColumn(t.Mode, EFieldType.String, 7, "Mode")),
+                new ColumnSource(new ColumnSerializerMetadata(EFieldType.String, "Ex"),
+                    ColumnsStub.CreateColumn(t.Ex, EFieldType.String, 8, "Ex"))
             };
-            var bitset = new QuoteBitsetColumnStub(columns, GetNullsColumn(t).ToArray());
-            return columns.Concat(new[] { bitset }).ToArray();
+            var bitset =
+                new ColumnSource(new ColumnSerializerMetadata(EFieldType.BitSet, MetadataConstants.NULLS_FILE_NAME),
+                    new QuoteBitsetColumnStub(columns.Select(c => c.Column).ToArray(), GetNullsColumn(t).ToArray()));
+            return columns.Concat(new[] {bitset}).ToArray();
         }
 
         private static IEnumerable<int> GetNullsColumn(Quote quote)

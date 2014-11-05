@@ -34,7 +34,7 @@ namespace Apaf.NFSdb.Tests.Columns.ThriftModel
             return new ColumnStubImpl<T>(value, fieldType, propertyName);
         }
 
-        public class ColumnStubImpl<T> : IFixedWidthColumn, IStringColumn, IColumnStub
+        public class ColumnStubImpl<T> : IFixedWidthColumn, IRefTypeColumn, IColumnStub
         {
             private T _value;
 
@@ -93,6 +93,25 @@ namespace Apaf.NFSdb.Tests.Columns.ThriftModel
             public void SetString(long rowID, string value, ITransactionContext readContext)
             {
                 SetValue(value);
+            }
+
+            public object GetValue(long rowID, IReadContext readContext)
+            {
+                if (FieldType == EFieldType.String)
+                {
+                    return GetString(rowID, readContext);
+                }
+                throw new System.NotImplementedException();
+            }
+
+            public void SetValue(long rowID, object value, ITransactionContext readContext)
+            {
+                if (FieldType == EFieldType.String)
+                {
+                    SetString(rowID, (string) value, readContext);
+                    return;
+                }
+                throw new System.NotImplementedException();
             }
 
             public void SetInt32(long rowID, int value, ITransactionContext readContext)

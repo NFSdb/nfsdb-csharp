@@ -45,11 +45,11 @@ namespace Apaf.NFSdb.Tests.Columns
             var sym = CreateSymbolColumn(tx);
             
             // Act.
-            sym.SetString(0, "First Value", tx);
+            sym.SetValue(0, "First Value", tx);
             _symbolCatch.Reset();
 
             // Verify.
-            var result = sym.GetString(0, tx.ReadCache);
+            var result = sym.GetValue(0, tx.ReadCache);
             Assert.That(result, Is.EqualTo("First Value"));
         }
 
@@ -67,14 +67,14 @@ namespace Apaf.NFSdb.Tests.Columns
 
             foreach (string val in firstValueSet.Split('|'))
             {
-                sym.SetString(rowId++, val, tx);
+                sym.SetValue(rowId++, val, tx);
             }
             _symbolCatch.Reset();
 
             // Act.
             foreach (string val in repeatedVals.Split('|'))
             {
-                sym.SetString(rowId++, val, tx);
+                sym.SetValue(rowId++, val, tx);
             }
 
             // Verify.

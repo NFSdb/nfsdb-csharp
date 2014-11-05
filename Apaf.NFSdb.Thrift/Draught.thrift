@@ -1,5 +1,5 @@
 namespace java com.bp.gis.thrift.model
-namespace csharp Apaf.NJournal.TestModel.Model
+namespace csharp Apaf.NFSdb.TestModel.Model
 
 struct DraughtMinMax {
      1: required string imo;

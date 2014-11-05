@@ -27,6 +27,7 @@ namespace Apaf.NFSdb.Core.Column
         Double,
         String,
         BitSet,
-        Symbol
+        Symbol,
+        Binary
     }
 }

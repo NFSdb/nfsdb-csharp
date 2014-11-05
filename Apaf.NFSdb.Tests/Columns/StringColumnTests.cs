@@ -44,7 +44,7 @@ namespace Apaf.NFSdb.Tests.Columns
         public void ShouldReadString(string value, int maxSize)
         {
             var stringCol = CreateStringColumn(value, maxSize);
-            var value2 = stringCol.GetString(0, _readerContext);
+            var value2 = stringCol.GetValue(0, _readerContext);
             Assert.That(value2, Is.EqualTo(value));
         }
 
@@ -56,9 +56,9 @@ namespace Apaf.NFSdb.Tests.Columns
         {
             var stringCol = CreateStringColumn(maxLen);
             var readContext = TestTxLog.TestContext();
-            stringCol.SetString(0, value, readContext);
+            stringCol.SetValue(0, value, readContext);
 
-            Assert.That(stringCol.GetString(0, readContext.ReadCache), Is.EqualTo(value));
+            Assert.That(stringCol.GetValue(0, readContext.ReadCache), Is.EqualTo(value));
         }
 
         [Test]

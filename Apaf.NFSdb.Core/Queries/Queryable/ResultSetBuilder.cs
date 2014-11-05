@@ -17,6 +17,7 @@
 #endregion
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Linq.Expressions;
 using Apaf.NFSdb.Core.Queries.Queryable.PlanItem;
 using Apaf.NFSdb.Core.Tx;
@@ -28,6 +29,7 @@ namespace Apaf.NFSdb.Core.Queries.Queryable
         private readonly IJournal<T> _journal;
         private readonly IReadTransactionContext _tx;
         private IPlanItem _planHead;
+        private bool _takeSingle;
 
         public ResultSetBuilder(IJournal<T> journal, IReadTransactionContext tx)
         {
@@ -37,7 +39,7 @@ namespace Apaf.NFSdb.Core.Queries.Queryable
 
         public IPlanItem PlanItem { get { return _planHead; }}
 
-        public IEnumerable<T> Build()
+        public object Build()
         {
             if (_planHead != null)
             {
@@ -47,9 +49,16 @@ namespace Apaf.NFSdb.Core.Queries.Queryable
             {
                 _planHead = new TimestampRangePlanItem(DateInterval.Any);
             }
+            var result = new ResultSet<T>(_journal, _tx.ReadCache, 
+                _planHead.Execute(_journal, _tx));
 
-            return new ResultSet<T>(_journal, _tx.ReadCache, 
-                _planHead.Execute(_journal, _tx)); 
+            // Bind call.
+            if (_takeSingle)
+            {
+                return result.Single();
+            }
+
+            return result;
         }
 
         private IPlanItem OptimizePlan(IPlanItem planHead)
@@ -221,6 +230,12 @@ namespace Apaf.NFSdb.Core.Queries.Queryable
             }
 
             throw new NotSupportedException("Plan type is not supported " + planHead.GetType());
+        }
+
+        public void TakeSingle(ResultSetBuilder<T> other)
+        {
+            _takeSingle = true;
+            _planHead = other._planHead;
         }
     }
 }

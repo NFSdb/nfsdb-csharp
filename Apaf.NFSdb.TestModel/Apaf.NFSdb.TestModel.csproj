@@ -83,6 +83,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Model\DraughtMinMax.cs" />
+    <Compile Include="Model\File.cs" />
     <Compile Include="Model\InteractionPoint.cs" />
     <Compile Include="Model\PlaceGraph.cs" />
     <Compile Include="Model\Quote.cs" />

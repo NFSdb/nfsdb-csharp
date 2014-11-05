@@ -1,5 +1,5 @@
 namespace java org.java.journal.test.model
-namespace csharp Apaf.NJournal.TestModel.Model
+namespace csharp Apaf.NFSdb.TestModel.Model
 
 struct Trade {
      1: required i64 timestamp;

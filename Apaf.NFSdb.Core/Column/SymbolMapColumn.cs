@@ -113,6 +113,16 @@ namespace Apaf.NFSdb.Core.Column
             tx.PartitionTx[_dataPartitionID].AppendOffset[_dataFileID] = (rowID + 1)*INT32_SIZE;
         }
 
+        public object GetValue(long rowID, IReadContext readContext)
+        {
+            return GetString(rowID, readContext);
+        }
+
+        public void SetValue(long rowID, object value, ITransactionContext readContext)
+        {
+            SetString(rowID, (string)value, readContext);
+        }
+
         public int CheckKeyQuick(string value, IReadTransactionContext tx)
         {
             var key = _symbolCache.GetRowID(value);

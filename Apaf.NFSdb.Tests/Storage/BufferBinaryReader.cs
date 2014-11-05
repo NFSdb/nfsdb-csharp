@@ -58,6 +58,15 @@ namespace Apaf.NFSdb.Tests.Storage
             Buffer.BlockCopy(_buffer, (int) offset, array, arrayOffset, sizeBytes);
         }
 
+        public unsafe void ReadBytes(long offset, byte* array, int arrayOffset, int sizeBytes)
+        {
+            array = array + arrayOffset;
+            for (int i = 0; i < sizeBytes; i++)
+            {
+                array[i] = _buffer[offset + i];
+            }
+        }
+
         public unsafe int ReadInt32(long offset)
         {
 #if BIGENDIAN

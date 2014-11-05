@@ -82,14 +82,33 @@ namespace Apaf.NFSdb.Core.Queries.Queryable
                     return VisitConstant((ConstantExpression) exp);
             }
 
-            switch ((JournalExpressionType)exp.NodeType)
+            switch ((EJournalExpressionType)exp.NodeType)
             {
-                case JournalExpressionType.Contains:
+                case EJournalExpressionType.Contains:
                     return VisitContains((SymbolContainsExpression)exp);
+                case EJournalExpressionType.Single:
+                    return VisitCall((SingleItemExpression) exp);
                 default:
                     throw new NFSdbQuaryableNotSupportedException(
                         "Expression {0} cannot be bound to Journal operation.", exp);
             }
+        }
+
+        private ResultSetBuilder<T> VisitCall(SingleItemExpression m)
+        {
+            var result = new ResultSetBuilder<T>(_journal, _tx);
+            switch (m.Operation)
+            {
+                case EJournalExpressionType.Single:
+                    result.TakeSingle(Visit(m.Body));
+                    break;
+
+                default:
+                    throw new NFSdbQuaryableNotSupportedException(
+                        "Expression call {0} cannot be bound to Journal operation.", m);
+            }
+
+            return result;
         }
 
         private ResultSetBuilder<T> VisitConstant(ConstantExpression exp)
@@ -233,25 +252,35 @@ namespace Apaf.NFSdb.Core.Queries.Queryable
             {
                 var memberName = ExHelper.GetMemberName(expression, typeof (T));
                 var literal = ExHelper.LiteralName(expression, typeof (T));
-                if (!(literal is string))
+                if (literal is string)
                 {
-                    throw new NFSdbQuaryableNotSupportedException(
-                        "The only support where clause is Member == \"value\" wehre value is a string");
+                    var result = new ResultSetBuilder<T>(_journal, _tx);
+                    result.IndexScan(memberName, (string) literal);
+                    return result;
                 }
-                var result = new ResultSetBuilder<T>(_journal, _tx);
-                result.IndexScan(memberName, (string) literal);
 
-                return result;
+                if (literal is long)
+                {
+                    if (GetTimestamp(_journal.Metadata) != null &&
+                        GetTimestamp(_journal.Metadata).PropertyName == memberName)
+                    {
+                        var timestamp = (long) literal;
+                        var filterInterval = new DateInterval(DateUtils.UnixTimestampToDateTime(timestamp),
+                            DateUtils.UnixTimestampToDateTime(timestamp + 1));
+
+                        var result = new ResultSetBuilder<T>(_journal, _tx);
+                        result.TimestampInterval(filterInterval);
+                        return result;
+                    }
+                }
             }
-            else
-            {
-                throw new NotImplementedException();
-            }
+            throw new NotSupportedException(
+                string.Format("Unable to translate expression {0} to journal operation", expression));
         }
 
         private ResultSetBuilder<T> VisitUnary(UnaryExpression exp)
         {
-            throw new NotImplementedException();
+            throw new NotSupportedException();
         }
     }
 }

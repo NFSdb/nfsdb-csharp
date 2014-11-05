@@ -1,4 +1,5 @@
 ﻿#region copyright
+
 /*
  * Copyright (c) 2014. APAF http://apafltd.co.uk
  *
@@ -14,7 +15,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 #endregion
+
 using System;
 using Apaf.NFSdb.Core.Configuration;
 
@@ -22,34 +25,34 @@ namespace Apaf.NFSdb.Core.Column
 {
     public class ColumnMetadata
     {
-        private ColumnMetadata(SymbolElement symbolConfig, int fieldID) 
-            : this((ColumnElement) symbolConfig, fieldID)
+        private ColumnMetadata(IColumnSerializerMetadata serializerMetadata, 
+            SymbolElement symbolConfig, int fieldID)
+            : this(serializerMetadata, (ColumnElement) symbolConfig, fieldID)
         {
             HintDistinctCount = symbolConfig.HintDistinctCount;
             Indexed = symbolConfig.Indexed;
             SameAs = symbolConfig.SameAs;
         }
 
-        private ColumnMetadata(StringElement stringConfig, int fieldID)
-            : this((ColumnElement)stringConfig, fieldID)
+        private ColumnMetadata(IColumnSerializerMetadata serializerMetadata, 
+            StringElement stringConfig, int fieldID)
+            : this(serializerMetadata, (ColumnElement) stringConfig, fieldID)
         {
         }
 
-        private ColumnMetadata(ColumnElement configElement, int fieldID)
+        private ColumnMetadata(IColumnSerializerMetadata serializerMetadata, 
+            ColumnElement configElement, int fieldID)
         {
+            SerializerMetadata = serializerMetadata;
             FieldID = fieldID;
-            FieldType = configElement.ColumnType;
             AvgSize = GetStringAvgSize(configElement.AvgSize);
             MaxSize = configElement.MaxSize;
-            FileName = configElement.Name;
-            PropertyName = GetPropertyName(configElement.Name);
         }
 
-        private ColumnMetadata(EFieldType filedType, string fileName, int avgSize, int maxSize, int fieldID)
+        private ColumnMetadata(IColumnSerializerMetadata serializerMetadata,
+            int avgSize, int maxSize, int fieldID)
         {
-            FieldType = filedType;
-            FileName = fileName;
-            PropertyName = GetPropertyName(fileName);
+            SerializerMetadata = serializerMetadata;
             AvgSize = avgSize;
             MaxSize = maxSize;
             FieldID = fieldID;
@@ -58,21 +61,38 @@ namespace Apaf.NFSdb.Core.Column
         public int FieldID { get; private set; }
         public string SameAs { get; private set; }
         public bool Indexed { get; private set; }
-        public EFieldType FieldType { get; private set; }
-        public string FileName { get; private set; }
-        public string PropertyName { get; private set; }
+
+        public EFieldType FieldType
+        {
+            get { return SerializerMetadata.DataType; }
+        }
+
+        public string FileName
+        {
+            get { return SerializerMetadata.GetFieldName(); }
+        }
+
+        public string PropertyName
+        {
+            get { return SerializerMetadata.PropertyName; }
+        }
+
         public int HintDistinctCount { get; private set; }
         public int AvgSize { get; private set; }
         public int MaxSize { get; private set; }
+        public IColumnSerializerMetadata SerializerMetadata { get; private set; }
 
-        public static ColumnMetadata FromColumnElement(ColumnElement colElement, int fieldID)
+        public static ColumnMetadata FromColumnElement(IColumnSerializerMetadata metadata, 
+            ColumnElement colElement, int fieldID)
         {
             switch (colElement.ColumnType)
             {
                 case EFieldType.String:
-                    return new ColumnMetadata((StringElement)colElement, fieldID);
+                    return new ColumnMetadata(metadata, (StringElement) colElement, fieldID);
                 case EFieldType.Symbol:
-                    return new ColumnMetadata((SymbolElement)colElement, fieldID);
+                    var symbolMeta = new ColumnSerializerMetadata(EFieldType.Symbol, metadata.PropertyName,
+                        metadata.Nulllable, metadata.Size);
+                    return new ColumnMetadata(symbolMeta, (SymbolElement) colElement, fieldID);
                 default:
                     throw new ArgumentOutOfRangeException("colElement",
                         "ColumnType.ColumnType expected to be Symbol or String but was " +
@@ -80,43 +100,45 @@ namespace Apaf.NFSdb.Core.Column
             }
         }
 
-        public static ColumnMetadata FromStringField(string fieldName, int avgSize, int maxSize, int fieldID)
+        public static ColumnMetadata FromStringField(IColumnSerializerMetadata serializerMetadata, 
+            int avgSize, int maxSize, int fieldID)
         {
-            return new ColumnMetadata(EFieldType.String, fieldName, GetStringAvgSize(avgSize), maxSize, fieldID);
+            return new ColumnMetadata(serializerMetadata, GetStringAvgSize(avgSize), maxSize, fieldID);
         }
-        
+
+        public static ColumnMetadata FromBinaryField(IColumnSerializerMetadata serializerMetadata,
+            int avgSize, int maxSize, int fieldID)
+        {
+            return new ColumnMetadata(serializerMetadata, GetBinaryAvgSize(avgSize), maxSize, fieldID);
+        }
+
         private static int GetStringAvgSize(int avgSize)
         {
-            return 2*avgSize + StringHeaderSizeEstimate(avgSize);
+            return 2*avgSize + VarBinaryHeaderSizeEstimate();
         }
 
-        private static int StringHeaderSizeEstimate(int avgSize)
+        private static int GetBinaryAvgSize(int avgSize)
         {
-            if (avgSize < MetadataConstants.STRING_BYTE_LIMIT)
-            {
-                return 2;
-            }
-            if (avgSize < MetadataConstants.STRING_TWO_BYTE_LIMIT)
-            {
-                return 3;
-            }
-            return 5;
+            return 2*avgSize + VarBinaryHeaderSizeEstimate();
         }
 
-        public static ColumnMetadata FromFixedField(EFieldType fieldType, string fieldName, int fieldID)
+        private static int VarBinaryHeaderSizeEstimate()
         {
-            return new ColumnMetadata(fieldType, fieldName, fieldType.GetSize(), fieldType.GetSize(), fieldID);
+            return MetadataConstants.LARGE_VAR_COL_HEADER_LENGTH;
         }
 
-        public static ColumnMetadata FromBitsetField(string fieldName, int fieldCount, int fieldID)
+        public static ColumnMetadata FromFixedField(IColumnSerializerMetadata serializerMetadata, int fieldID)
         {
-            return new ColumnMetadata(EFieldType.BitSet, fieldName, fieldCount, fieldCount, fieldID);
+            return new ColumnMetadata(serializerMetadata, 
+                serializerMetadata.DataType.GetSize(), 
+                serializerMetadata.DataType.GetSize(), 
+                fieldID);
         }
 
-        private static string GetPropertyName(string name)
+        public static ColumnMetadata FromBitsetField(IColumnSerializerMetadata serializerMetadata, 
+            int fieldCount, int fieldID)
         {
-            return name.Substring(0, 1).ToUpper()
-                   + name.Substring(1, name.Length - 1);
+            return new ColumnMetadata(serializerMetadata, fieldCount, fieldCount, fieldID);
         }
     }
 }

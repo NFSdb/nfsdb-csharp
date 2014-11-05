@@ -33,7 +33,7 @@ namespace Apaf.NFSdb.IntegrationTests.Reading
     [TestFixture]
     public class QuoteJournalTests
     {
-        private const int GENERATE_RECORDS_COUNT = (int) 1E6;
+        private const int GENERATE_RECORDS_COUNT = TestUtils.GENERATE_RECORDS_COUNT;
         private static readonly DateTime START = new DateTime(DateTime.Now.AddYears(-1).Year, 
             DateTime.Now.AddYears(-1).Month, 1);
 

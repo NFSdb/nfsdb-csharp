@@ -36,9 +36,9 @@ namespace Apaf.NFSdb.Core.Storage
         private readonly ColumnStorage _columnStorage;
         private readonly DateTime _endDate;
         private readonly FileTxSupport _txSupport;
-        private readonly IColumn[] _columns;
         private readonly IFixedWidthColumn _timestampColumn;
-
+        private readonly Dictionary<string, ISymbolMapColumn> _symbols;
+ 
         public Partition(IJournalMetadata<T> metadata,
             ICompositeFileFactory memeorymMappedFileFactory,
             EFileAccess access,
@@ -48,14 +48,20 @@ namespace Apaf.NFSdb.Core.Storage
             _columnStorage = new ColumnStorage(metadata.Settings, startDate,
                 access, partitionID, memeorymMappedFileFactory);
             
-            _columns = metadata.GetPartitionColums(_columnStorage).ToArray();
+            ColumnSource[] columns = metadata.GetPartitionColums(_columnStorage).ToArray();
+            _symbols = columns
+                .Where(c => c.Metadata.DataType == EFieldType.Symbol)
+                .Select(c => c.Column)
+                .Cast<ISymbolMapColumn>()
+                .ToDictionary(c => c.PropertyName, StringComparer.OrdinalIgnoreCase);
+
             if (metadata.TimestampFieldID.HasValue)
             {
                 _timestampColumn = 
-                    (IFixedWidthColumn)_columns[metadata.TimestampFieldID.Value];
+                    (IFixedWidthColumn)columns[metadata.TimestampFieldID.Value].Column;
             }
 
-            _fieldSerializer = metadata.GetSerializer(_columns);
+            _fieldSerializer = metadata.GetSerializer(columns);
             StartDate = startDate;
             _endDate = PartitionManagerUtils.GetPartitionEndDate(
                 startDate, metadata.Settings.PartitionType);
@@ -148,8 +154,7 @@ namespace Apaf.NFSdb.Core.Storage
 
         private ISymbolMapColumn SymbolMapColumn(string symbol)
         {
-            var symb = (ISymbolMapColumn)_columns.First(c =>
-                c.PropertyName.Equals(symbol, StringComparison.OrdinalIgnoreCase));
+            var symb = _symbols[symbol];
             return symb;
         }
     }

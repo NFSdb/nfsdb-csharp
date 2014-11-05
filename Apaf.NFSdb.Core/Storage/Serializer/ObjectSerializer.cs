@@ -32,33 +32,32 @@ namespace Apaf.NFSdb.Core.Storage.Serializer
         private readonly int _bitsetColSize;
 
         private readonly Func<ByteArray, IFixedWidthColumn[], long,
-            IStringColumn[], IReadContext, object> _fillItemMethod;
+            IRefTypeColumn[], IReadContext, object> _fillItemMethod;
 
         private readonly IFixedWidthColumn[] _fixedColumns;
         private readonly IBitsetColumn _issetColumn;
-        private readonly IStringColumn[] _stringColumns;
+        private readonly IRefTypeColumn[] _refTypeColumns;
 
         private readonly Action<object, ByteArray, IFixedWidthColumn[], long,
-            IStringColumn[], ITransactionContext> _writeMethod;
+            IRefTypeColumn[], ITransactionContext> _writeMethod;
 
-        public ObjectSerializer(IEnumerable<IColumn> columns, 
-            Func<ByteArray, IFixedWidthColumn[], long, IStringColumn[], IReadContext, object> readMethod,
-            Action<object, ByteArray, IFixedWidthColumn[], long, IStringColumn[], ITransactionContext> writeMethod)
+        public ObjectSerializer(IEnumerable<ColumnSource> columns, 
+            Func<ByteArray, IFixedWidthColumn[], long, IRefTypeColumn[], IReadContext, object> readMethod,
+            Action<object, ByteArray, IFixedWidthColumn[], long, IRefTypeColumn[], ITransactionContext> writeMethod)
         {
-            IColumn[] allColumns = columns.ToArray();
-
+            var allColumns = columns.ToArray();
             _fixedColumns = allColumns
-                .Where(c => c.FieldType != EFieldType.BitSet
-                            && c.FieldType != EFieldType.String
-                            && c.FieldType != EFieldType.Symbol)
+                .Where(c => !c.Metadata.IsRefType() && c.Metadata.DataType != EFieldType.BitSet)
+                .Select(c => c.Column)
                 .Cast<IFixedWidthColumn>().ToArray();
 
-            _stringColumns = allColumns
-                .Where(c => c.FieldType == EFieldType.String
-                            || c.FieldType == EFieldType.Symbol)
-                .Cast<IStringColumn>().ToArray();
+            _refTypeColumns = allColumns
+                .Where(c => c.Metadata.IsRefType())
+                .Select(c => c.Column)
+                .Cast<IRefTypeColumn>().ToArray();
 
             _issetColumn = (IBitsetColumn)allColumns
+                .Select(c => c.Column)
                 .FirstOrDefault(c => c.FieldType == EFieldType.BitSet);
 
             if (_issetColumn == null)
@@ -75,7 +74,7 @@ namespace Apaf.NFSdb.Core.Storage.Serializer
         {
             var bitSetAddress = _issetColumn.GetValue(rowID, readContext);
             var byteArray = new ByteArray(bitSetAddress);
-            return _fillItemMethod(byteArray, _fixedColumns, rowID, _stringColumns, readContext);
+            return _fillItemMethod(byteArray, _fixedColumns, rowID, _refTypeColumns, readContext);
         }
 
         public void Write(object item, long rowID, ITransactionContext tx)
@@ -83,7 +82,7 @@ namespace Apaf.NFSdb.Core.Storage.Serializer
             var readCache = tx.ReadCache;
             var bitSetAddress = readCache.AllocateByteArray(_bitsetColSize);
             var byteArray = new ByteArray(bitSetAddress);
-            _writeMethod(item, byteArray, _fixedColumns, rowID, _stringColumns, tx);
+            _writeMethod(item, byteArray, _fixedColumns, rowID, _refTypeColumns, tx);
             _issetColumn.SetValue(rowID, bitSetAddress, tx);
         }
     }

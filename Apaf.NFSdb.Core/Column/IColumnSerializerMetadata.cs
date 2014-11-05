@@ -1,4 +1,5 @@
 ﻿#region copyright
+
 /*
  * Copyright (c) 2014. APAF http://apafltd.co.uk
  *
@@ -14,19 +15,28 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 #endregion
-
 using System;
-using System.Collections.Generic;
-using Apaf.NFSdb.Core.Column;
-using Apaf.NFSdb.Core.Storage;
+using System.Reflection;
 
-namespace Apaf.NFSdb.Core.Configuration
+namespace Apaf.NFSdb.Core.Column
 {
-    public interface IJournalMetadata<T> : IJournalMetadataCore
+    public interface IColumnSerializerMetadata
     {
-        void InitializeSymbols(IColumnStorage symbolStorage);
-        IEnumerable<ColumnSource> GetPartitionColums(IColumnStorage partitionStorage);
-        Func<T, long> GetTimestampReader();
+        EFieldType DataType { get; }
+        int Size { get; }
+        bool Nulllable { get; }
+
+        string PropertyName { get; }
+        string GetFieldName();
+
+        MethodInfo GetSetMethod();
+        MethodInfo GetGetMethod();
+
+        FieldInfo GetNullableHasValueField();
+        FieldInfo GetNullableValueField();
+        Type GetDataType();
+        bool IsRefType();
     }
 }

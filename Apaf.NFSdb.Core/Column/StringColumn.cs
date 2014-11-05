@@ -15,7 +15,6 @@
  * limitations under the License.
  */
 #endregion
-using System;
 using System.Diagnostics;
 using Apaf.NFSdb.Core.Exceptions;
 using Apaf.NFSdb.Core.Storage;
@@ -23,46 +22,18 @@ using Apaf.NFSdb.Core.Tx;
 
 namespace Apaf.NFSdb.Core.Column
 {
-    public class StringColumn : IStringColumn
+    public class StringColumn : BinaryColumn, IStringColumn
     {
-        private const EFieldType INDEX_COLUMN_TYPE = EFieldType.Int64;
-        public const int SHORT_HEADER_LENGTH = 1;
-        public const int MEDIUM_HEADER_LENGTH = 2;
-        public const int LARGE_HEADER_LENGTH = 4;
-        public static readonly int BYTE_LIMIT = MetadataConstants.STRING_BYTE_LIMIT;
-        public static readonly int TWO_BYTE_LIMIT = MetadataConstants.STRING_TWO_BYTE_LIMIT;
-        private readonly IRawFile _data;
-        private readonly IRawFile _index;
-        private readonly int _headerSize;
-        private readonly FixedColumn _indexColumn;
-        private readonly int _maxSize;
-
         public StringColumn(IRawFile data, IRawFile index, 
             int maxSize, string propertyName)
+            : base(data, index, maxSize, propertyName)
         {
-            PropertyName = propertyName;
-            _data = data;
-            _index = index;
-            _maxSize = maxSize;
-            _headerSize = LARGE_HEADER_LENGTH;
-            _indexColumn = new FixedColumn(index, INDEX_COLUMN_TYPE);
         }
 
-        public int MaxSize
+        public unsafe string GetString(long rowID, IReadContext readContext)
         {
-            get { return _maxSize; }
-        }
-
-        public unsafe virtual string GetString(long rowID, IReadContext readContext)
-        {
-            var beginOffset = GetOffset(rowID);
-            var charlen = GetStringLength(_data, beginOffset, _headerSize);
-            if (charlen == 0)
-            {
-                return string.Empty;
-            }
-            var byteArray = readContext.AllocateByteArray2(charlen * 2);
-            _data.ReadBytes(beginOffset + _headerSize, byteArray, 0, charlen * 2);
+            var byteArray = GetBytes(rowID, readContext);
+            var charlen = byteArray.Length/2;
 
 #if BIGENDIAN
             fixed (byte* src = byteArray)
@@ -78,7 +49,6 @@ namespace Apaf.NFSdb.Core.Column
                 return str;
             }
 #else
-
             fixed (byte* src = byteArray)
             {
                 var srcChar = (char*)src;
@@ -92,42 +62,16 @@ namespace Apaf.NFSdb.Core.Column
         {
             if (value == null)
             {
-                _indexColumn.SetInt64(rowID, MetadataConstants.STRING_NULL_VALUE, tx);
+                SetBytes(rowID, null, tx);
             }
             else
             {
-                var stringOffset = tx.PartitionTx[_data.PartitionID].AppendOffset[_data.FileID];
-                _indexColumn.SetInt64(rowID, stringOffset, tx);
-                var charlen = value.Length;
-                int size = charlen*2 + _headerSize;
 #if BIGENDIAN
-                var byteArray = tx.ReadCache.AllocateByteArray2(size);
+                var byteArray = tx.ReadCache.AllocateByteArray2(value.Length * 2);
                 fixed (byte* src = byteArray)
                 {
+                    var charlen = value.Length;
                     int pos = 0;
-                    src[pos++] = 1;
-                    switch (_headerSize - 1)
-                    {
-                        case 1:
-                            src[pos++] = (byte)charlen;
-                            break;
-                        case 2:
-                            var uLen = (ushort) charlen;
-                            var shortBytes = (byte*)(&uLen);
-                            src[pos++] = shortBytes[1];
-                            src[pos++] = shortBytes[0];
-                            break;
-                        case 4:
-                            var intBytes = (byte*)(&charlen);
-                            src[pos++] = intBytes[3];
-                            src[pos++] = intBytes[2];
-                            src[pos++] = intBytes[1];
-                            src[pos++] = intBytes[0];
-                            break;
-                        default:
-                            throw new ArgumentOutOfRangeException();
-                    }
-
                     fixed (char* chars = value)
                     {
                         var strBytes = (byte*) &chars[0];
@@ -137,39 +81,32 @@ namespace Apaf.NFSdb.Core.Column
                             src[pos++] = strBytes[2 * i];
                         }
                     }
-                    DebugCheckEquals(pos, size);
+                    DebugCheckEquals(pos, charlen * 2);
                 }
 
-                _data.WriteBytes(stringOffset, byteArray, 0, size);
+                SetBytes(rowID, byteArray, tx);
 #else
-                switch (_headerSize)
-                {
-                    case 1:
-                        _data.WriteByte(stringOffset, (byte)charlen);
-                        break;
-                    case 2:
-                        var uLen = (ushort)charlen;
-                        var shortBytes = (byte*)(&uLen);
-                        _data.WriteBytes(stringOffset, shortBytes, 0, _headerSize);
-                        break;
-                    case 4:
-                        var intBytes = (byte*)(&charlen);
-                        _data.WriteBytes(stringOffset, intBytes, 0, _headerSize);
-                        break;
-                    default:
-                        throw new ArgumentOutOfRangeException();
-                }
-
                 fixed (char* chars = value)
                 {
                     var strBytes = (byte*)chars;
-                    _data.WriteBytes(stringOffset + _headerSize, strBytes, 0, charlen * 2);
+                    SetBytes(rowID, strBytes, 0, value.Length  * 2, tx);
                 }
 #endif
-                tx.PartitionTx[_data.PartitionID].AppendOffset[_data.FileID] = stringOffset + size;
             }
         }
 
+        public object GetValue(long rowID, IReadContext readContext)
+        {
+            return GetString(rowID, readContext);
+        }
+
+        public void SetValue(long rowID, object value, ITransactionContext readContext)
+        {
+            SetString(rowID, (string)value, readContext);
+        }
+
+        // ReSharper disable once UnusedMember.Local
+        // ReSharper disable UnusedParameter.Local
         [Conditional("DEBUG")]
         private void DebugCheckEquals(int pos, int size)
         {
@@ -178,39 +115,22 @@ namespace Apaf.NFSdb.Core.Column
                 throw new NFSdbUnsafeDebugCheckException("Write string byte array size check failed");
             }
         }
+        // ReSharper restore UnusedParameter.Local
 
-        public EFieldType FieldType
+
+        protected override void WriteLength(long writeOffset, int size)
+        {
+            base.WriteLength(writeOffset, size / 2);
+        }
+
+        protected override int ReadLength(IRawFile headerBuff, long offset)
+        {
+            return base.ReadLength(headerBuff, offset)*2;
+        }
+
+        public override EFieldType FieldType
         {
             get { return EFieldType.String; }
-        }
-
-        public string PropertyName { get; private set; }
-
-        private static int GetHeaderSize(int maxSize)
-        {
-            if (maxSize <= BYTE_LIMIT) return SHORT_HEADER_LENGTH;
-            if (maxSize <= TWO_BYTE_LIMIT) return MEDIUM_HEADER_LENGTH;
-            return LARGE_HEADER_LENGTH;
-        }
-
-        private static int GetStringLength(IRawFile headerBuff, long offset, int headerSize)
-        {
-            switch (headerSize)
-            {
-                case 1:
-                    return headerBuff.ReadByte(offset);
-                case 2:
-                    return headerBuff.ReadUInt16(offset);
-                case 4:
-                    return headerBuff.ReadInt32(offset);
-                default:
-                    throw new ArgumentOutOfRangeException("headerSize");
-            }
-        }
-
-        private long GetOffset(long rowID)
-        {
-            return _indexColumn.GetInt64(rowID);
         }
     }
 }

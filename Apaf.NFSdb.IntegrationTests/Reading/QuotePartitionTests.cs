@@ -30,7 +30,7 @@ namespace Apaf.NFSdb.IntegrationTests.Reading
     [Category("Integration")]
     public class QuotePartitionTests
     {
-        private const int ITEMS_COUNT = (int)1e6;
+        private const int ITEMS_COUNT = TestUtils.GENERATE_RECORDS_COUNT;
 
         [Test]
         [Category("Integration")]

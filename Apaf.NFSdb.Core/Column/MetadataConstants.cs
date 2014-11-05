@@ -44,12 +44,14 @@ namespace Apaf.NFSdb.Core.Column
         public static readonly int DEFAULT_SYMBOL_AVG_SIZE = DEFAULT_STRING_AVG_SIZE;
         public static readonly int DEFAULT_MAX_OPEN_PARTITIONS = -1;
         public static readonly int DEFAULT_LAG_HOURS = 0;
+        public static readonly int DEFAULT_BINARY_AVG_SIZE = 255;
+        public static readonly int DEFAULT_BINARY_MAX_SIZE = 65536;
 
-        public static readonly int STRING_AVG_HEADER = 2;
         public const int STRING_INDEX_FILE_RECORD_SIZE = 8;
         public const int STRING_BYTE_LIMIT = byte.MaxValue;
         public const int STRING_TWO_BYTE_LIMIT = ushort.MaxValue;
-        public const int STRING_NULL_VALUE = -1;
+        public const int INDEX_NULL_DATA_VALUE = -1;
+        public const int LARGE_VAR_COL_HEADER_LENGTH = 4;
     
         public static readonly int SYMBOL_STRING_CACHE_SIZE = 500;
         public static readonly string TEMP_DIRECTORY_PREFIX = "temp";

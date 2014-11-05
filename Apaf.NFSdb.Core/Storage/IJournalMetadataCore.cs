@@ -23,7 +23,7 @@ namespace Apaf.NFSdb.Core.Configuration
 {
     public interface IJournalMetadataCore
     {
-        IFieldSerializer GetSerializer(IEnumerable<IColumn> columns);
+        IFieldSerializer GetSerializer(IEnumerable<ColumnSource> columns);
         IEnumerable<ColumnMetadata> Columns { get; }
         JournalSettings Settings { get; }
         int? TimestampFieldID { get; }

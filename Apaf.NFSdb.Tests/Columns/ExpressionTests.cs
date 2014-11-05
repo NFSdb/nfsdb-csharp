@@ -93,14 +93,14 @@ namespace Apaf.NFSdb.Tests.Columns
 
             public static object ReadItemPoco(ByteArray bitset,
                 IFixedWidthColumn[] fixedCols,
-                long rowid, IStringColumn[] stringColumns, IReadContext readContext)
+                long rowid, IRefTypeColumn[] stringColumns, IReadContext readContext)
             {
                 var q = (QuotePoco)FormatterServices.GetUninitializedObject(typeof(QuotePoco));
                 q._timestamp = fixedCols[0].GetInt64(rowid);
 
                 if (!bitset.IsSet(0))
                 {
-                    q._sym = stringColumns[0].GetString(rowid, readContext);
+                    q._sym = (string) stringColumns[0].GetValue(rowid, readContext);
                 }
 
                 if (!bitset.IsSet(1))
@@ -120,11 +120,11 @@ namespace Apaf.NFSdb.Tests.Columns
 
                 if (!bitset.IsSet(3))
                 {
-                    q._mode = stringColumns[1].GetString(rowid, readContext);
+                    q._mode = (string) stringColumns[1].GetValue(rowid, readContext);
                 }
                 if (!bitset.IsSet(4))
                 {
-                    q._ex = stringColumns[2].GetString(rowid, readContext);
+                    q._ex = (string) stringColumns[2].GetValue(rowid, readContext);
                 }
                 return q;
             }
@@ -134,14 +134,14 @@ namespace Apaf.NFSdb.Tests.Columns
                 ByteArray bitset,
                 IFixedWidthColumn[] fixedCols,
                 long rowid, 
-                IStringColumn[] stringColumns, 
+                IRefTypeColumn[] stringColumns, 
                 ITransactionContext readContext)
             {
                 var q = (QuotePoco)obj;
                 fixedCols[0].SetInt64(rowid, q._timestamp, readContext);
 
                 bitset.Set(0, q._sym == null);
-                stringColumns[0].SetString(rowid, q._sym, readContext);
+                stringColumns[0].SetValue(rowid, q._sym, readContext);
 
                 bool isnull = !q._ask.hasValue;
                 bitset.Set(1, isnull);
@@ -161,10 +161,10 @@ namespace Apaf.NFSdb.Tests.Columns
                 fixedCols[3].SetInt32(rowid, q._askSize, readContext);
 
                 bitset.Set(2, q._mode == null);
-                stringColumns[1].SetString(rowid, q._mode, readContext);
+                stringColumns[1].SetValue(rowid, q._mode, readContext);
 
                 bitset.Set(3, q._ex == null);
-                stringColumns[1].SetString(rowid, q._ex, readContext);
+                stringColumns[1].SetValue(rowid, q._ex, readContext);
             }
         }
 
@@ -305,7 +305,7 @@ namespace Apaf.NFSdb.Tests.Columns
         }
 
         public static object GenerateItem(ByteArray bitset, IFixedWidthColumn[] fixdCols,
-            long rowid, IStringColumn[] stringColumns, IReadContext readContext)
+            long rowid, IRefTypeColumn[] stringColumns, IReadContext readContext)
         {
             var q = new Quote();
             if (!bitset.IsSet(0))
@@ -315,7 +315,7 @@ namespace Apaf.NFSdb.Tests.Columns
 
             if (!bitset.IsSet(1))
             {
-                q.Mode = stringColumns[0].GetString(rowid, readContext);
+                q.Mode = (string) stringColumns[0].GetValue(rowid, readContext);
             }
 
             if (!bitset.IsSet(2))
@@ -325,7 +325,7 @@ namespace Apaf.NFSdb.Tests.Columns
 
             if (!bitset.IsSet(3))
             {
-                q.Sym = stringColumns[1].GetString(rowid, readContext);
+                q.Sym = (string) stringColumns[1].GetValue(rowid, readContext);
             }
             return q;
         }
@@ -333,7 +333,7 @@ namespace Apaf.NFSdb.Tests.Columns
         public static void WriteItem(object obj, 
             ByteArray bitset, 
             IFixedWidthColumn[] fixedCols, long rowid, 
-            IStringColumn[] stringColumns, ITransactionContext readContext)
+            IRefTypeColumn[] stringColumns, ITransactionContext readContext)
         {
             var q = (Quote) obj;
             bitset.Set(0, !q.__isset.timestamp);
@@ -343,7 +343,7 @@ namespace Apaf.NFSdb.Tests.Columns
             fixedCols[1].SetDouble(rowid, q.Bid, readContext);
 
             bitset.Set(2, !q.__isset.bid);
-            stringColumns[0].SetString(rowid, q.Mode, readContext);
+            stringColumns[0].SetValue(rowid, q.Mode, readContext);
         }
 
         public void Set(Quote q, double val)

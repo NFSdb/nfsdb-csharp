@@ -11,33 +11,30 @@ namespace Apaf.NFSdb.Core.Storage.Serializer
         private readonly int _bitsetColSize;
         private readonly IFixedWidthColumn[] _fixedColumns;
         private readonly IBitsetColumn _issetColumn;
-        private readonly IStringColumn[] _stringColumns;
+        private readonly IRefTypeColumn[] _stringColumns;
 
-        private readonly Func<ByteArray, IFixedWidthColumn[], long, IStringColumn[], IReadContext, object> _readMethod;
-        private readonly Action<object, ByteArray, IFixedWidthColumn[], long, IStringColumn[], ITransactionContext>
+        private readonly Func<ByteArray, IFixedWidthColumn[], long, IRefTypeColumn[], IReadContext, object> _readMethod;
+        private readonly Action<object, ByteArray, IFixedWidthColumn[], long, IRefTypeColumn[], ITransactionContext>
             _writeMethod;
 
-        public PocoObjectSerializer(IEnumerable<IColumn> columns, 
-            Func<ByteArray, IFixedWidthColumn[], long, IStringColumn[], IReadContext, object> readMethod,
-            Action<object, ByteArray, IFixedWidthColumn[], long, IStringColumn[], ITransactionContext> writeMethod)
+        public PocoObjectSerializer(IEnumerable<ColumnSource> columns, 
+            Func<ByteArray, IFixedWidthColumn[], long, IRefTypeColumn[], IReadContext, object> readMethod,
+            Action<object, ByteArray, IFixedWidthColumn[], long, IRefTypeColumn[], ITransactionContext> writeMethod)
         {
-            IColumn[] allColumns = columns.ToArray();
-
-            // IFixedWidthColumn array.
+            var allColumns = columns.ToArray();
             _fixedColumns = allColumns
-                        .Where(c => c.FieldType != EFieldType.BitSet
-                                    && c.FieldType != EFieldType.String
-                                    && c.FieldType != EFieldType.Symbol)
-                        .Cast<IFixedWidthColumn>().ToArray();
+                .Where(c => !c.Metadata.IsRefType() && c.Metadata.DataType != EFieldType.BitSet)
+                .Select(c => c.Column)
+                .Cast<IFixedWidthColumn>().ToArray();
 
-            // IStringColumn array.
             _stringColumns = allColumns
-                .Where(c => c.FieldType == EFieldType.String
-                            || c.FieldType == EFieldType.Symbol)
-                .Cast<IStringColumn>().ToArray();
+                .Where(c => c.Metadata.IsRefType())
+                .Select(c => c.Column)
+                .Cast<IRefTypeColumn>().ToArray();
 
             // IBitsetColumn.
-            _issetColumn = (IBitsetColumn) allColumns
+            _issetColumn = (IBitsetColumn)allColumns
+                .Select(c => c.Column)
                 .FirstOrDefault(c => c.FieldType == EFieldType.BitSet);
 
             if (_issetColumn != null)

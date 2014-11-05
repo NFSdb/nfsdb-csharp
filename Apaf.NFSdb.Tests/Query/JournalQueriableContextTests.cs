@@ -16,6 +16,7 @@
  */
 #endregion
 using System;
+using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
 using Apaf.NFSdb.Core;
@@ -323,7 +324,25 @@ namespace Apaf.NFSdb.Tests.Query
                          select q);
         }
 
+        [TestCase(10L, ExpectedResult = "10")]
+        [TestCase(30L, ExpectedResult = "30")]
+        public string Supports_single_search(long fromInclusive)
+        {
+            return ExecuteLambda(
+                items => items.Single(q => q.Timestamp == fromInclusive));
+        }
+
+        private string ExecuteLambda(Func<IQueryable<Quote>, Quote> lambda, int increment = 2)
+        {
+            return ExecuteLambda(l => new[] { lambda(l) }, increment);
+        }
+
         private string ExecuteLambda(Func<IQueryable<Quote>, IQueryable<Quote>> lambda, int increment = 2)
+        {
+            return ExecuteLambda(l => lambda(l).AsEnumerable(), increment);
+        }
+
+        private string ExecuteLambda(Func<IQueryable<Quote>, IEnumerable<Quote>> lambda, int increment = 2)
         {
             Utils.ClearJournal<Quote>();
             var config = Utils.ReadConfig<Quote>();
@@ -340,7 +359,7 @@ namespace Apaf.NFSdb.Tests.Query
                 var qts = lambda(rdr.Items);
 
                 // Act.
-                var result = qts.AsEnumerable().Select(q => q.Timestamp);
+                var result = qts.Select(q => q.Timestamp);
 
                 // Verify.
                 return string.Join(",", result);

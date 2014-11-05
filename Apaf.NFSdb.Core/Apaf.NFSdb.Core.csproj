@@ -93,13 +93,20 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Collections\ExpandableList.cs" />
+    <Compile Include="Column\BinaryColumn.cs" />
     <Compile Include="Column\BitsetColumn.cs" />
     <Compile Include="Column\ByteArray.cs" />
-    <Compile Include="Column\FieldData.cs" />
+    <Compile Include="Column\ColumnSerializerMetadata.cs" />
     <Compile Include="Column\ColumnMetadata.cs" />
+    <Compile Include="Column\ColumnSource.cs" />
+    <Compile Include="Column\IBinaryColumn.cs" />
+    <Compile Include="Column\IColumnSerializerMetadata.cs" />
     <Compile Include="Column\IndexAddressColumn.cs" />
     <Compile Include="Column\IndexColumn.cs" />
+    <Compile Include="Column\IStringColumn.cs" />
+    <Compile Include="Configuration\BinaryElement.cs" />
     <Compile Include="Configuration\JournalBuilder.cs" />
+    <Compile Include="Queries\Queryable\SingleItemExpression.cs" />
     <Compile Include="Storage\Serializer\FixedColumnNullableWrapper.cs" />
     <Compile Include="Storage\Serializer\ISerializerFactory.cs" />
     <Compile Include="Column\ITypeColumnParser.cs" />
@@ -111,7 +118,7 @@
     <Compile Include="Configuration\ColumnStaticMetadata.cs" />
     <Compile Include="Column\IColumnUpdateDelegate.cs" />
     <Compile Include="Column\IFixedWidthColumn.cs" />
-    <Compile Include="Column\IStringColumn.cs" />
+    <Compile Include="Column\IRefTypeColumn.cs" />
     <Compile Include="Column\ISymbolMapColumn.cs" />
     <Compile Include="Storage\Serializer\ObjectSerializer.cs" />
     <Compile Include="Column\SymbolMapColumn.cs" />
@@ -142,7 +149,7 @@
     <Compile Include="Queries\Queryable\PlanItem\ColumnScanPlanItem.cs" />
     <Compile Include="Queries\Queryable\ExpressionEvaluatorVisitor.cs" />
     <Compile Include="Queries\Queryable\PlanItem\IntersectPlanItem.cs" />
-    <Compile Include="Queries\Queryable\JournalExpressionType.cs" />
+    <Compile Include="Queries\Queryable\EJournalExpressionType.cs" />
     <Compile Include="Queries\Queryable\NJournalQuaryableNotSupportedException.cs" />
     <Compile Include="Storage\IJournalMetadataCore.cs" />
     <Compile Include="Storage\IPartitionCore.cs" />

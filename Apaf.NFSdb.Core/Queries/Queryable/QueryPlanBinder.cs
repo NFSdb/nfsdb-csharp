@@ -18,6 +18,7 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.Linq;
 using System.Linq.Expressions;
 using Apaf.NFSdb.Core.Tx;
@@ -75,7 +76,7 @@ namespace Apaf.NFSdb.Core.Queries.Queryable
 
         protected override Expression VisitMethodCall(MethodCallExpression m)
         {
-            if (m.Method.DeclaringType == typeof(System.Linq.Queryable) 
+            if (m.Method.DeclaringType == typeof(System.Linq.Queryable)
                 || m.Method.DeclaringType == typeof(Enumerable)
                 || m.Method.DeclaringType == typeof(List<string>))
             {
@@ -83,6 +84,9 @@ namespace Apaf.NFSdb.Core.Queries.Queryable
                 {
                     case "Where":
                         return BindWhere(m.Type, m.Arguments[0], GetLambda(m.Arguments[1]));
+
+                    case "Single":
+                        return BindSingle(m.Type, m.Arguments[0], GetLambda(m.Arguments[1]));
 
                     case "Contains":
                         if (m.Arguments.Count == 2)
@@ -99,6 +103,7 @@ namespace Apaf.NFSdb.Core.Queries.Queryable
 
             return base.VisitMethodCall(m);
         }
+
         private Expression BindContains(Expression source, Expression match)
         {
             var constSource = source as ConstantExpression;
@@ -152,6 +157,15 @@ namespace Apaf.NFSdb.Core.Queries.Queryable
             }
             return Visit(predicate.Body);
         }
+
+        private Expression BindSingle(Type resultType, Expression source, LambdaExpression predicate)
+        {
+            if (resultType != typeof(T))
+            {
+                throw new NFSdbQuaryableNotSupportedException("Use Single to select item of Journal type");
+            }
+            return new SingleItemExpression(Visit(predicate.Body), EJournalExpressionType.Single);
+        }
         
         /// <summary>
         /// Determines whether a given expression can be executed locally. 
@@ -179,8 +193,10 @@ namespace Apaf.NFSdb.Core.Queries.Queryable
                 return false;
             }
             if (expression.NodeType == ExpressionType.Convert &&
-                expression.Type == typeof(object))
+                expression.Type == typeof (object))
+            {
                 return true;
+            }
             return expression.NodeType != ExpressionType.Parameter &&
                    expression.NodeType != ExpressionType.Lambda;
         }

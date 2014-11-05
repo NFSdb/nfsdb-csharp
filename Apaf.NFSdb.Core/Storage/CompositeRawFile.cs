@@ -208,6 +208,28 @@ namespace Apaf.NFSdb.Core.Storage
             }
         }
 
+        public unsafe void ReadBytes(long offset, byte* array, int arrayOffset, int sizeBytes)
+        {
+            offset += FILE_HEADER_LENGTH;
+            var buff1 = GetFilePart(offset);
+
+            // Respect buff1 size.
+            var readSize1 = Math.Min((int)(buff1.BufferSize + buff1.BufferOffset - offset),
+                sizeBytes);
+            buff1.ReadBytes(offset, array, arrayOffset, readSize1);
+
+            // Split.
+            if (readSize1 < sizeBytes)
+            {
+                offset = buff1.BufferOffset + buff1.BufferSize - FILE_HEADER_LENGTH;
+                sizeBytes -= readSize1;
+                arrayOffset += readSize1;
+
+                // Recursivly read.
+                ReadBytes(offset, array, arrayOffset, sizeBytes);
+            }
+        }
+
 
         public int ReadInt32(long offset)
         {
