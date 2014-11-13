@@ -45,7 +45,7 @@ namespace Apaf.NFSdb.Tests.Reflection
         [Test]
         public void Timestamp_delegate_test()
         {
-            var constr = ReflectionHelper.CreateTimestampDelegate<Quote>("timestamp");
+            var constr = ReflectionHelper.CreateTimestampDelegate<Quote>("_timestamp");
             const long timestamp = 20109236987;
             var q = new Quote {Timestamp = timestamp};
 

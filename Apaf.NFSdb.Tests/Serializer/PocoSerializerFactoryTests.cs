@@ -195,28 +195,18 @@ namespace Apaf.NFSdb.Tests.Serializer
 
             var columns = new[]
             {
-                
-                new ColumnSource(new ColumnSerializerMetadata(EFieldType.Int64, "Timestamp"),
-                    ColumnsStub.CreateColumn(t.Timestamp, EFieldType.Int64, 1, "Timestamp")),
-                new ColumnSource(new ColumnSerializerMetadata(EFieldType.Symbol, "Sym"),
-                    ColumnsStub.CreateColumn(t.Sym, EFieldType.String, 2, "Sym")),
-                new ColumnSource(new ColumnSerializerMetadata(EFieldType.Double, "Bid"),
-                    ColumnsStub.CreateColumn(t.Bid ?? 0.0, EFieldType.Double, 3, "Bid")),
-                new ColumnSource(new ColumnSerializerMetadata(EFieldType.Double, "Ask"),
-                    ColumnsStub.CreateColumn(t.Ask ?? 0.0, EFieldType.Double, 4, "Ask")),
-                new ColumnSource(new ColumnSerializerMetadata(EFieldType.Int32, "BidSize"),
-                    ColumnsStub.CreateColumn(t.BidSize, EFieldType.Int32, 5, "BidSize")),
-                new ColumnSource(new ColumnSerializerMetadata(EFieldType.Int32, "AskSize"),
-                    ColumnsStub.CreateColumn(t.AskSize, EFieldType.Int32, 6, "AskSize")),
-                new ColumnSource(new ColumnSerializerMetadata(EFieldType.String, "Mode"),
-                    ColumnsStub.CreateColumn(t.Mode, EFieldType.String, 7, "Mode")),
-                new ColumnSource(new ColumnSerializerMetadata(EFieldType.String, "Ex"),
-                    ColumnsStub.CreateColumn(t.Ex, EFieldType.String, 8, "Ex"))
+                CreateSolumnSource(EFieldType.Int64, "Timestamp", t.Timestamp, 1),
+                CreateSolumnSource(EFieldType.Symbol, "Sym", t.Sym, 2),
+                CreateSolumnSource(EFieldType.Double, "Bid", t.Bid, 3),
+                CreateSolumnSource(EFieldType.Double, "Ask", t.Ask ?? 0.0, 4),
+                CreateSolumnSource(EFieldType.Int32, "BidSize", t.BidSize, 5),
+                CreateSolumnSource(EFieldType.Int32, "AskSize", t.AskSize, 6),
+                CreateSolumnSource(EFieldType.String, "Mode", t.Mode, 7),
+                CreateSolumnSource(EFieldType.String, "Ex", t.Ex, 8)
             };
             var bitset =
-                new ColumnSource(new ColumnSerializerMetadata(EFieldType.BitSet, MetadataConstants.NULLS_FILE_NAME),
-                    new QuoteBitsetColumnStub(
-                        columns.Select(c => c.Column).ToArray(), new[] {0, 2}));
+                new ColumnSource(new ColumnSerializerMetadata(EFieldType.BitSet, MetadataConstants.NULLS_FILE_NAME, null),
+                    new QuoteBitsetColumnStub(columns.Select(c => c.Column).ToArray(), new[] {0, 2}));
 
             columns = columns.Concat(new[] {bitset}).ToArray();
 
@@ -228,6 +218,17 @@ namespace Apaf.NFSdb.Tests.Serializer
             // Verify.
             return typeof (Quote).GetProperty(propertyName).GetGetMethod()
                 .Invoke(resultQuote, null);
+        }
+
+        private static ColumnSource CreateSolumnSource<T>(EFieldType type, string name, T value, int order)
+        {
+            return new ColumnSource(new ColumnSerializerMetadata(type, name, null),
+                ColumnsStub.CreateColumn(value, type, order, name));
+        }
+
+        private string AnonFieldName(string timestamp)
+        {
+            return null;
         }
 
         [TestCase("Timestamp", ExpectedResult = 1309L)]
@@ -465,25 +466,17 @@ namespace Apaf.NFSdb.Tests.Serializer
         {
             var columns = new[]
             {
-                new ColumnSource(new ColumnSerializerMetadata(EFieldType.Int64, "Timestamp"),
-                    ColumnsStub.CreateColumn(t.Timestamp, EFieldType.Int64, 1, "Timestamp")),
-                new ColumnSource(new ColumnSerializerMetadata(EFieldType.Symbol, "Sym"),
-                    ColumnsStub.CreateColumn(t.Sym, EFieldType.String, 2, "Sym")),
-                new ColumnSource(new ColumnSerializerMetadata(EFieldType.Double, "Bid"),
-                    ColumnsStub.CreateColumn(t.Bid ?? 0.0, EFieldType.Double, 3, "Bid")),
-                new ColumnSource(new ColumnSerializerMetadata(EFieldType.Double, "Ask"),
-                    ColumnsStub.CreateColumn(t.Ask ?? 0.0, EFieldType.Double, 4, "Ask")),
-                new ColumnSource(new ColumnSerializerMetadata(EFieldType.Int32, "BidSize"),
-                    ColumnsStub.CreateColumn(t.BidSize, EFieldType.Int32, 5, "BidSize")),
-                new ColumnSource(new ColumnSerializerMetadata(EFieldType.Int32, "AskSize"),
-                    ColumnsStub.CreateColumn(t.AskSize, EFieldType.Int32, 6, "AskSize")),
-                new ColumnSource(new ColumnSerializerMetadata(EFieldType.String, "Mode"),
-                    ColumnsStub.CreateColumn(t.Mode, EFieldType.String, 7, "Mode")),
-                new ColumnSource(new ColumnSerializerMetadata(EFieldType.String, "Ex"),
-                    ColumnsStub.CreateColumn(t.Ex, EFieldType.String, 8, "Ex"))
+                CreateSolumnSource(EFieldType.Int64, "Timestamp", t.Timestamp, 1),
+                CreateSolumnSource(EFieldType.Symbol, "Sym", t.Sym, 2),
+                CreateSolumnSource(EFieldType.Double, "Bid", t.Bid ?? 0.0, 3),
+                CreateSolumnSource(EFieldType.Double, "Ask", t.Ask ?? 0.0, 4),
+                CreateSolumnSource(EFieldType.Int32, "BidSize", t.BidSize, 5),
+                CreateSolumnSource(EFieldType.Int32, "AskSize", t.AskSize, 6),
+                CreateSolumnSource(EFieldType.String, "Mode", t.Mode, 7),
+                CreateSolumnSource(EFieldType.String, "Ex", t.Ex, 8)
             };
             var bitset =
-                new ColumnSource(new ColumnSerializerMetadata(EFieldType.BitSet, MetadataConstants.NULLS_FILE_NAME),
+                new ColumnSource(new ColumnSerializerMetadata(EFieldType.BitSet, MetadataConstants.NULLS_FILE_NAME, null),
                     new QuoteBitsetColumnStub(columns.Select(c => c.Column).ToArray(), GetNullsColumn(t).ToArray()));
             return columns.Concat(new[] {bitset}).ToArray();
         }

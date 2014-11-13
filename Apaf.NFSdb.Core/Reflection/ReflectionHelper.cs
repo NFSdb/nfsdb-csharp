@@ -54,7 +54,7 @@ namespace Apaf.NFSdb.Core.Reflection
             var il = dynamic.GetILGenerator();
             il.DeclareLocal(type);
             il.Emit(OpCodes.Ldarg_0);
-            il.Emit(OpCodes.Ldfld, type.GetField("_" + timestampField, BindingFlags.Instance
+            il.Emit(OpCodes.Ldfld, type.GetField(timestampField, BindingFlags.Instance
                 | BindingFlags.NonPublic));
             il.Emit(OpCodes.Ret);
 

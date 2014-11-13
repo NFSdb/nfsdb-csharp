@@ -24,18 +24,21 @@ namespace Apaf.NFSdb.Core.Column
 {
     public class ColumnSerializerMetadata : IColumnSerializerMetadata
     {
-        public ColumnSerializerMetadata(EFieldType type, string propertyName, bool nullable = false, int size = 0)
+        public ColumnSerializerMetadata(EFieldType type, string propertyName, 
+            string fieldName, bool nullable = false, int size = 0)
         {
             DataType = type;
             PropertyName = propertyName;
             Size = size;
             Nulllable = nullable;
+            FieldName = fieldName;
         }
 
         public EFieldType DataType { get; private set; }
         public string PropertyName { get; private set; }
         public int Size { get; private set; }
         public bool Nulllable { get; private set; }
+        public string FieldName { get; private set; }
 
         public MethodInfo GetGetMethod()
         {
@@ -49,7 +52,7 @@ namespace Apaf.NFSdb.Core.Column
             return typeof(IFixedWidthColumn).GetMethod("Get" + fieldType);
         }
 
-        public string GetFieldName()
+        public string GetFileName()
         {
             return PropertyName.Substring(0, 1).ToLower() + PropertyName.Substring(1);
         }
@@ -129,6 +132,9 @@ namespace Apaf.NFSdb.Core.Column
                     break;
                 case EFieldType.Double:
                     ntype = typeof(double?);
+                    break;
+                case EFieldType.DateTime:
+                    ntype = typeof(DateTime?);
                     break;
                 default:
                     throw new ArgumentOutOfRangeException();

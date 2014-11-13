@@ -15,8 +15,11 @@
  * limitations under the License.
  */
 #endregion
+
+using System;
 using Apaf.NFSdb.Core.Storage;
 using Apaf.NFSdb.Core.Tx;
+using Apaf.NFSdb.Core.Writes;
 
 namespace Apaf.NFSdb.Core.Column
 {
@@ -68,6 +71,17 @@ namespace Apaf.NFSdb.Core.Column
             return _storage.ReadDouble(rowID * _sizeBytes);
         }
 
+        public unsafe DateTime GetDateTime(long rowID)
+        {
+            if (_fieldType == EFieldType.DateTimeEpochMilliseconds)
+            {
+                return DateUtils.UnixTimestampToDateTime(GetInt64(rowID));
+            }
+            long dateTimeData = GetInt64(rowID);
+            long* l = &dateTimeData;
+            return ((DateTime*)l)[0];
+        }
+
         public void SetInt32(long rowID, int value, ITransactionContext tx)
         {
             var offset = rowID*_sizeBytes;
@@ -108,6 +122,18 @@ namespace Apaf.NFSdb.Core.Column
             var offset = rowID * _sizeBytes;
             _storage.WriteDouble(offset, value);
             tx.PartitionTx[_partitionID].AppendOffset[_fileID] = offset + _sizeBytes;
+        }
+
+        public unsafe void SetDateTime(long rowID, DateTime value, ITransactionContext readContext)
+        {
+            if (_fieldType == EFieldType.DateTimeEpochMilliseconds)
+            {
+                SetInt64(rowID, DateUtils.DateTimeToUnixTimeStamp(value), readContext);
+                return;
+            }
+
+            DateTime* d = &value;
+            SetInt64(rowID, ((long*)d)[0], readContext);
         }
 
         public EFieldType FieldType

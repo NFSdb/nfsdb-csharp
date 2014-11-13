@@ -51,6 +51,7 @@ namespace Apaf.NFSdb.IntegrationTests.Reading
                 .WithSymbolColumn("Sym", 20, 5, 5)
                 .WithSymbolColumn("Ex", 20, 20, 20)
                 .WithSymbolColumn("Mode", 20, 20, 20)
+                .WithTimestampColumn("Timestamp")
                 .ToJournal<PocoQuote>(access);
         }
 
@@ -78,6 +79,7 @@ namespace Apaf.NFSdb.IntegrationTests.Reading
             trade.Timestamp = START_TIMESTAMP + incrementMs * i;
             trade.Bid = i * 2.04;
             trade.Bid = i;
+            // trade.BidSize = (int)i;
             trade.Ask = i * 50.09014;
             trade.AskSize = (int)(i % int.MaxValue);
             trade.Ex = "LXE";
@@ -133,7 +135,6 @@ namespace Apaf.NFSdb.IntegrationTests.Reading
             {
                 var q = j.OpenReadTx();
                 long count = 0;
-                var sw = new Stopwatch();
                 var expected = new PocoQuote();
                 var increment = GetTimestampIncrement(totalCount, partitionCount);
 

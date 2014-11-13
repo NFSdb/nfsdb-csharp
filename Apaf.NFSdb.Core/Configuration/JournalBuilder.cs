@@ -52,12 +52,6 @@ namespace Apaf.NFSdb.Core.Configuration
             return this;
         }
 
-        public JournalBuilder WithTimestampColumn(string columnName)
-        {
-            _config.TimestampColumn = columnName;
-            return this;
-        }
-
         public JournalBuilder WithSerializerFactory(ISerializerFactory serializer)
         {
             if (_serializerNameSet)
@@ -106,6 +100,22 @@ namespace Apaf.NFSdb.Core.Configuration
                 AvgSize = avgSize > 0 ? avgSize : MetadataConstants.DEFAULT_SYMBOL_AVG_SIZE,
                 MaxSize = maxSize > 0 ? maxSize : MetadataConstants.DEFAULT_SYMBOL_MAX_SIZE,
             });
+            return this;
+        }
+
+        public JournalBuilder WithEpochDateTimeColumn(string name)
+        {
+            _config.DateTimes.Add(new DateTimeElement
+            {
+                Name = name,
+                IsEpochMilliseconds = true
+            });
+            return this;
+        }
+
+        public JournalBuilder WithTimestampColumn(string columnName)
+        {
+            _config.TimestampColumn = columnName;
             return this;
         }
 

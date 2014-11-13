@@ -96,35 +96,35 @@ namespace Apaf.NFSdb.Core.Storage.Serializer
                 // Type.
                 if (property.PropertyType == typeof(byte))
                 {
-                    cols.Add(new ColumnSerializerMetadata(EFieldType.Byte, propertyName));
+                    cols.Add(new ColumnSerializerMetadata(EFieldType.Byte, propertyName, GetFieldName(propertyName)));
                 }
                 else if (property.PropertyType == typeof(bool))
                 {
-                    cols.Add(new ColumnSerializerMetadata(EFieldType.Bool, propertyName));
+                    cols.Add(new ColumnSerializerMetadata(EFieldType.Bool, propertyName, GetFieldName(propertyName)));
                 }
                 else if (property.PropertyType == typeof(short))
                 {
-                    cols.Add(new ColumnSerializerMetadata(EFieldType.Int16, propertyName));
+                    cols.Add(new ColumnSerializerMetadata(EFieldType.Int16, propertyName, GetFieldName(propertyName)));
                 }
                 else if (property.PropertyType == typeof(int))
                 {
-                    cols.Add(new ColumnSerializerMetadata(EFieldType.Int32, propertyName));
+                    cols.Add(new ColumnSerializerMetadata(EFieldType.Int32, propertyName, GetFieldName(propertyName)));
                 }
                 else if (property.PropertyType == typeof(long))
                 {
-                    cols.Add(new ColumnSerializerMetadata(EFieldType.Int64, propertyName));
+                    cols.Add(new ColumnSerializerMetadata(EFieldType.Int64, propertyName, GetFieldName(propertyName)));
                 }
                 else if (property.PropertyType == typeof(double))
                 {
-                    cols.Add(new ColumnSerializerMetadata(EFieldType.Double, propertyName));
+                    cols.Add(new ColumnSerializerMetadata(EFieldType.Double, propertyName, GetFieldName(propertyName)));
                 }
                 else if (property.PropertyType == typeof(string))
                 {
-                    cols.Add(new ColumnSerializerMetadata(EFieldType.String, propertyName));
+                    cols.Add(new ColumnSerializerMetadata(EFieldType.String, propertyName, GetFieldName(propertyName)));
                 }
                 else if (property.PropertyType == typeof(byte[]))
                 {
-                    cols.Add(new ColumnSerializerMetadata(EFieldType.Binary, propertyName));
+                    cols.Add(new ColumnSerializerMetadata(EFieldType.Binary, propertyName, GetFieldName(propertyName)));
                 }
                 else
                 {
@@ -136,9 +136,15 @@ namespace Apaf.NFSdb.Core.Storage.Serializer
             var issetField = _objectType.GetField(MetadataConstants.THRIFT_ISSET_FIELD_NAME);
             if (issetField.FieldType.Name.EndsWith(MetadataConstants.THRIFT_ISSET_FIELD_TYPE_SUFFIX))
             {
-                cols.Add(new ColumnSerializerMetadata(EFieldType.BitSet, MetadataConstants.NULLS_FILE_NAME));
+                cols.Add(new ColumnSerializerMetadata(EFieldType.BitSet, MetadataConstants.NULLS_FILE_NAME,
+                    MetadataConstants.THRIFT_ISSET_FIELD_NAME));
             }
             return cols;
+        }
+
+        private string GetFieldName(string propertyName)
+        {
+            return "_" + propertyName.Substring(0, 1).ToLower() + propertyName.Substring(1);
         }
 
         public IFieldSerializer CreateFieldSerializer(IEnumerable<ColumnSource> columns)
@@ -490,7 +496,7 @@ namespace Apaf.NFSdb.Core.Storage.Serializer
 
         private static FieldInfo GetIssetFieldInfo(Type issetType, IColumnSerializerMetadata field)
         {
-            return issetType.GetField(field.GetFieldName(), BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+            return issetType.GetField(field.GetFileName(), BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
         }
     }
 }

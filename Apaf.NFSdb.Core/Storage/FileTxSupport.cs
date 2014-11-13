@@ -81,7 +81,7 @@ namespace Apaf.NFSdb.Core.Storage
                         string.Format("Error reading transaction state from file {0}",
                             file.Filename), ex);
                 }
-                var size = GetRecordSize(column, file);
+                var size = StorageSizeUtils.GetRecordSize(column, file.DataType);
 
                 if (size > 0)
                 {
@@ -144,7 +144,7 @@ namespace Apaf.NFSdb.Core.Storage
                     else
                     {
                         ColumnMetadata column = _metadata.GetColumnById(file.ColumnID);
-                        var size = GetRecordSize(column, file);
+                        var size = StorageSizeUtils.GetRecordSize(column, file.DataType);
 
                         if (size > 0)
                         {
@@ -272,24 +272,6 @@ namespace Apaf.NFSdb.Core.Storage
                 rec.SymbolTableIndexPointers = symbolTableIndexPointers.ToArray();
                 rec.SymbolTableSizes = symbolTableSize.ToArray();
             }
-        }
-
-        private static int GetRecordSize(ColumnMetadata column, IRawFile file)
-        {
-            if (column.FieldType == EFieldType.BitSet)
-                return column.AvgSize;
-
-            if (column.FieldType.IsFixedSize())
-                return column.FieldType.GetSize();
-
-            if (file.DataType.IsFixedSize())
-                return file.DataType.GetSize();
-
-            if (column.FieldType == EFieldType.Symbol
-                && file.DataType == EDataType.Data)
-                return EFieldType.Int32.GetSize();
-
-            return -1;
         }
     }
 }

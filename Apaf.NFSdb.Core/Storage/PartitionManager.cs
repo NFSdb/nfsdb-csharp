@@ -160,7 +160,7 @@ namespace Apaf.NFSdb.Core.Storage
             }
             lock (_lastTransLogSync)
             {
-                var processedFiles = new Stack<IFileTxSupport>();
+                var processedFiles = new List<IFileTxSupport>(_partitions.Count + 1);
                 var modified = _partitions.Where(p => tx.IsParitionUpdated(p.PartitionID, _lastTransactionLog));
 
                 // Non-empty tx.
@@ -171,7 +171,7 @@ namespace Apaf.NFSdb.Core.Storage
                         try
                         {
                             txFile.Commit(tx, _lastTransactionLog);
-                            processedFiles.Push(txFile);
+                            processedFiles.Add(txFile);
                         }
                         catch (NFSdbCommitFailedException)
                         {

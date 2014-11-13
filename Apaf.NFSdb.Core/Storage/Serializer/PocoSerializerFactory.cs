@@ -37,7 +37,6 @@ namespace Apaf.NFSdb.Core.Storage.Serializer
         private Action<object, ByteArray, IFixedWidthColumn[], long, IRefTypeColumn[], ITransactionContext> _writeMethod;
         private static readonly Guid GENERATOR_MARK_GUID = Guid.NewGuid();
         private bool _isAnonymouse;
-        private Dictionary<string, string> _propertyToFields;
 
         public void Initialize(Type objectType)
         {
@@ -238,7 +237,7 @@ namespace Apaf.NFSdb.Core.Storage.Serializer
                         il.Emit(OpCodes.Ldarg_S, 4);
                         il.Emit(OpCodes.Callvirt, column.GetGetMethod());
                         il.Emit(OpCodes.Castclass, column.GetDataType());
-                        il.Emit(OpCodes.Stfld, GetFieldInfo(column.PropertyName));
+                        il.Emit(OpCodes.Stfld, GetFieldInfo(column.FieldName));
                         il.MarkLabel(notSetLabels[i]);
                     }
                     else if (!column.Nulllable)
@@ -250,17 +249,16 @@ namespace Apaf.NFSdb.Core.Storage.Serializer
                         il.Emit(OpCodes.Ldelem_Ref);
                         il.Emit(OpCodes.Ldarg_2);
                         il.Emit(OpCodes.Callvirt, column.GetGetMethod());
-                        il.Emit(OpCodes.Stfld, GetFieldInfo(column.PropertyName));
+                        il.Emit(OpCodes.Stfld, GetFieldInfo(column.FieldName));
                     }
                     else
                     {
-                        // Use FixedColumnNullableWrapper[].
                         il.Emit(OpCodes.Ldarga_S, (byte)0);
                         il.Emit(OpCodes.Ldc_I4, nulli);
                         il.Emit(OpCodes.Call, isSetMethod);
                         il.Emit(OpCodes.Brtrue_S, notSetLabels[i]);
                         il.Emit(OpCodes.Ldloc_0);
-                        il.Emit(OpCodes.Ldflda, GetFieldInfo(column.PropertyName));
+                        il.Emit(OpCodes.Ldflda, GetFieldInfo(column.FieldName));
                         il.Emit(OpCodes.Ldarg_1);
                         il.Emit(OpCodes.Ldc_I4, fci);
                         il.Emit(OpCodes.Ldelem_Ref);
@@ -268,7 +266,7 @@ namespace Apaf.NFSdb.Core.Storage.Serializer
                         il.Emit(OpCodes.Callvirt, column.GetGetMethod());
                         il.Emit(OpCodes.Stfld, column.GetNullableValueField());
                         il.Emit(OpCodes.Ldloc_0);
-                        il.Emit(OpCodes.Ldflda, GetFieldInfo(column.PropertyName));
+                        il.Emit(OpCodes.Ldflda, GetFieldInfo(column.FieldName));
                         il.Emit(OpCodes.Ldc_I4_1);
                         il.Emit(OpCodes.Stfld, column.GetNullableHasValueField());
                         il.MarkLabel(notSetLabels[i]);
@@ -287,11 +285,8 @@ namespace Apaf.NFSdb.Core.Storage.Serializer
                     long, IRefTypeColumn[], IReadContext, object>));
         }
 
-        
-
-        private FieldInfo GetFieldInfo(string propertyName)
+        private FieldInfo GetFieldInfo(string fieldName)
         {
-            var fieldName = _propertyToFields[propertyName];
             return _objectType.GetField(fieldName, BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
         }
 
@@ -484,7 +479,7 @@ namespace Apaf.NFSdb.Core.Storage.Serializer
                         il.Emit(OpCodes.Ldelem_Ref);
                         il.Emit(OpCodes.Ldarg_3);
                         il.Emit(OpCodes.Ldloc_0);
-                        il.Emit(OpCodes.Ldfld, GetFieldInfo(column.PropertyName));
+                        il.Emit(OpCodes.Ldfld, GetFieldInfo(column.FieldName));
                         il.Emit(OpCodes.Ldarg_S, (byte) 5);
                         il.Emit(OpCodes.Callvirt, column.GetSetMethod());
                     }
@@ -495,7 +490,7 @@ namespace Apaf.NFSdb.Core.Storage.Serializer
                         il.Emit(OpCodes.Ldarga_S, 1);
                         il.Emit(OpCodes.Ldc_I4, nci++);
                         il.Emit(OpCodes.Ldloc_0);
-                        il.Emit(OpCodes.Ldfld, GetFieldInfo(column.PropertyName));
+                        il.Emit(OpCodes.Ldfld, GetFieldInfo(column.FieldName));
                         il.Emit(OpCodes.Ldnull);
                         il.Emit(OpCodes.Ceq);
                         il.Emit(OpCodes.Call, setMethod);
@@ -504,14 +499,14 @@ namespace Apaf.NFSdb.Core.Storage.Serializer
                         il.Emit(OpCodes.Ldelem_Ref);
                         il.Emit(OpCodes.Ldarg_3);
                         il.Emit(OpCodes.Ldloc_0);
-                        il.Emit(OpCodes.Ldfld, GetFieldInfo(column.PropertyName));
+                        il.Emit(OpCodes.Ldfld, GetFieldInfo(column.FieldName));
                         il.Emit(OpCodes.Ldarg_S, (byte)5);
                         il.Emit(OpCodes.Callvirt, column.GetSetMethod());
                     }
                     else
                     {
                         il.Emit(OpCodes.Ldloc_0);
-                        il.Emit(OpCodes.Ldflda, GetFieldInfo(column.PropertyName));
+                        il.Emit(OpCodes.Ldflda, GetFieldInfo(column.FieldName));
                         il.Emit(OpCodes.Ldfld, column.GetNullableHasValueField());
                         il.Emit(OpCodes.Ldc_I4_0);
                         il.Emit(OpCodes.Ceq);
@@ -527,7 +522,7 @@ namespace Apaf.NFSdb.Core.Storage.Serializer
                         il.Emit(OpCodes.Ldelem_Ref);
                         il.Emit(OpCodes.Ldarg_3);
                         il.Emit(OpCodes.Ldloc_0);
-                        il.Emit(OpCodes.Ldflda, GetFieldInfo(column.PropertyName));
+                        il.Emit(OpCodes.Ldflda, GetFieldInfo(column.FieldName));
                         il.Emit(OpCodes.Ldfld, column.GetNullableValueField());
                         il.Emit(OpCodes.Ldarg_S, 5);
                         il.Emit(OpCodes.Callvirt, column.GetSetMethod());
@@ -547,8 +542,6 @@ namespace Apaf.NFSdb.Core.Storage.Serializer
 
         protected virtual IList<IColumnSerializerMetadata> ParseColumnsImpl()
         {
-            _propertyToFields = new Dictionary<string, string>();
-
             // Properties.
             // Public.
             var fields =
@@ -562,7 +555,6 @@ namespace Apaf.NFSdb.Core.Storage.Serializer
             {
                 var fieldName = field.Name;
                 var propertyName = GetPropertyName(fieldName);
-                _propertyToFields.Add(propertyName, fieldName);
 
                 // Type.
                 var propertyType = field.FieldType;
@@ -576,37 +568,41 @@ namespace Apaf.NFSdb.Core.Storage.Serializer
 
                 if (propertyType == typeof(byte))
                 {
-                    cols.Add(new ColumnSerializerMetadata(EFieldType.Byte, propertyName, nullable));
+                    cols.Add(new ColumnSerializerMetadata(EFieldType.Byte, propertyName, fieldName, nullable));
                 }
                 else if (propertyType == typeof(bool))
                 {
-                    cols.Add(new ColumnSerializerMetadata(EFieldType.Bool, propertyName, nullable));
+                    cols.Add(new ColumnSerializerMetadata(EFieldType.Bool, propertyName, fieldName, nullable));
                 }
                 else if (propertyType == typeof(short))
                 {
-                    cols.Add(new ColumnSerializerMetadata(EFieldType.Int16, propertyName, nullable));
+                    cols.Add(new ColumnSerializerMetadata(EFieldType.Int16, propertyName, fieldName, nullable));
                 }
                 else if (propertyType == typeof(int))
                 {
-                    cols.Add(new ColumnSerializerMetadata(EFieldType.Int32, propertyName, nullable));
+                    cols.Add(new ColumnSerializerMetadata(EFieldType.Int32, propertyName, fieldName, nullable));
                 }
                 else if (propertyType == typeof(long))
                 {
-                    cols.Add(new ColumnSerializerMetadata(EFieldType.Int64, propertyName, nullable));
+                    cols.Add(new ColumnSerializerMetadata(EFieldType.Int64, propertyName, fieldName, nullable));
                 }
                 else if (propertyType == typeof(double))
                 {
-                    cols.Add(new ColumnSerializerMetadata(EFieldType.Double, propertyName, nullable));
+                    cols.Add(new ColumnSerializerMetadata(EFieldType.Double, propertyName, fieldName, nullable));
+                }
+                else if (propertyType == typeof(DateTime))
+                {
+                    cols.Add(new ColumnSerializerMetadata(EFieldType.DateTime, propertyName, fieldName, nullable));
                 }
                 else if (propertyType == typeof(string))
                 {
                     // ReSharper disable once RedundantArgumentDefaultValue
-                    cols.Add(new ColumnSerializerMetadata(EFieldType.String, propertyName, true));
+                    cols.Add(new ColumnSerializerMetadata(EFieldType.String, propertyName, fieldName, true));
                     nullableCount++;
                 }
                 else if (propertyType == typeof(byte[]))
                 {
-                    cols.Add(new ColumnSerializerMetadata(EFieldType.Binary, propertyName, true));
+                    cols.Add(new ColumnSerializerMetadata(EFieldType.Binary, propertyName, fieldName, true));
                     nullableCount++;
                 }
                 else
@@ -618,7 +614,7 @@ namespace Apaf.NFSdb.Core.Storage.Serializer
 
             if (nullableCount > 0)
             {
-                cols.Add(new ColumnSerializerMetadata(EFieldType.BitSet, MetadataConstants.NULLS_FILE_NAME, false, nullableCount));
+                cols.Add(new ColumnSerializerMetadata(EFieldType.BitSet, MetadataConstants.NULLS_FILE_NAME, null, false, nullableCount));
             }
             return cols;
         }

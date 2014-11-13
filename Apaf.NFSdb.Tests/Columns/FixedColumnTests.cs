@@ -16,8 +16,10 @@
  */
 #endregion
 using System;
+using System.Collections.Generic;
 using Apaf.NFSdb.Core.Column;
 using Apaf.NFSdb.Core.Storage;
+using Apaf.NFSdb.Core.Writes;
 using Apaf.NFSdb.Tests.Columns.ThriftModel;
 using Apaf.NFSdb.Tests.Tx;
 using Moq;
@@ -49,6 +51,14 @@ namespace Apaf.NFSdb.Tests.Columns
         {
             var col = CreateCol(EFieldType.Int64, long.MaxValue);
             Assert.That(col.GetInt64(1), Is.EqualTo(long.MaxValue));
+        }
+
+        [Test]
+        public void ShouldReadDateTime()
+        {
+
+            var col = CreateCol(EFieldType.DateTime, 0L);
+            Assert.That(col.GetDateTime(1), Is.EqualTo(DateTime.MinValue));
         }
 
         [Test]
@@ -103,6 +113,25 @@ namespace Apaf.NFSdb.Tests.Columns
 
             Assert.That(col.GetInt64(offset), Is.EqualTo(value), "Offset " + offset);
             _mockStorage.Verify(m => m.WriteInt64(It.IsAny<long>(), It.IsAny<long>()), Times.Once);
+        }
+
+        [TestCaseSource("ShouldWriteDateTimeSource")]
+        public void ShouldWriteDateTime(DateTime value)
+        {
+            var offset = DateTime.Now.Millisecond % 256;
+            var col = CreateCol(EFieldType.Int64);
+            col.SetDateTime(offset, value, TestTxLog.TestContext());
+
+            DateTime result = col.GetDateTime(offset);
+            Assert.That(result, Is.EqualTo(value), "Offset " + offset);
+            _mockStorage.Verify(m => m.WriteInt64(It.IsAny<long>(), It.IsAny<long>()), Times.Once);
+        }
+
+        public IEnumerable<TestCaseData> ShouldWriteDateTimeSource()
+        {
+            yield return new TestCaseData(DateTime.MinValue);
+            yield return new TestCaseData(DateTime.Now.Date);
+            yield return new TestCaseData(DateTime.MaxValue);
         }
 
         [TestCase(-124)]

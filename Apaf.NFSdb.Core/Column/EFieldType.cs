@@ -28,6 +28,8 @@ namespace Apaf.NFSdb.Core.Column
         String,
         BitSet,
         Symbol,
-        Binary
+        Binary,
+        DateTime,
+        DateTimeEpochMilliseconds
     }
 }

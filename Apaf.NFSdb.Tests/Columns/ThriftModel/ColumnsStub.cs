@@ -15,6 +15,8 @@
  * limitations under the License.
  */
 #endregion
+
+using System;
 using Apaf.NFSdb.Core.Column;
 using Apaf.NFSdb.Core.Storage;
 using Apaf.NFSdb.Core.Tx;
@@ -85,6 +87,11 @@ namespace Apaf.NFSdb.Tests.Columns.ThriftModel
                 return GetValue<double>(rowID);
             }
 
+            public DateTime GetDateTime(long rowID)
+            {
+                return GetValue<DateTime>(rowID);
+            }
+
             public string GetString(long rowID, IReadContext readContext)
             {
                 return GetValue<string>(rowID);
@@ -97,7 +104,8 @@ namespace Apaf.NFSdb.Tests.Columns.ThriftModel
 
             public object GetValue(long rowID, IReadContext readContext)
             {
-                if (FieldType == EFieldType.String)
+                if (FieldType == EFieldType.String
+                    || FieldType == EFieldType.Symbol)
                 {
                     return GetString(rowID, readContext);
                 }
@@ -106,7 +114,8 @@ namespace Apaf.NFSdb.Tests.Columns.ThriftModel
 
             public void SetValue(long rowID, object value, ITransactionContext readContext)
             {
-                if (FieldType == EFieldType.String)
+                if (FieldType == EFieldType.String
+                    || FieldType == EFieldType.Symbol)
                 {
                     SetString(rowID, (string) value, readContext);
                     return;
@@ -140,6 +149,11 @@ namespace Apaf.NFSdb.Tests.Columns.ThriftModel
             }
 
             public void SetDouble(long rowID, double value, ITransactionContext readContext)
+            {
+                SetValue(value);
+            }
+
+            public void SetDateTime(long rowID, DateTime value, ITransactionContext readContext)
             {
                 SetValue(value);
             }

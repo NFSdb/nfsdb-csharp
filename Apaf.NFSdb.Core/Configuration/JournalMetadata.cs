@@ -61,7 +61,17 @@ namespace Apaf.NFSdb.Core.Configuration
             // Timestamp.
             if (!string.IsNullOrEmpty(config.TimestampColumn))
             {
-                _timestampDelegate = ReflectionHelper.CreateTimestampDelegate<T>(config.TimestampColumn);
+                var timestampColumn = columnsFields.FirstOrDefault(c => 
+                    c.PropertyName.Equals(config.TimestampColumn, StringComparison.OrdinalIgnoreCase));
+
+                if (timestampColumn == null)
+                {
+                    throw new NFSdbConfigurationException("Timestamp column with name {0} is not found", 
+                        config.TimestampColumn);
+                }
+                _timestampDelegate = 
+                    ReflectionHelper.CreateTimestampDelegate<T>(timestampColumn.FieldName);
+
                 TimestampFieldID = _columns.Single(
                     c => c.FileName.Equals(config.TimestampColumn,
                         StringComparison.OrdinalIgnoreCase)).FieldID;
@@ -249,8 +259,6 @@ namespace Apaf.NFSdb.Core.Configuration
 
             foreach (IColumnSerializerMetadata field in fields)
             {
-                var fieldName = GetFileName(field.PropertyName);
-
                 // Type.
                 switch (field.DataType)
                 {
@@ -262,12 +270,34 @@ namespace Apaf.NFSdb.Core.Configuration
                     case EFieldType.Double:
                         cols.Add(ColumnMetadata.FromFixedField(field, cols.Count));
                         break;
+
+                    case EFieldType.DateTime:
+                        // Check config.
+                        var dateTimeConfig = ((IEnumerable<ColumnElement>)(config.DateTimes))
+                            .Concat(config.Symbols)
+                            .FirstOrDefault(c => c.Name.Equals(field.PropertyName,
+                                StringComparison.OrdinalIgnoreCase));
+
+                        if (dateTimeConfig != null
+                            && ((DateTimeElement)dateTimeConfig).IsEpochMilliseconds)
+                        {
+                            cols.Add(ColumnMetadata.FromFixedField(
+                                new ColumnSerializerMetadata(EFieldType.DateTimeEpochMilliseconds, 
+                                    field.PropertyName, field.FieldName, field.Nulllable), 
+                                cols.Count));
+                        }
+                        else
+                        {
+                            cols.Add(ColumnMetadata.FromFixedField(field, cols.Count));
+                        }
+                        break;
+
                     case EFieldType.Symbol:
                     case EFieldType.String:
                         // Check config.
                         var stringConfig = ((IEnumerable<ColumnElement>) (config.Strings))
                             .Concat(config.Symbols)
-                            .FirstOrDefault(c => c.Name.Equals(fieldName,
+                            .FirstOrDefault(c => c.Name.Equals(field.PropertyName,
                                 StringComparison.OrdinalIgnoreCase));
 
                         if (stringConfig != null)
@@ -285,7 +315,7 @@ namespace Apaf.NFSdb.Core.Configuration
                         break;
                     case EFieldType.Binary:
                         var binaryConfig = ((IEnumerable<ColumnElement>) (config.Binaries))
-                            .FirstOrDefault(c => c.Name.Equals(fieldName,
+                            .FirstOrDefault(c => c.Name.Equals(field.PropertyName,
                                 StringComparison.OrdinalIgnoreCase));
 
                         if (binaryConfig != null)

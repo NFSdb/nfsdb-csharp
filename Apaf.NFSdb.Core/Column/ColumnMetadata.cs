@@ -69,12 +69,17 @@ namespace Apaf.NFSdb.Core.Column
 
         public string FileName
         {
-            get { return SerializerMetadata.GetFieldName(); }
+            get { return SerializerMetadata.GetFileName(); }
         }
 
         public string PropertyName
         {
             get { return SerializerMetadata.PropertyName; }
+        }
+
+        public string FieldName
+        {
+            get { return SerializerMetadata.FieldName; }
         }
 
         public int HintDistinctCount { get; private set; }
@@ -91,7 +96,7 @@ namespace Apaf.NFSdb.Core.Column
                     return new ColumnMetadata(metadata, (StringElement) colElement, fieldID);
                 case EFieldType.Symbol:
                     var symbolMeta = new ColumnSerializerMetadata(EFieldType.Symbol, metadata.PropertyName,
-                        metadata.Nulllable, metadata.Size);
+                        metadata.FieldName, metadata.Nulllable, metadata.Size);
                     return new ColumnMetadata(symbolMeta, (SymbolElement) colElement, fieldID);
                 default:
                     throw new ArgumentOutOfRangeException("colElement",

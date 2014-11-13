@@ -29,7 +29,8 @@ namespace Apaf.NFSdb.Core.Column
         bool Nulllable { get; }
 
         string PropertyName { get; }
-        string GetFieldName();
+        string FieldName { get; }
+        string GetFileName();
 
         MethodInfo GetSetMethod();
         MethodInfo GetGetMethod();

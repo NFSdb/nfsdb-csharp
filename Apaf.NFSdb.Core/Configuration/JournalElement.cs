@@ -78,6 +78,9 @@ namespace Apaf.NFSdb.Core.Configuration
         [XmlElement("string")]
         public List<StringElement> Strings { get; set; }
 
+        [XmlElement("datetime")]
+        public List<DateTimeElement> DateTimes { get; set; }
+
         [XmlElement("binary")]
         public List<BinaryElement> Binaries { get; set; }
 

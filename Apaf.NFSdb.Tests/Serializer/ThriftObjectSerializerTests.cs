@@ -278,30 +278,29 @@ namespace Apaf.NFSdb.Tests.Serializer
 
         private static ColumnSource[] GetQuoteColumns(Quote t)
         {
+            int i = 1;
             var columns = new[]
             {
-                new ColumnSource(new ColumnSerializerMetadata(EFieldType.Int64, "Timestamp"), 
-                    ColumnsStub.CreateColumn(t.Timestamp, EFieldType.Int64, 1, "Timestamp")),
-                new ColumnSource(new ColumnSerializerMetadata(EFieldType.Symbol, "Sym"), 
-                    ColumnsStub.CreateColumn(t.Sym, EFieldType.String, 2, "Sym")),
-                new ColumnSource(new ColumnSerializerMetadata(EFieldType.Double, "Bid"), 
-                    ColumnsStub.CreateColumn(t.Bid, EFieldType.Double, 3, "Bid")),
-                new ColumnSource(new ColumnSerializerMetadata(EFieldType.Double, "Ask"), 
-                    ColumnsStub.CreateColumn(t.Ask, EFieldType.Double, 4, "Ask")),
-                new ColumnSource(new ColumnSerializerMetadata(EFieldType.Int32, "BidSize"), 
-                    ColumnsStub.CreateColumn(t.BidSize, EFieldType.Int32, 5, "BidSize")),
-                new ColumnSource(new ColumnSerializerMetadata(EFieldType.Int32, "AskSize"), 
-                    ColumnsStub.CreateColumn(t.AskSize, EFieldType.Int32, 6, "AskSize")),
-                new ColumnSource(new ColumnSerializerMetadata(EFieldType.String, "Mode"), 
-                    ColumnsStub.CreateColumn(t.Mode, EFieldType.String, 7, "Mode")),
-                new ColumnSource(new ColumnSerializerMetadata(EFieldType.String, "Ex"), 
-                    ColumnsStub.CreateColumn(t.Ex, EFieldType.String, 8, "Ex"))
+               CreateSolumnSource(EFieldType.Int64, "Timestamp", t.Timestamp, i++),
+               CreateSolumnSource(EFieldType.Symbol, "Sym", t.Sym, i++),
+               CreateSolumnSource(EFieldType.Double, "Bid", t.Bid, i++),
+               CreateSolumnSource(EFieldType.Double, "Ask", t.Ask, i++),
+               CreateSolumnSource(EFieldType.Int32, "BidSize", t.BidSize, i++),
+               CreateSolumnSource(EFieldType.Int32, "AskSize", t.AskSize, i++),
+               CreateSolumnSource(EFieldType.String, "Mode", t.Mode, i++),
+               CreateSolumnSource(EFieldType.String, "Ex", t.Ex, i++)
             };
-            var bitset = new ColumnSource(new ColumnSerializerMetadata(EFieldType.BitSet, "_isset"),
+            var bitset = new ColumnSource(new ColumnSerializerMetadata(EFieldType.BitSet, "_isset", null),
                 new QuoteBitsetColumnStub(columns.Select(c => c.Column).ToArray(), GetNullsColumn(t).ToArray()));
 
             return columns.Concat(new[] {bitset}).ToArray();
-        } 
+        }
+
+        private static ColumnSource CreateSolumnSource<T>(EFieldType type, string name, T value, int order)
+        {
+            return new ColumnSource(new ColumnSerializerMetadata(type, name, null),
+                ColumnsStub.CreateColumn(value, type, order, name));
+        }
 
         private static IEnumerable<int> GetNullsColumn(Quote quote)
         {

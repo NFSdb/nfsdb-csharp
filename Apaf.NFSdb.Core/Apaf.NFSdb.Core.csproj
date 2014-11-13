@@ -105,6 +105,7 @@
     <Compile Include="Column\IndexColumn.cs" />
     <Compile Include="Column\IStringColumn.cs" />
     <Compile Include="Configuration\BinaryElement.cs" />
+    <Compile Include="Configuration\DateTimeElement.cs" />
     <Compile Include="Configuration\JournalBuilder.cs" />
     <Compile Include="Queries\Queryable\SingleItemExpression.cs" />
     <Compile Include="Storage\Serializer\FixedColumnNullableWrapper.cs" />
@@ -176,6 +177,7 @@
     <Compile Include="Storage\EDataTypeExtensions.cs" />
     <Compile Include="Storage\FileTxSupport.cs" />
     <Compile Include="Storage\IFileTxSupport.cs" />
+    <Compile Include="Storage\StorageSizeUtils.cs" />
     <Compile Include="Tx\IReadTransactionContext.cs" />
     <Compile Include="Tx\ITransactionContext.cs" />
     <Compile Include="Storage\PartitionManager.cs" />

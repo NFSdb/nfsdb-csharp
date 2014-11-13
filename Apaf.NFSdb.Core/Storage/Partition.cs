@@ -38,7 +38,9 @@ namespace Apaf.NFSdb.Core.Storage
         private readonly FileTxSupport _txSupport;
         private readonly IFixedWidthColumn _timestampColumn;
         private readonly Dictionary<string, ISymbolMapColumn> _symbols;
- 
+        private readonly ColumnSource[] _columns;
+        private readonly IJournalMetadata<T> _metadata;
+
         public Partition(IJournalMetadata<T> metadata,
             ICompositeFileFactory memeorymMappedFileFactory,
             EFileAccess access,
@@ -47,9 +49,10 @@ namespace Apaf.NFSdb.Core.Storage
         {
             _columnStorage = new ColumnStorage(metadata.Settings, startDate,
                 access, partitionID, memeorymMappedFileFactory);
-            
-            ColumnSource[] columns = metadata.GetPartitionColums(_columnStorage).ToArray();
-            _symbols = columns
+
+            _metadata = metadata;
+            _columns = metadata.GetPartitionColums(_columnStorage).ToArray();
+            _symbols = _columns
                 .Where(c => c.Metadata.DataType == EFieldType.Symbol)
                 .Select(c => c.Column)
                 .Cast<ISymbolMapColumn>()
@@ -58,10 +61,10 @@ namespace Apaf.NFSdb.Core.Storage
             if (metadata.TimestampFieldID.HasValue)
             {
                 _timestampColumn = 
-                    (IFixedWidthColumn)columns[metadata.TimestampFieldID.Value].Column;
+                    (IFixedWidthColumn)_columns[metadata.TimestampFieldID.Value].Column;
             }
 
-            _fieldSerializer = metadata.GetSerializer(columns);
+            _fieldSerializer = metadata.GetSerializer(_columns);
             StartDate = startDate;
             _endDate = PartitionManagerUtils.GetPartitionEndDate(
                 startDate, metadata.Settings.PartitionType);
@@ -72,8 +75,6 @@ namespace Apaf.NFSdb.Core.Storage
         }
 
         public IColumnStorage Storage { get { return _columnStorage; } }
-
-
         public DateTime StartDate { get; private set; }
         public DateTime EndDate { get { return _endDate; } }
         public int PartitionID { get; private set; }
@@ -103,6 +104,20 @@ namespace Apaf.NFSdb.Core.Storage
 
         public void Commit(ITransactionContext tx, ITransactionContext oldTxContext)
         {
+            // Set respective append offset.
+            // Some serializers can skip null fields.
+            var pd = tx.PartitionTx[PartitionID];
+            var count = pd.NextRowID;
+            foreach (var file in _columnStorage.AllOpenedFiles())
+            {
+                var column = _metadata.GetColumnById(file.ColumnID);
+                var size = StorageSizeUtils.GetRecordSize(column, file.DataType);
+                if (size > 0)
+                {
+                    pd.AppendOffset[file.FileID] = count*size;
+                }
+            }
+
             _txSupport.Commit(tx, oldTxContext);
         }
 
