@@ -99,6 +99,7 @@
   <ItemGroup>
     <Compile Include="Collections\ExpandableListTests.cs" />
     <Compile Include="Columns\ByteArrayTests.cs" />
+    <Compile Include="Columns\DateTimeTests.cs" />
     <Compile Include="Columns\ExpressionTests.cs" />
     <Compile Include="Columns\FixedColumnTests.cs" />
     <Compile Include="Columns\IndexColumnTests.cs" />

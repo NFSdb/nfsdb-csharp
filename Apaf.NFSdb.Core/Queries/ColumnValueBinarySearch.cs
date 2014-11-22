@@ -38,7 +38,6 @@ namespace Apaf.NFSdb.Core.Queries
             while (lo <= hi)
             {
                 long i = (hi - lo) / 2 + lo;
-
                 long c = column.GetInt64(i) - value;
                 if (c == 0) return i;
 

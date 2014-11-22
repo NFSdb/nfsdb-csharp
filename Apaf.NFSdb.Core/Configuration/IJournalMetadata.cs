@@ -27,6 +27,6 @@ namespace Apaf.NFSdb.Core.Configuration
     {
         void InitializeSymbols(IColumnStorage symbolStorage);
         IEnumerable<ColumnSource> GetPartitionColums(IColumnStorage partitionStorage);
-        Func<T, long> GetTimestampReader();
+        Func<T, DateTime> GetTimestampReader();
     }
 }

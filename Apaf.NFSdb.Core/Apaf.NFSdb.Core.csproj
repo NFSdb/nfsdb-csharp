@@ -106,6 +106,7 @@
     <Compile Include="Column\IStringColumn.cs" />
     <Compile Include="Configuration\BinaryElement.cs" />
     <Compile Include="Configuration\DateTimeElement.cs" />
+    <Compile Include="Configuration\DateTimeMode.cs" />
     <Compile Include="Configuration\JournalBuilder.cs" />
     <Compile Include="Queries\Queryable\SingleItemExpression.cs" />
     <Compile Include="Storage\Serializer\FixedColumnNullableWrapper.cs" />

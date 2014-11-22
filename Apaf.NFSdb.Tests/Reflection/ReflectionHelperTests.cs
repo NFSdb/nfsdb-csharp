@@ -15,7 +15,10 @@
  * limitations under the License.
  */
 #endregion
+
+using System;
 using Apaf.NFSdb.Core.Reflection;
+using Apaf.NFSdb.Core.Writes;
 using Apaf.NFSdb.Tests.Columns.ThriftModel;
 using NUnit.Framework;
 
@@ -49,8 +52,9 @@ namespace Apaf.NFSdb.Tests.Reflection
             const long timestamp = 20109236987;
             var q = new Quote {Timestamp = timestamp};
 
-            Assert.That(constr(q), Is.EqualTo(timestamp));
+            Assert.That(constr(q), Is.EqualTo(DateUtils.UnixTimestampToDateTime(timestamp)));
         }
+
 
         [Test]
         public void Create_constructor_delegate_performance_test()

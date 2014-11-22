@@ -18,6 +18,8 @@
 using System;
 using System.Reflection;
 using System.Reflection.Emit;
+using Apaf.NFSdb.Core.Exceptions;
+using Apaf.NFSdb.Core.Writes;
 
 namespace Apaf.NFSdb.Core.Reflection
 {
@@ -30,10 +32,11 @@ namespace Apaf.NFSdb.Core.Reflection
             var constructor = type.GetConstructor(Type.EmptyTypes);
             if (constructor == null) throw new NotSupportedException("Default constructor does not exists");
 
-            var dynamic = new DynamicMethod(string.Empty,
+            var dynamic = new DynamicMethod("Create_item_nfsdb",
                 typeof (object),
                 new Type[0],
-                type);
+                type, 
+                true);
 
             var il = dynamic.GetILGenerator();
             il.DeclareLocal(type);
@@ -44,21 +47,33 @@ namespace Apaf.NFSdb.Core.Reflection
 
             return (Func<object>)dynamic.CreateDelegate(typeof(Func<object>));
         }
-        
-        public static Func<T, long> CreateTimestampDelegate<T>(string timestampField)
+
+        public static Func<T, DateTime> CreateTimestampDelegate<T>(string timestampField)
         {
             var type = typeof (T);
-            var dynamic = new DynamicMethod("Test_timestamp" + Guid.NewGuid(),
-                typeof(long), new[] { type },type);
-            
+            var field = type.GetField(timestampField, BindingFlags.Instance
+                                                      | BindingFlags.NonPublic);
+            if (field == null)
+            {
+                throw new NFSdbConfigurationException(
+                    string.Format("Timestamp field {0} cannot be found", timestampField));
+            }
+
+            var dynamic = new DynamicMethod("Get_timestamp_nfsdb" + Guid.NewGuid(),
+                typeof (DateTime), new[] {type}, type, true);
+
             var il = dynamic.GetILGenerator();
             il.DeclareLocal(type);
             il.Emit(OpCodes.Ldarg_0);
-            il.Emit(OpCodes.Ldfld, type.GetField(timestampField, BindingFlags.Instance
-                | BindingFlags.NonPublic));
+            il.Emit(OpCodes.Ldfld, field);
+
+            if (field.FieldType == typeof (long))
+            {
+                il.Emit(OpCodes.Call, typeof(DateUtils).GetMethod("UnixTimestampToDateTime"));
+            }
             il.Emit(OpCodes.Ret);
 
-            return (Func<T, long>)dynamic.CreateDelegate(typeof(Func<T, long>));
+            return (Func<T, DateTime>)dynamic.CreateDelegate(typeof(Func<T, DateTime>));
         }
     }
 }

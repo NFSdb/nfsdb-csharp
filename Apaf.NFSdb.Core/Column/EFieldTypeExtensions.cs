@@ -38,6 +38,7 @@ namespace Apaf.NFSdb.Core.Column
                 case EFieldType.Double:
                     return 8;
                 case EFieldType.DateTime:
+                case EFieldType.DateTimeEpochMilliseconds:
                     return 8;
                 default:
                     throw new ArgumentOutOfRangeException("fieldType");

@@ -40,7 +40,7 @@ namespace Apaf.NFSdb.Core.Configuration
         private readonly ExpandableList<SymbolCache> _symbolCaches =
             new ExpandableList<SymbolCache>(() => new SymbolCache());
 
-        private readonly Func<T, long> _timestampDelegate;
+        private readonly Func<T, DateTime> _timestampDelegate;
         private IColumnStorage _symbolStorage;
         private readonly ISerializerFactory _serializerFactory;
 
@@ -68,6 +68,14 @@ namespace Apaf.NFSdb.Core.Configuration
                 {
                     throw new NFSdbConfigurationException("Timestamp column with name {0} is not found", 
                         config.TimestampColumn);
+                }
+
+                if (timestampColumn.DataType != EFieldType.DateTime
+                    && timestampColumn.DataType != EFieldType.DateTimeEpochMilliseconds
+                    && timestampColumn.DataType != EFieldType.Int64)
+                {
+                    throw new NFSdbConfigurationException("Timestamp column {0} must be DateTime or Int64 but was {1}",
+                        config.TimestampColumn, timestampColumn.DataType);
                 }
                 _timestampDelegate = 
                     ReflectionHelper.CreateTimestampDelegate<T>(timestampColumn.FieldName);
@@ -166,7 +174,7 @@ namespace Apaf.NFSdb.Core.Configuration
             return _columns[columndID];
         }
 
-        public Func<T, long> GetTimestampReader()
+        public Func<T, DateTime> GetTimestampReader()
         {
             return _timestampDelegate;
         }
@@ -354,9 +362,9 @@ namespace Apaf.NFSdb.Core.Configuration
                    + name.Substring(1, name.Length - 1);
         }
 
-        private static long DefaultGetTimestamp(T item)
+        private static DateTime DefaultGetTimestamp(T item)
         {
-            return 0L;
+            return DateTime.MinValue;
         }
     }
 }

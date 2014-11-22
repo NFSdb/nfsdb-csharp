@@ -7,7 +7,7 @@ using Apaf.NFSdb.Core.Storage;
 using Apaf.NFSdb.TestShared;
 using NUnit.Framework;
 
-namespace Apaf.NFSdb.IntegrationTests.BinaryColumn
+namespace Apaf.NFSdb.IntegrationTests.Columns
 {
     [TestFixture]
     public class PocoBinaryTests
@@ -72,7 +72,6 @@ namespace Apaf.NFSdb.IntegrationTests.BinaryColumn
                 for(int i = 0; i < count; i++)
                 {
                     var file = r2.Items.Single(j => j.Path == i.ToString(CultureInfo.InvariantCulture));
-
                     for (int j = 0; j < file.Content.Length; j++)
                     {
                         Assert.AreEqual(file.Content[j], (byte)j);

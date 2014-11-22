@@ -38,7 +38,6 @@ namespace Apaf.NFSdb.Core.Storage
         private readonly FileTxSupport _txSupport;
         private readonly IFixedWidthColumn _timestampColumn;
         private readonly Dictionary<string, ISymbolMapColumn> _symbols;
-        private readonly ColumnSource[] _columns;
         private readonly IJournalMetadata<T> _metadata;
 
         public Partition(IJournalMetadata<T> metadata,
@@ -51,8 +50,8 @@ namespace Apaf.NFSdb.Core.Storage
                 access, partitionID, memeorymMappedFileFactory);
 
             _metadata = metadata;
-            _columns = metadata.GetPartitionColums(_columnStorage).ToArray();
-            _symbols = _columns
+            ColumnSource[] columns = metadata.GetPartitionColums(_columnStorage).ToArray();
+            _symbols = columns
                 .Where(c => c.Metadata.DataType == EFieldType.Symbol)
                 .Select(c => c.Column)
                 .Cast<ISymbolMapColumn>()
@@ -61,10 +60,10 @@ namespace Apaf.NFSdb.Core.Storage
             if (metadata.TimestampFieldID.HasValue)
             {
                 _timestampColumn = 
-                    (IFixedWidthColumn)_columns[metadata.TimestampFieldID.Value].Column;
+                    (IFixedWidthColumn)columns[metadata.TimestampFieldID.Value].Column;
             }
 
-            _fieldSerializer = metadata.GetSerializer(_columns);
+            _fieldSerializer = metadata.GetSerializer(columns);
             StartDate = startDate;
             _endDate = PartitionManagerUtils.GetPartitionEndDate(
                 startDate, metadata.Settings.PartitionType);
@@ -73,6 +72,7 @@ namespace Apaf.NFSdb.Core.Storage
             DirectoryPath = path;
             _txSupport = new FileTxSupport(partitionID, _columnStorage, metadata);
         }
+
 
         public IColumnStorage Storage { get { return _columnStorage; } }
         public DateTime StartDate { get; private set; }
@@ -131,12 +131,17 @@ namespace Apaf.NFSdb.Core.Storage
             if (_timestampColumn == null)
             {
                 throw new NFSdbConfigurationException("timestampColumn is not configured for journal in "
-                    + DirectoryPath);
+                                                      + DirectoryPath);
             }
 
             var hi = tx.GetRowCount(PartitionID);
-            var valuets = DateUtils.DateTimeToUnixTimeStamp(value);
-            return ColumnValueBinarySearch.LongBinarySerach(_timestampColumn, valuets, 0L, hi);
+            var timestampType = _timestampColumn.FieldType;
+            long values = timestampType == EFieldType.Int64
+                     || timestampType == EFieldType.DateTimeEpochMilliseconds
+                ? DateUtils.DateTimeToUnixTimeStamp(value)
+                : DateUtils.ToUnspecifiedDateTicks(value);
+            
+            return ColumnValueBinarySearch.LongBinarySerach(_timestampColumn, values, 0L, hi);
         }
 
         public IEnumerable<long> GetSymbolRows(string symbol, string value, 

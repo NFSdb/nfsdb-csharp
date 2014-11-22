@@ -47,8 +47,7 @@ namespace Apaf.NFSdb.Core.Writes
 
         public void Append(T item)
         {
-            var timestamp = _writerState.GetTimestampDelegate(item);
-            var dateTime = DateUtils.UnixTimestampToDateTime(timestamp);
+            var dateTime = _writerState.GetTimestampDelegate(item);
             var p = _partitionManager.GetAppendPartition(dateTime, _transaction);
             
             p.Append(item, _transaction);

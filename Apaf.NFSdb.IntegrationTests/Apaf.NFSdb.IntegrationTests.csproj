@@ -84,8 +84,9 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="BinaryColumn\PocoBinaryTests.cs" />
+    <Compile Include="Columns\PocoBinaryTests.cs" />
     <Compile Include="IntegrationTestConstants.cs" />
+    <Compile Include="Columns\PocoDateTimeTests.cs" />
     <Compile Include="Reading\PocoQuoteJournalTests.cs" />
     <Compile Include="Reading\QuoteJournalTests.cs" />
     <Compile Include="Reading\QuotePartitionTests.cs" />

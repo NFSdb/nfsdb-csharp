@@ -131,13 +131,10 @@ namespace Apaf.NFSdb.Core.Queries.Queryable
 
                 return result;
             }
-            else
-            {
-                throw new NFSdbQuaryableNotSupportedException(
-                    "Contains can only be bound for expression like List<string>.Contains(symbol_column))." +
-                    " Unable to bind {0}",
-                    exp);
-            }
+            throw new NFSdbQuaryableNotSupportedException(
+                "Contains can only be bound for expression like List<string>.Contains(symbol_column))." +
+                " Unable to bind {0}",
+                exp);
         }
 
         private ResultSetBuilder<T> VisitBinary(BinaryExpression expression)
@@ -259,14 +256,26 @@ namespace Apaf.NFSdb.Core.Queries.Queryable
                     return result;
                 }
 
-                if (literal is long)
+
+                if (literal is long || literal is DateTime)
                 {
+
                     if (GetTimestamp(_journal.Metadata) != null &&
                         GetTimestamp(_journal.Metadata).PropertyName == memberName)
                     {
-                        var timestamp = (long) literal;
-                        var filterInterval = new DateInterval(DateUtils.UnixTimestampToDateTime(timestamp),
-                            DateUtils.UnixTimestampToDateTime(timestamp + 1));
+                        DateInterval filterInterval;
+                        if (literal is long)
+                        {
+                            var timestamp = (long) literal;
+                            filterInterval = new DateInterval(DateUtils.UnixTimestampToDateTime(timestamp),
+                                DateUtils.UnixTimestampToDateTime(timestamp + 1));
+                        }
+                        else
+                        {
+                            var timestamp = (DateTime) literal;
+                            filterInterval = new DateInterval(timestamp,
+                                new DateTime(timestamp.Ticks + 1, timestamp.Kind));
+                        }
 
                         var result = new ResultSetBuilder<T>(_journal, _tx);
                         result.TimestampInterval(filterInterval);

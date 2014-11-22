@@ -42,6 +42,7 @@ namespace Apaf.NFSdb.Core.Configuration
             Strings = new List<StringElement>();
             Symbols = new List<SymbolElement>();
             Binaries = new List<BinaryElement>();
+            DateTimes = new List<DateTimeElement>();
             SerializerName = MetadataConstants.THRIFT_SERIALIZER_NAME;
         }
 

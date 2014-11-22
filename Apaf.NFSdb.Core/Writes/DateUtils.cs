@@ -22,6 +22,7 @@ namespace Apaf.NFSdb.Core.Writes
     public static class DateUtils
     {
         private static DateTime _epoch = new DateTime(1970, 1, 1, 0, 0, 0, 0);
+        private const UInt64 TICKS_MASK = UInt64.MaxValue >> 2;
 
         public static DateTime UnixTimestampToDateTime(long unixTimeStamp)
         {
@@ -32,6 +33,12 @@ namespace Apaf.NFSdb.Core.Writes
         public static long DateTimeToUnixTimeStamp(DateTime dateTime)
         {
             return (dateTime.Ticks - _epoch.Ticks) / TimeSpan.TicksPerMillisecond;
+        }
+
+        public unsafe static long ToUnspecifiedDateTicks(DateTime dateTime)
+        {
+            UInt64 dateNoKind = ((UInt64*)&dateTime)[0] & TICKS_MASK;
+            return ((long*)&dateNoKind)[0];
         }
     }
 }

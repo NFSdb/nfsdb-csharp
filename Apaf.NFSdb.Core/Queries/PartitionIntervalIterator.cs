@@ -28,8 +28,8 @@ namespace Apaf.NFSdb.Core.Queries
         {
             foreach (var partt in partitions)
             {
-                long low = int.MaxValue;
-                long hi = int.MinValue;
+                long low = long.MaxValue;
+                long hi = long.MinValue;
 
                 if (interval.Start < partt.StartDate)
                 {

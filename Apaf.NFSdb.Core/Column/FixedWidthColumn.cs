@@ -124,16 +124,13 @@ namespace Apaf.NFSdb.Core.Column
             tx.PartitionTx[_partitionID].AppendOffset[_fileID] = offset + _sizeBytes;
         }
 
-        public unsafe void SetDateTime(long rowID, DateTime value, ITransactionContext readContext)
+        public void SetDateTime(long rowID, DateTime value, ITransactionContext readContext)
         {
-            if (_fieldType == EFieldType.DateTimeEpochMilliseconds)
-            {
-                SetInt64(rowID, DateUtils.DateTimeToUnixTimeStamp(value), readContext);
-                return;
-            }
+            var toLong = _fieldType == EFieldType.DateTimeEpochMilliseconds
+                ? DateUtils.DateTimeToUnixTimeStamp(value)
+                : DateUtils.ToUnspecifiedDateTicks(value);
 
-            DateTime* d = &value;
-            SetInt64(rowID, ((long*)d)[0], readContext);
+            SetInt64(rowID, toLong, readContext);
         }
 
         public EFieldType FieldType
