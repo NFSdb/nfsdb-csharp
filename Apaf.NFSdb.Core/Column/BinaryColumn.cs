@@ -116,7 +116,7 @@ namespace Apaf.NFSdb.Core.Column
             }
         }
 
-        protected virtual void WriteLength(long writeOffset, int size)
+        protected virtual unsafe void WriteLength(long writeOffset, int size)
         {
             switch (HeaderSize)
             {
@@ -124,26 +124,31 @@ namespace Apaf.NFSdb.Core.Column
                     _data.WriteByte(writeOffset, (byte) size);
                     break;
                 case 2:
-                    _data.WriteUInt16(writeOffset, (ushort) size);
+                    var ussize = (UInt16) size;
+                    _data.WriteBytes(writeOffset, (byte*)(&ussize), 0, 2);
                     break;
                 case 4:
-                    _data.WriteInt32(writeOffset, size);
+                    _data.WriteBytes(writeOffset, (byte*)(&size), 0, 4);
                     break;
                 default:
                     throw new NotSupportedException("HeaderSize " + HeaderSize);
             }
         }
 
-        protected virtual int ReadLength(IRawFile headerBuff, long offset)
+        protected virtual unsafe int ReadLength(IRawFile headerBuff, long offset)
         {
             switch (HeaderSize)
             {
                 case 1:
                     return headerBuff.ReadByte(offset);
                 case 2:
-                    return headerBuff.ReadUInt16(offset);
+                    UInt16 ssize = 0;
+                    headerBuff.ReadBytes(offset, (byte*)(&ssize), 0, 2);
+                    return ssize;
                 case 4:
-                    return headerBuff.ReadInt32(offset);
+                    int isize;
+                    headerBuff.ReadBytes(offset, (byte*)(&isize), 0, 2);
+                    return isize;
                 default:
                     throw new NotSupportedException("HeaderSize " + HeaderSize);
             }

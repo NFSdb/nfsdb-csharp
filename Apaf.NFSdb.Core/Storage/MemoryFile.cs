@@ -21,6 +21,7 @@ using System.IO;
 using System.IO.MemoryMappedFiles;
 using System.Runtime.InteropServices;
 using System.Threading;
+using Apaf.NFSdb.Core.Column;
 using Apaf.NFSdb.Core.Exceptions;
 using Microsoft.Win32.SafeHandles;
 
@@ -35,31 +36,52 @@ namespace Apaf.NFSdb.Core.Storage
         public MemoryFile(string fileName, int bitHint, EFileAccess access)
         {
             if (fileName == null) throw new ArgumentNullException("fileName");
+
+            if (bitHint < MetadataConstants.MIN_FILE_BIT_HINT
+                || bitHint > MetadataConstants.MAX_FILE_BIT_HINT)
+            {
+                throw new NFSdbConfigurationException("Calclated size of file {0} " +
+                                                      "is invalid. Should be >= 2^{1} and  <= 2^{2} " +
+                                                      "but was 2^{3}", 
+                                                      fileName, 
+                                                      MetadataConstants.MIN_FILE_BIT_HINT,
+                                                      MetadataConstants.MAX_FILE_BIT_HINT,
+                                                      bitHint);
+            }
+
             Filename = fileName;
 
             _access = access;
-            var fi = new FileInfo(fileName);
-            var size = 1 << bitHint;
-
-            if (!fi.Exists)
+            try
             {
-                if (!fi.Directory.Exists)
-                {
-                    fi.Directory.Create();
-                }
+                var fi = new FileInfo(fileName);
+                var size = 1 << bitHint;
 
-                using (var newFile = File.Create(fi.FullName))
+                if (!fi.Exists)
                 {
-                    MarkAsSparseFile(newFile.SafeFileHandle);
-                    newFile.SetLength(size);
+                    if (fi.Directory != null && !fi.Directory.Exists)
+                    {
+                        fi.Directory.Create();
+                    }
+
+                    using (var newFile = File.Create(fi.FullName))
+                    {
+                        MarkAsSparseFile(newFile.SafeFileHandle);
+                        newFile.SetLength(size);
+                    }
+                    Size = size;
                 }
-                Size = size;
+                else
+                {
+                    Size = fi.Length;
+                }
+                _fullName = fi.FullName;
+
             }
-            else
+            catch (IOException ex)
             {
-                Size = fi.Length;
+                throw new NFSdbIOException("Unable to create file or directory for path {0}", ex, fileName);
             }
-            _fullName = fi.FullName;
         }
 
         [DllImport("Kernel32.dll", SetLastError = true, CharSet = CharSet.Auto)]
@@ -148,10 +170,20 @@ namespace Apaf.NFSdb.Core.Storage
                 using (var rmmf1 = MemoryMappedFile.CreateFromFile(file, null, file.Length,
                         mmAccess, null, HandleInheritability.None, false))
                 {
-                    return new AccessorBinaryReader(
-                        rmmf1.CreateViewAccessor(offset, size, mmAccess),
-                        offset, 
-                        size);
+                    try
+                    {
+                        return new AccessorBinaryReader(
+                            rmmf1.CreateViewAccessor(offset, size, mmAccess),
+                            offset,
+                            size);
+                    }
+                    catch (IOException ex)
+                    {
+                        throw new NFSdbIOException("Unable to create memory mapped file" +
+                                                        " with address {0}, size {1} and offset {1}. " +
+                                                        "See InnerException for details.",
+                                                        ex, _fullName, offset, size);
+                    }
                 }
             }
         }

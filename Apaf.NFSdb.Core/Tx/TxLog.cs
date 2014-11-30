@@ -97,8 +97,7 @@ namespace Apaf.NFSdb.Core.Tx
 
             // 4
             var size = tx.Size();
-            _data.WriteInt32(offset, size);
-            offset += 4;
+            WriteInt32(size, ref offset);
 
             // 8
             WriteInt64(tx.PrevTxAddress, ref offset);
@@ -142,8 +141,9 @@ namespace Apaf.NFSdb.Core.Tx
 
         private void SetTxAddress(long address)
         {
-            _data.WriteInt64(0, address);
-            _data.WriteByte(8, GetCheckByte(address));
+            long offset = 0;
+            WriteInt64(address, ref offset);
+            WriteByte(GetCheckByte(address), ref offset);
         }
 
         private long GetTxAddress()
@@ -206,10 +206,9 @@ namespace Apaf.NFSdb.Core.Tx
             if (array != null)
             {
                 WriteUInt16((uint) array.Length, ref offset);
-                foreach (var item in array)
+                for(int i =0; i < array.Length; i++)
                 {
-                    _data.WriteInt64(offset, item);
-                    offset += 8;
+                    WriteInt64(array[i], ref offset);
                 }
             }
             else
@@ -218,21 +217,21 @@ namespace Apaf.NFSdb.Core.Tx
             }
         }
 
-        private void WriteUInt16(uint value, ref long offset)
+        private unsafe void WriteUInt16(uint value, ref long offset)
         {
-            _data.WriteUInt16(offset, value);
+            _data.WriteBytes(offset, (byte*)(&value), 0, 4);
             offset += 2;
         }
 
-        private void WriteInt64(long value, ref long offset)
+        private unsafe void WriteInt64(long value, ref long offset)
         {
-            _data.WriteInt64(offset, value);
+            _data.WriteBytes(offset, (byte*)(&value), 0, 8);
             offset += 8;
         }
 
-        private void WriteInt32(int value, ref long offset)
+        private unsafe void WriteInt32(int value, ref long offset)
         {
-            _data.WriteInt64(offset, value);
+            _data.WriteBytes(offset, (byte*)(&value), 0, 4);
             offset += 4;
         }
 
@@ -245,46 +244,52 @@ namespace Apaf.NFSdb.Core.Tx
         private byte ReadByte(ref long offset)
         {
             var res = _data.ReadByte(offset);
-            offset += 1;
+            offset++;
             return res;
         }
 
-        private long ReadInt64(ref long offset)
+        private unsafe long ReadInt64(ref long offset)
         {
-            var res = _data.ReadInt64(offset);
+            long value;
+            _data.ReadBytes(offset, (byte*) (&value), 0, 8);
             offset += 8;
-            return res;
+            return value;
         }
 
-        private int ReadInt32(ref long offset)
+        private unsafe int ReadInt32(ref long offset)
         {
-            var res = _data.ReadInt32(offset);
-            offset += 4;
-            return res;
+            int value;
+            _data.ReadBytes(offset, (byte*)(&value), 0, 4);
+            offset += 8;
+            return value;
+        }
+
+        private unsafe int ReadUInt16(ref long offset)
+        {
+            UInt16 value;
+            _data.ReadBytes(offset, (byte*)(&value), 0, 2);
+            offset += 2;
+            return value;
         }
 
         private int[] ReadInt32Array(ref long offset)
         {
-            int sz = _data.ReadUInt16(offset);
-            offset += 2;
+            int sz = ReadUInt16(ref offset);
             var lagIndexPointers = new int[sz];
             for (int i = 0; i < sz; i++)
             {
-                lagIndexPointers[i] = _data.ReadInt32(offset);
-                offset += 4;
+                lagIndexPointers[i] = ReadInt32(ref offset);
             }
             return lagIndexPointers;
         }
 
         private long[] ReadInt64Array(ref long offset)
         {
-            int sz = _data.ReadUInt16(offset);
-            offset += 2;
+            int sz = ReadUInt16(ref offset);
             var lagIndexPointers = new long[sz];
             for (int i = 0; i < sz; i++)
             {
-                lagIndexPointers[i] = _data.ReadInt64(offset);
-                offset += 8;
+                lagIndexPointers[i] = ReadInt64(ref offset);
             }
             return lagIndexPointers;
         }

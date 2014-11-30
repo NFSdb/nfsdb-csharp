@@ -61,7 +61,6 @@ namespace Apaf.NFSdb.Tests.Storage
         // Reading 2nd chunk
         [TestCase(0x400, (long)1E9, 0x801, 0x800, 0x400)]
         // Reading beyond the file end
-        //[TestCase(0x400, 0x800 - 8, 0x801, 0x801, 0, ExpectedException = typeof(NFSdbInvalidReadException))]
         public void ShouldReadFromCorrectChunk(int recordsSize, long fileLength, long readOffset, long chunkStart, long chunkSize)
         {
             var compFile = CreateCompositeRawFile(fileLength, recordsSize);

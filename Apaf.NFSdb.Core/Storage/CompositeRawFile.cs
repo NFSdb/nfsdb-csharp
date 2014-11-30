@@ -18,6 +18,7 @@
 using System;
 using System.Threading;
 using Apaf.NFSdb.Core.Column;
+using Apaf.NFSdb.Core.Exceptions;
 
 namespace Apaf.NFSdb.Core.Storage
 {
@@ -43,6 +44,17 @@ namespace Apaf.NFSdb.Core.Storage
             int columnID,
             EDataType dataType)
         {
+            if (bitHint < MetadataConstants.MIN_FILE_BIT_HINT 
+                || bitHint > MetadataConstants.MAX_FILE_BIT_HINT)
+            {
+                throw new NFSdbConfigurationException("Calclated size of file {0} " +
+                                                      "is invalid. Should be >= 2^{1} and  <= 2^{2} " +
+                                                      "but was 2^{3}",
+                                                      fileName,
+                                                      MetadataConstants.MIN_FILE_BIT_HINT,
+                                                      MetadataConstants.MAX_FILE_BIT_HINT,
+                                                      bitHint);
+            }
             _bitHint = bitHint;
             Access = access;
             _compositeFile = mmf.OpenFile(fileName, bitHint, access);

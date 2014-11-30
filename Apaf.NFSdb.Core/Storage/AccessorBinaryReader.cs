@@ -17,6 +17,7 @@
 #endregion
 using System;
 using System.IO.MemoryMappedFiles;
+using Apaf.NFSdb.Core.Column;
 using log4net;
 
 namespace Apaf.NFSdb.Core.Storage
@@ -32,9 +33,15 @@ namespace Apaf.NFSdb.Core.Storage
         private const byte FALSE = 0;
         private static readonly int ALLOCATION_GRANULARITY = AccessorHelper.Info.dwAllocationGranularity;
 
-        public AccessorBinaryReader(MemoryMappedViewAccessor view, long bufferOffset,
+        public  AccessorBinaryReader(MemoryMappedViewAccessor view, long bufferOffset,
             long bufferSize)
         {
+            if (bufferOffset < 0)
+            {
+                throw new ArgumentOutOfRangeException("bufferOffset",
+                    "bufferOffset must be positive");
+            }
+
             _view = view;
             _bufferOffset = bufferOffset;
             _bufferSize = bufferSize;

@@ -69,10 +69,14 @@ namespace Apaf.NFSdb.Core.Column
         public static readonly string THRIFT_SERIALIZER_NAME = "thrift";
         public static readonly string POCO_SERIALIZER_NAME = "poco";
         public static readonly string DEFAULT_SERIALIZER_NAME = "thrift";
+
         public const int K_FILE_KEY_BLOCK_HEADER_SIZE = 16;
         public const int K_FILE_KEY_BLOCK_OFFSET = 8;
         public const int K_FILE_ROW_BLOCK_LEN_OFFSET = 0;
         public const int NULL_SYMBOL_VALUE = -1;
         public const int SYMBOL_NOT_FOUND_VALUE = -1;
+
+        public const int MIN_FILE_BIT_HINT = 9;
+        public const int MAX_FILE_BIT_HINT = 63;
     }
 }

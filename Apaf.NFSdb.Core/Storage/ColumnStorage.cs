@@ -119,7 +119,7 @@ namespace Apaf.NFSdb.Core.Storage
             return file;
         }
 
-        private int GetBitHint(string fieldName, EDataType dataType)
+        private int GetBitHint(string fieldName, EDataType dataType) 
         {
             int avgRecSize;
             var recordCount = _settings.RecordHint;
@@ -156,12 +156,24 @@ namespace Apaf.NFSdb.Core.Storage
                 default:
                     throw new ArgumentOutOfRangeException("dataType");
             }
-            return CalculateHint(avgRecSize, recordCount);
+            var bitHint = CalculateHint(avgRecSize, recordCount);
+            if (bitHint < MetadataConstants.MIN_FILE_BIT_HINT)
+            {
+                bitHint = MetadataConstants.MIN_FILE_BIT_HINT;
+            }
+            if (bitHint > MetadataConstants.MAX_FILE_BIT_HINT)
+            {
+                bitHint = MetadataConstants.MAX_FILE_BIT_HINT;
+            }
+            return bitHint;
         }
 
         private static int CalculateHint(int avgSize, long recordHint)
         {
-            return (int)Math.Ceiling(Math.Log(checked(avgSize * recordHint), 2));
+            var bitHint = (int)Math.Floor(Math.Log(checked(avgSize * recordHint), 2));
+            // Take 1/4 of the best size for better space utilization.
+            // This is power of 2 - reduce by 2.
+            return bitHint - 2;
         }
 
         public IEnumerable<IRawFile> AllOpenedFiles()

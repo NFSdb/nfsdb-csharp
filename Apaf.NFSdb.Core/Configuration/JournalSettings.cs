@@ -48,7 +48,7 @@ namespace Apaf.NFSdb.Core.Configuration
             Columns = _columns;
 
             _recordHint = jconf.RecordHint;
-            if (_recordHint < 0) _recordHint = MetadataConstants.DEFAULT_RECORD_HINT;
+            if (_recordHint <= 0) _recordHint = MetadataConstants.DEFAULT_RECORD_HINT;
 
         }
 
