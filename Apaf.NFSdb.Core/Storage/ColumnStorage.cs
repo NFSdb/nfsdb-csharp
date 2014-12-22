@@ -126,6 +126,7 @@ namespace Apaf.NFSdb.Core.Storage
             var columnDistinctCount = Math.Max(_settings.GetColumn(fieldName).HintDistinctCount, 1);
             switch (dataType)
             {
+                case EDataType.Symd:
                 case EDataType.Data:
                     avgRecSize = _settings.GetAvgSize(fieldName);
                     break;
@@ -135,24 +136,21 @@ namespace Apaf.NFSdb.Core.Storage
                     avgRecSize = MetadataConstants.STRING_INDEX_FILE_RECORD_SIZE;
                     break;
 
-                case EDataType.Symrr:
-                    recordCount = columnDistinctCount;
-                    avgRecSize = 8;
+                case EDataType.Symrk:
+                    avgRecSize = 16;
+                    recordCount = columnDistinctCount * 2;
                     break;
 
+                case EDataType.Symrr:
+                    recordCount = columnDistinctCount * MetadataConstants.HASH_FUNCTION_GROUPING_RATE;
+                    avgRecSize = (int)Math.Max(recordCount / columnDistinctCount / 2, 1);
+                    break;
                 case EDataType.Datar:
                     avgRecSize = 8;
                     break;
-
-                case EDataType.Symrk:
                 case EDataType.Datak:
                     avgRecSize = 16;
-                    recordCount = MetadataConstants.HASH_FUNCTION_GROUPING_RATE * MetadataConstants.AVG_KEYBLOCKS_IN_K_FILE;
-                    break;
-
-                case EDataType.Symd:
-                    avgRecSize = _settings.GetAvgSize(fieldName);
-                    recordCount = columnDistinctCount;
+                    recordCount = columnDistinctCount * 2;
                     break;
 
                 default:
