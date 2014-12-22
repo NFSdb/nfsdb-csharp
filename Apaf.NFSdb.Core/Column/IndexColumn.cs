@@ -22,6 +22,7 @@ using Apaf.NFSdb.Core.Tx;
 namespace Apaf.NFSdb.Core.Column
 {
     // File binary structure
+    // .r file
     // -------------------------------------------
     // Header:
     // -------------------------------------------
@@ -116,8 +117,8 @@ namespace Apaf.NFSdb.Core.Column
             if (blockOffset == 0 || cellIndex == 0)
             {
                 var prevRowBlockOffset = blockOffset;
-                blockOffset = tx.PartitionTx[_rData.PartitionID].AppendOffset[_rFileID] + _rowBlockSize;
-                tx.PartitionTx[_rData.PartitionID].AppendOffset[_rFileID] = blockOffset;
+                blockOffset = tx.GetPartitionTx(_rData.PartitionID).AppendOffset[_rFileID] + _rowBlockSize;
+                tx.GetPartitionTx(_rData.PartitionID).AppendOffset[_rFileID] = blockOffset;
                 _rData.WriteInt64(blockOffset - 8, prevRowBlockOffset);
                 
                 // Save block offset in k file

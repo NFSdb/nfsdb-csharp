@@ -106,7 +106,6 @@ namespace Apaf.NFSdb.Core.Configuration
             {
                 throw new ArgumentOutOfRangeException("fieldName");
             }
-            if (column.FieldType == EFieldType.Symbol) return INT32_SIZE;
 
             var avgSize = column.AvgSize;
             if (avgSize < 0) avgSize = MetadataConstants.DEFAULT_AVG_RECORD_SIZE;

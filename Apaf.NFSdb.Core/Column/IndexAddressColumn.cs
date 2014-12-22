@@ -24,6 +24,7 @@ using Apaf.NFSdb.Core.Tx;
 namespace Apaf.NFSdb.Core.Column
 {
     // File binary structure
+    // .k files
     // -------------------------------------------
     // Header:
     // -------------------------------------------
@@ -135,7 +136,7 @@ namespace Apaf.NFSdb.Core.Column
         public long ReadOnlyKeyRecordOffset(int key, IReadTransactionContext tx)
         {
             // Check transaction.
-            var sd = tx.PartitionTx[_partitionID].SymbolData[_fileID];
+            var sd = tx.GetPartitionTx(_partitionID).SymbolData[_fileID];
             long keyBlockOffset = sd.KeyBlockOffset;
             CheckKeyBlockOffset(keyBlockOffset);
 
@@ -155,7 +156,7 @@ namespace Apaf.NFSdb.Core.Column
         public long ReadKeyRecordOffset(int key, ITransactionContext tx)
         {
             // Check transaction.
-            var sd = tx.PartitionTx[_partitionID].SymbolData[_fileID];
+            var sd = tx.GetPartitionTx(_partitionID).SymbolData[_fileID];
             if (!sd.KeyBlockCreated)
             {
                 CopyKeyBlock(tx);
@@ -189,13 +190,13 @@ namespace Apaf.NFSdb.Core.Column
 
         private void CopyKeyBlock(ITransactionContext tx)
         {
-            var sd = tx.PartitionTx[_partitionID].SymbolData[_fileID];
-            var newBlockOffset = tx.PartitionTx[_partitionID].AppendOffset[_fileID];
+            var sd = tx.GetPartitionTx(_partitionID).SymbolData[_fileID];
+            var newBlockOffset = tx.GetPartitionTx(_partitionID).AppendOffset[_fileID];
             
             var currentBlockOffset = sd.KeyBlockOffset;
             CheckKeyBlockOffset(currentBlockOffset);
          
-            var currentBlockLen = (int) sd.KeyBlockSize;
+            var currentBlockLen = sd.KeyBlockSize;
             var keyBlockBuff = tx.ReadCache.AllocateByteArray3(currentBlockLen);
             _kData.ReadBytes(currentBlockOffset, keyBlockBuff, 0, keyBlockBuff.Length);
             _kData.WriteBytes(newBlockOffset, keyBlockBuff, 0, currentBlockLen);

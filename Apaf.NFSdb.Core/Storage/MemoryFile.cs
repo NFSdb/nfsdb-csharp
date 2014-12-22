@@ -29,6 +29,7 @@ namespace Apaf.NFSdb.Core.Storage
 {
     public class MemoryFile : ICompositeFile
     {
+        private readonly int _bitHint;
         private readonly EFileAccess _access;
         private readonly string _fullName;
         private bool _fileOpened;
@@ -37,25 +38,18 @@ namespace Apaf.NFSdb.Core.Storage
         {
             if (fileName == null) throw new ArgumentNullException("fileName");
 
-            if (bitHint < MetadataConstants.MIN_FILE_BIT_HINT
-                || bitHint > MetadataConstants.MAX_FILE_BIT_HINT)
-            {
-                throw new NFSdbConfigurationException("Calclated size of file {0} " +
-                                                      "is invalid. Should be >= 2^{1} and  <= 2^{2} " +
-                                                      "but was 2^{3}", 
-                                                      fileName, 
-                                                      MetadataConstants.MIN_FILE_BIT_HINT,
-                                                      MetadataConstants.MAX_FILE_BIT_HINT,
-                                                      bitHint);
-            }
-
             Filename = fileName;
-
+            _bitHint = bitHint;
             _access = access;
+            _fullName = Path.GetFullPath(fileName);
+        }
+
+        private void CheckFileSize()
+        {
             try
             {
-                var fi = new FileInfo(fileName);
-                var size = 1 << bitHint;
+                var fi = new FileInfo(_fullName);
+                var size = 1 << _bitHint;
 
                 if (!fi.Exists)
                 {
@@ -75,12 +69,10 @@ namespace Apaf.NFSdb.Core.Storage
                 {
                     Size = fi.Length;
                 }
-                _fullName = fi.FullName;
-
             }
             catch (IOException ex)
             {
-                throw new NFSdbIOException("Unable to create file or directory for path {0}", ex, fileName);
+                throw new NFSdbIOException("Unable to create file or directory for path {0}", ex, Filename);
             }
         }
 
@@ -98,22 +90,22 @@ namespace Apaf.NFSdb.Core.Storage
 
         public static void MarkAsSparseFile(SafeFileHandle fileHandle)
         {
-            int bytesReturned = 0;
-            var lpOverlapped = new NativeOverlapped();
-            var result =
-                DeviceIoControl(
-                    fileHandle,
-                    590020, //FSCTL_SET_SPARSE,
-                    IntPtr.Zero,
-                    0,
-                    IntPtr.Zero,
-                    0,
-                    ref bytesReturned,
-                    ref lpOverlapped);
-            if (result == false)
-            {
-                throw new Win32Exception();
-            }
+            //int bytesReturned = 0;
+            //var lpOverlapped = new NativeOverlapped();
+            //var result =
+            //    DeviceIoControl(
+            //        fileHandle,
+            //        590020, //FSCTL_SET_SPARSE,
+            //        IntPtr.Zero,
+            //        0,
+            //        IntPtr.Zero,
+            //        0,
+            //        ref bytesReturned,
+            //        ref lpOverlapped);
+            //if (result == false)
+            //{
+            //    throw new Win32Exception();
+            //}
         }
 
         public long Size { get; private set; }
@@ -125,6 +117,11 @@ namespace Apaf.NFSdb.Core.Storage
         public IRawFilePart CreateViewAccessor(long offset, long size)
         {
             // First chunk (0 offset).
+            if (!_fileOpened)
+            {
+                CheckFileSize();
+            }
+
             if (offset == 0)
             {
                 // File access will be enforced.
@@ -142,9 +139,10 @@ namespace Apaf.NFSdb.Core.Storage
                     }
                 }
             }
+
             // Enforce access for 0 chunk.
-            var fileAccess = CalculateFileAccess(offset);
-            var fileShare = CalculateFileShare(offset);
+            var fileAccess = CalculateFileAccess();
+            var fileShare = CalculateFileShare();
 
             using (var file = File.Open(_fullName, FileMode.Open, fileAccess, fileShare))
             {
@@ -188,13 +186,13 @@ namespace Apaf.NFSdb.Core.Storage
             }
         }
 
-        private FileShare CalculateFileShare(long offset)
+        private FileShare CalculateFileShare()
         {
             return !_fileOpened && _access == EFileAccess.ReadWrite ?
                 FileShare.Read : FileShare.ReadWrite;
         }
 
-        private FileAccess CalculateFileAccess(long offset)
+        private FileAccess CalculateFileAccess()
         {
             return !_fileOpened && _access == EFileAccess.Read ?
                 FileAccess.Read : FileAccess.ReadWrite;

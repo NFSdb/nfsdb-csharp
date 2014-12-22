@@ -15,15 +15,10 @@
  * limitations under the License.
  */
 #endregion
-using Apaf.NFSdb.Core.Storage;
-
-namespace Apaf.NFSdb.Core.Tx
+namespace Apaf.NFSdb.Core.Storage
 {
-    public interface IReadTransactionContext
+    public interface IRollback
     {
-        IReadContext ReadCache { get; }
-        PartitionTxData GetPartitionTx(int partitionID);
-        int PartitionTxCount { get; }
-        long GetRowCount(int partitionID);
+        void Rollback();
     }
 }

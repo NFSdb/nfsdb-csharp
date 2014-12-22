@@ -15,24 +15,40 @@
  * limitations under the License.
  */
 #endregion
+
+using System.Collections.Generic;
 using System.Linq;
+using Apaf.NFSdb.Core.Storage;
 
 namespace Apaf.NFSdb.Core.Tx
 {
     public interface ITransactionContext : IReadTransactionContext
     {
-        PartitionTxData AddPartition(int partitionID);
+        void AddPartition(IFileTxSupport parition);
+        void AddPartition(PartitionTxData partitionData, int partitionID);
         long PrevTxAddress { get; set; }
-        bool IsParitionUpdated(int partitionID, TransactionContext lastTransactionLog);
+        bool IsParitionUpdated(int partitionID, ITransactionContext lastTransactionLog);
     }
 
     public class PartitionTxData
     {
+        private PartitionTxData()
+        {
+        }
+
+        public PartitionTxData(int columnCount)
+        {
+            AppendOffset = new long[columnCount];
+            SymbolData = Enumerable.Range(0, columnCount)
+                .Select(dd => new SymbolTxData()).ToArray();
+        }
+
         public bool IsPartitionUpdated;
         public long NextRowID;
         public long LastTimestamp;
         public long[] AppendOffset;
-        public SymbolTxData[] SymbolData;
+        public IList<SymbolTxData> SymbolData;
+        public bool IsAppended;
 
         public PartitionTxData DeepClone()
         {

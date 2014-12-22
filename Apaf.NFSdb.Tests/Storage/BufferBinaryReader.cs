@@ -42,16 +42,14 @@ namespace Apaf.NFSdb.Tests.Storage
 
         public bool Disposed { get; private set; }
 
-        public int PartitionID { get; private set; }
+        public int PartitionID { get; set; }
         public int FileID { get; private set; }
-        public int ColumnID { get; private set; }
-        public EDataType DataType { get; private set; }
-        public EFileAccess Access { get; private set; }
+        public int ColumnID { get; set; }
+        public EDataType DataType { get; set; }
+        public EFileAccess Access { get; set; }
+        public long MappedSize { get{ return _buffer.Length;} }
 
-        public string Filename
-        {
-            get { return "TestFile"; } 
-        }
+        public string Filename { get; set; }
 
         public void ReadBytes(long offset, byte[] array, int arrayOffset, int sizeBytes)
         {

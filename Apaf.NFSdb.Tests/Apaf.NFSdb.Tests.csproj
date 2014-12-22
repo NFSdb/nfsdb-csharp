@@ -135,6 +135,8 @@
     <Compile Include="Columns\IndexColumnTests.cs" />
     <Compile Include="Columns\PocoModel\Quote.cs" />
     <Compile Include="Columns\PocoModel\Trade.cs" />
+    <Compile Include="Common\DisposableTempDir.cs" />
+    <Compile Include="Common\TestUtils.cs" />
     <Compile Include="Serializer\ThriftObjectSerializerTests.cs" />
     <Compile Include="Columns\StringColumnTests.cs" />
     <Compile Include="Columns\SymbolMapColumnTests.cs" />
@@ -165,7 +167,9 @@
     <Compile Include="Serializer\PocoSerializerFactoryTests.cs" />
     <Compile Include="Storage\BufferBinaryReader.cs" />
     <Compile Include="Storage\ByteOrder.cs" />
+    <Compile Include="Storage\ColumnStorageTests.cs" />
     <Compile Include="Storage\CompositeRawFileTests.cs" />
+    <Compile Include="Storage\FileTxSupportTests.cs" />
     <Compile Include="Storage\MemeoryMapReadWriteTests.cs" />
     <Compile Include="Storage\MemoryFileTests.cs" />
     <Compile Include="Tx\TestTxLog.cs" />

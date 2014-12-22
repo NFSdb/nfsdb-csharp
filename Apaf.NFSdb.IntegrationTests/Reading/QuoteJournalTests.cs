@@ -51,7 +51,7 @@ namespace Apaf.NFSdb.IntegrationTests.Reading
         [Category("Performance")]
         public void Should_read_all_rows()
         {
-            var totalCount = (int)(2.5*GENERATE_RECORDS_COUNT);
+            var totalCount = (int)(5*GENERATE_RECORDS_COUNT);
             GenerateRecords(totalCount, 2);
             using (var j = CreateJournal(EFileAccess.Read))
             {

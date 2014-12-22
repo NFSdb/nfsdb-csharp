@@ -120,7 +120,7 @@ namespace Apaf.NFSdb.Tests.Storage
         {
             var bitHint = (int)Math.Ceiling(Math.Log(chunkSize, 2));
             return new CompositeRawFile(_dummyFileName,
-                bitHint, new CompositeFileFactory(), readWrite, 0, 0, 0, EDataType.Data);
+                bitHint, new CompositeFileFactory(), readWrite, 0, 0, 0, EDataType.Data, 1);
         }
     }
 }

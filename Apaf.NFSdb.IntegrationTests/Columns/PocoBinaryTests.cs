@@ -35,6 +35,7 @@ namespace Apaf.NFSdb.IntegrationTests.Columns
                 .WithPartitionBy(EPartitionType.Month)
                 .WithLocation(directoryPath)
                 .WithSymbolColumn("Path", 10000, 20, 20)
+                .WithTimestampColumn("Timestamp")
                 .ToJournal<File>(access);
         }
 

@@ -28,10 +28,10 @@ namespace Apaf.NFSdb.Core.Storage
                 case EDataType.Symd:
                 case EDataType.Symrk:
                 case EDataType.Symrr:
-                case EDataType.Symi:
                 case EDataType.Datar:
                 case EDataType.Datak:
                 case EDataType.Data:
+                case EDataType.Symi:
                     return false;
 
                 case EDataType.Index:

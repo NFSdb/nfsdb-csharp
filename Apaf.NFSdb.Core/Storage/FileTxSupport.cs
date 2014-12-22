@@ -42,11 +42,11 @@ namespace Apaf.NFSdb.Core.Storage
             _metadata = metadata;
         }
 
-        public void ReadTxLogFromFile(ITransactionContext tx)
+        public PartitionTxData ReadTxLogFromFile()
         {
             long nextRowID = -1L;
             string lastRowIDFilename = null;
-            var pd = tx.AddPartition(_partitionID);
+            var pd = new PartitionTxData(_metadata.FileCount);
 
             foreach (IRawFile file in _storage.AllOpenedFiles())
             {
@@ -100,28 +100,24 @@ namespace Apaf.NFSdb.Core.Storage
                 }
             }
             pd.NextRowID = nextRowID;
+            return pd;
         }
 
 
-        public void ReadTxLogFromPartition(ITransactionContext itx, TxRec txRec)
+        public PartitionTxData ReadTxLogFromPartition(TxRec txRec = null)
         {
-            var tx = (TransactionContext) itx;
             if (txRec == null)
             {
-                ReadTxLogFromFile(tx);
+                return ReadTxLogFromFile();
             }
-            else
-            {
-                ReadTxLogFromFileAndTxRec(tx, txRec);
-            }
+            return ReadTxLogFromFileAndTxRec(txRec);
         }
 
-        private void ReadTxLogFromFileAndTxRec(TransactionContext tx, TxRec txRec)
+        private PartitionTxData ReadTxLogFromFileAndTxRec(TxRec txRec)
         {
-            long nextRowID = -1L;
             int symrRead = 0;
-            var pd = tx.AddPartition(_partitionID);
-            nextRowID = RowIDUtil.ToLocalRowID(txRec.JournalMaxRowID);
+            var pd = new PartitionTxData(_metadata.FileCount);
+            long nextRowID = RowIDUtil.ToLocalRowID(txRec.JournalMaxRowID);
             pd.NextRowID = nextRowID;
 
             foreach (IRawFile file in _storage.AllOpenedFiles())
@@ -176,61 +172,64 @@ namespace Apaf.NFSdb.Core.Storage
                 }
             }
             pd.NextRowID = nextRowID;
+            return pd;
         }
 
-        public void Commit(ITransactionContext newTx, ITransactionContext previousTx)
+        public IRollback Commit(ITransactionContext newTx)
         {
-            var processedFiles = new Stack<IRawFile>();
+            var processedFileOffsets = new List<CommitData>(_metadata.FileCount);
+            var actionRollaback = new CommitRollback(processedFileOffsets);
             foreach (IRawFile file in _storage.AllOpenedFiles())
             {
                 try
                 {
                     int partitionID = file.PartitionID;
                     int fileID = file.FileID;
-                    var partitionTxData = newTx.PartitionTx[partitionID];
+                    var partitionTxData = newTx.GetPartitionTx(partitionID);
+                    var oldOffset = file.GetAppendOffset();
                     var appendOffset = partitionTxData.AppendOffset[fileID];
 
                     if (file.DataType == EDataType.Symrk || file.DataType == EDataType.Datak)
                     {
+                        // Key block.
                         var sd = partitionTxData.SymbolData[fileID];
                         var keyBlockOffset = sd.KeyBlockOffset;
                         var keyBlockSize = sd.KeyBlockSize;
+                        var oldBlockOffset = file.ReadInt64(MetadataConstants.K_FILE_KEY_BLOCK_OFFSET);
                         file.WriteInt64(MetadataConstants.K_FILE_KEY_BLOCK_OFFSET, keyBlockOffset);
                         file.WriteInt64(keyBlockOffset, keyBlockSize);
-                        appendOffset = keyBlockOffset + keyBlockSize;
 
+                        // Append offset.
+                        appendOffset = keyBlockOffset + keyBlockSize;
                         partitionTxData.AppendOffset[fileID] = appendOffset;
+                        file.SetAppendOffset(appendOffset);
+
+                        processedFileOffsets.Add(new CommitData(file, oldOffset, oldBlockOffset));
                     }
-                    file.SetAppendOffset(appendOffset);
-                    processedFiles.Push(file);
+                    else
+                    {
+                        // Append offset.
+                        file.SetAppendOffset(appendOffset);
+                        processedFileOffsets.Add(new CommitData(file, oldOffset));
+                    }
                 }
                 catch (Exception ex)
                 {
-                    foreach (var rb in processedFiles)
-                    {
-                        try
-                        {
-                            var prevOffset = previousTx.PartitionTx[rb.PartitionID].AppendOffset[rb.FileID];
-                            rb.SetAppendOffset(prevOffset);
-                        }
-                        catch (Exception ex2)
-                        {
-                            LOG.ErrorFormat("Error undoing partial commit in file {0}. {1}",
-                                rb.Filename, ex2);
-                        }
-                    }
+                    actionRollaback.Rollback();
 
                     throw new NFSdbCommitFailedException(
                         "SetAppendOffset failed in file {0}", ex, file.Filename);
                 }
             }
+            return actionRollaback;
         }
 
         public void SetTxRec(ITransactionContext tx, TxRec rec)
         {
             rec.PrevTxAddress = tx.PrevTxAddress;
             rec.Command = TxRec.TX_NORMAL;
-            var pd = tx.AddPartition(_partitionID);
+            var pd = tx.GetPartitionTx(_partitionID);
+
             var columCount = _metadata.Columns.Count();
             if (_partitionID != MetadataConstants.SYMBOL_PARTITION_ID)
             {
@@ -246,8 +245,7 @@ namespace Apaf.NFSdb.Core.Storage
                 {
                     if (f.DataType == EDataType.Datak)
                     {
-                        rec.IndexPointers[f.ColumnID] = 
-                            tx.PartitionTx[_partitionID].SymbolData[f.FileID].KeyBlockOffset;
+                        rec.IndexPointers[f.ColumnID] = pd.SymbolData[f.FileID].KeyBlockOffset;
                     }
                 }
             }
@@ -260,17 +258,72 @@ namespace Apaf.NFSdb.Core.Storage
                 {
                     if (file.DataType == EDataType.Symi)
                     {
-                        var indexSize = (int) (tx.PartitionTx[_partitionID].AppendOffset[file.FileID]/8);
+                        var indexSize = (int) (pd.AppendOffset[file.FileID]/8);
                         symbolTableSize.Add(indexSize);
                     }
                     else if (file.DataType == EDataType.Symrk)
                     {
-                        var sd = tx.PartitionTx[_partitionID].SymbolData[file.FileID];
+                        var sd = pd.SymbolData[file.FileID];
                         symbolTableIndexPointers.Add(sd.KeyBlockOffset);
                     }
                 }
                 rec.SymbolTableIndexPointers = symbolTableIndexPointers.ToArray();
                 rec.SymbolTableSizes = symbolTableSize.ToArray();
+            }
+        }
+
+        private class CommitRollback : IRollback
+        {
+            private readonly List<CommitData> _processedFiles;
+
+            public CommitRollback(List<CommitData> processedFiles)
+            {
+                _processedFiles = processedFiles;
+            }
+
+            public void Rollback()
+            {
+                foreach (var rb in _processedFiles)
+                {
+                    try
+                    {
+                        rb.File.SetAppendOffset(rb.AppendOffeset);
+                        if (rb.IsKeyFile)
+                        {
+                            rb.File.WriteInt64(MetadataConstants.K_FILE_KEY_BLOCK_OFFSET, rb.KeyBlockOffset);
+                        }
+                    }
+                    catch (Exception ex2)
+                    {
+                        LOG.ErrorFormat("Error undoing partial commit in file {0}. " +
+                                        "Continued, but journal may be in the inconsistent state. {1}",
+                            rb.File.Filename, ex2);
+                    }
+                }
+            }
+        }
+
+        private class CommitData
+        {
+            public readonly IRawFile File;
+            public readonly long AppendOffeset;
+            public readonly long KeyBlockOffset;
+            public readonly bool IsKeyFile;
+
+            public CommitData(IRawFile file, 
+                long appendOffeset,
+                long keyBlockOffset)
+            {
+                File = file;
+                AppendOffeset = appendOffeset;
+                KeyBlockOffset = keyBlockOffset;
+                IsKeyFile = true;
+            }
+
+            public CommitData(IRawFile file, long appendOffeset)
+            {
+                File = file;
+                AppendOffeset = appendOffeset;
             }
         }
     }

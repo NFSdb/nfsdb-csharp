@@ -88,12 +88,12 @@ namespace Apaf.NFSdb.Core.Column
             }
             else
             {
-                var writeOffset = tx.PartitionTx[_data.PartitionID].AppendOffset[_data.FileID];
+                var writeOffset = tx.GetPartitionTx(_data.PartitionID).AppendOffset[_data.FileID];
                 _indexColumn.SetInt64(rowID, writeOffset, tx);
                 var size = value.Length;
                 WriteLength(writeOffset, size);
                 _data.WriteBytes(writeOffset + HeaderSize, value, 0, size);
-                tx.PartitionTx[_data.PartitionID].AppendOffset[_data.FileID] = 
+                tx.GetPartitionTx(_data.PartitionID).AppendOffset[_data.FileID] = 
                     writeOffset + HeaderSize + size;
             }
         }
@@ -106,12 +106,12 @@ namespace Apaf.NFSdb.Core.Column
             }
             else
             {
-                var writeOffset = tx.PartitionTx[_data.PartitionID].AppendOffset[_data.FileID];
+                var writeOffset = tx.GetPartitionTx(_data.PartitionID).AppendOffset[_data.FileID];
                 _indexColumn.SetInt64(rowID, writeOffset, tx);
 
                 WriteLength(writeOffset, length);
                 _data.WriteBytes(writeOffset + HeaderSize, value, startIndex, length);
-                tx.PartitionTx[_data.PartitionID].AppendOffset[_data.FileID] = 
+                tx.GetPartitionTx(_data.PartitionID).AppendOffset[_data.FileID] = 
                     writeOffset + HeaderSize + length;
             }
         }

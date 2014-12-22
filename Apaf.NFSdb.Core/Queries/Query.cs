@@ -87,6 +87,16 @@ namespace Apaf.NFSdb.Core.Queries
             return new ResultSet<T>(_journal, _transactionContext.ReadCache, ids, count);
         }
 
+        public ResultSet<T> Enumerate()
+        {
+            var paritionsAndMaxVals =
+                _journal.Partitions.Select(p => Tuple.Create(p.PartitionID,
+                    _transactionContext.GetRowCount(p.PartitionID)));
+
+            var ids = paritionsAndMaxVals.SelectMany(i => CreateRange(i.Item1, i.Item2));
+            return new ResultSet<T>(_journal, _transactionContext.ReadCache, ids);
+        }
+
         private IEnumerable<long> CreateRange(int partitionIndex, long itemsCount)
         {
             for (long i = 0; i < itemsCount; i++)

@@ -17,7 +17,6 @@
 #endregion
 using System;
 using System.IO.MemoryMappedFiles;
-using Apaf.NFSdb.Core.Column;
 using log4net;
 
 namespace Apaf.NFSdb.Core.Storage
@@ -94,6 +93,8 @@ namespace Apaf.NFSdb.Core.Storage
         {
             get { throw new NotSupportedException(); }
         }
+
+        public long MappedSize { get { return  _bufferSize; } }
 
         public void ReadBytes(long offset, byte[] array, int arrayOffset, int sizeBytes)
         {

@@ -15,15 +15,32 @@
  * limitations under the License.
  */
 #endregion
-using Apaf.NFSdb.Core.Storage;
+using System;
+using System.IO;
 
-namespace Apaf.NFSdb.Core.Tx
+namespace Apaf.NFSdb.Tests.Common
 {
-    public interface IReadTransactionContext
+    public class DisposableTempDir : IDisposable
     {
-        IReadContext ReadCache { get; }
-        PartitionTxData GetPartitionTx(int partitionID);
-        int PartitionTxCount { get; }
-        long GetRowCount(int partitionID);
+        private const string WORKING_DIR = "partition_tests";
+        private readonly string _dirName;
+
+        public DisposableTempDir()
+        {
+            _dirName = WORKING_DIR + Guid.NewGuid();
+        }
+
+        public string DirName
+        {
+            get { return _dirName; }
+        }
+
+        public void Dispose()
+        {
+            if (Directory.Exists(_dirName))
+            {
+                Directory.Delete(_dirName, true);
+            }
+        }
     }
 }

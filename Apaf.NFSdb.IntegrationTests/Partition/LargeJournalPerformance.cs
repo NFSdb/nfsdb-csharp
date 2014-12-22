@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Configuration;
 using System.IO;
+using System.Linq;
 using Apaf.NFSdb.Core;
 using Apaf.NFSdb.Core.Configuration;
 using Apaf.NFSdb.Core.Storage;
@@ -14,7 +15,7 @@ namespace Apaf.NFSdb.IntegrationTests.Partition
     {
         private const string FOLDER_PATH = "Large-Journal";
         private const int TOTAL_PARITIONS = 100;
-        private const int TOTAL_COUNT = (int) 100E6;
+        private const int TOTAL_COUNT = (int) 50E6;
         private const int GENERATE_RECORDS_COUNT_PER_PARTITION = TOTAL_COUNT / TOTAL_PARITIONS / 2;
 
         public class LargeJournal
@@ -74,6 +75,13 @@ namespace Apaf.NFSdb.IntegrationTests.Partition
             }
         }
 
+
+        private static bool JournalExists()
+        {
+            string directoryPath = Path.Combine(Utils.FindJournalsPath(), FOLDER_PATH);
+            return Directory.Exists(directoryPath);
+        }
+
         private static IJournal<LargeJournal> OpenJournal(EFileAccess access)
         {
             string directoryPath = Path.Combine(Utils.FindJournalsPath(), FOLDER_PATH);
@@ -98,15 +106,34 @@ namespace Apaf.NFSdb.IntegrationTests.Partition
             return OpenJournal(access);
         }
 
-        [Test]
-        [Category("Performance")]
-        public void Should_read_all_rows()
+        public void GenerateRows()
         {
             const int totalCount = TOTAL_COUNT;
             var generator = new LargeJournalGenerator();
             using (var journal = CreateJournal())
             {
                 generator.GenerateRecords(journal, totalCount, TOTAL_PARITIONS);
+            }
+        }
+
+
+        [Test]
+        [Category("Performance")]
+        public void Should_open_minimum_files()
+        {
+            if (!JournalExists())
+            {
+                GenerateRows();
+            }
+
+            using (var j = OpenJournal(EFileAccess.Read))
+            {
+                var readTx = j.OpenReadTx();
+                var first = readTx.Enumerate().Take(1).ToArray();
+                Console.WriteLine(j.Diagnostics.GetTotalFilesOpen());
+                Console.WriteLine(j.Diagnostics.GetTotalMemoryMapped());
+
+                Assert.That(j.Diagnostics.GetTotalFilesOpen(), Is.LessThan(27 + 18));
             }
         }
     }

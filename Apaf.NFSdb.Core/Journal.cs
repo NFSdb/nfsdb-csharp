@@ -41,6 +41,7 @@ namespace Apaf.NFSdb.Core
             _partitionManager = partitionManager;
             _writerState = new WriterState<T>(metadata);
             _stats = new JournalStatistics<T>(_partitionManager, metadata);
+            Diagnostics = new JournalDiagnostics(_partitionManager);
         }
 
         public IJournalMetadata<T> Metadata
@@ -53,7 +54,14 @@ namespace Apaf.NFSdb.Core
             get { return _partitionManager.Partitions; }
         }
 
+        public IJournalDiagnostics Diagnostics { get; private set; }
+
         public IQueryStatistics QueryStatistics { get { return _stats; } }
+
+        public IComparer<long> GetRecordsComparer(int[] columnIndices)
+        {
+            throw new NotImplementedException();
+        }
 
         public IQuery<T> OpenReadTx()
         {
@@ -69,11 +77,6 @@ namespace Apaf.NFSdb.Core
             }
             Monitor.Enter(_writeLock);
             return new Writer<T>(_writerState, _partitionManager, _writeLock);
-        }
-
-        public IComparer<long> GetRecordsComparer(int[] columnIndices)
-        {
-            throw new NotImplementedException();
         }
 
         public T Read(long rowID, IReadContext readContext)

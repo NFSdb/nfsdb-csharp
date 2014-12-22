@@ -99,7 +99,7 @@ namespace Apaf.NFSdb.Core.Column
                     key = CheckKeyQuick(value, hashKey, tx);
                     if (key == NOT_FOUND_VALUE)
                     {
-                        var appendOffset = tx.PartitionTx[SYMI_PARTITION_ID].AppendOffset[_symiFileID];
+                        var appendOffset = tx.GetPartitionTx(SYMI_PARTITION_ID).AppendOffset[_symiFileID];
                         key = (int) (appendOffset / STRING_INDEX_FILE_RECORD_SIZE);
                         
                         _globalSymColumn.SetString(key, value, tx);
@@ -110,7 +110,7 @@ namespace Apaf.NFSdb.Core.Column
             }
             _data.WriteInt32(rowID * INT32_SIZE, key);
             _datarIndex.Add(key, rowID, tx);
-            tx.PartitionTx[_dataPartitionID].AppendOffset[_dataFileID] = (rowID + 1)*INT32_SIZE;
+            tx.GetPartitionTx(_dataPartitionID).AppendOffset[_dataFileID] = (rowID + 1)*INT32_SIZE;
         }
 
         public object GetValue(long rowID, IReadContext readContext)

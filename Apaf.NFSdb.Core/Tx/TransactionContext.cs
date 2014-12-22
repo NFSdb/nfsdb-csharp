@@ -15,6 +15,9 @@
  * limitations under the License.
  */
 #endregion
+
+using System;
+using System.Collections.Generic;
 using System.Linq;
 using Apaf.NFSdb.Core.Storage;
 
@@ -46,66 +49,57 @@ namespace Apaf.NFSdb.Core.Tx
             }
         }
 
-        public PartitionTxData[] PartitionTx { get; private set; }
+        public IList<PartitionTxData> PartitionTx { get; private set; }
 
         public long GetRowCount(int partitionID)
         {
             return PartitionTx[partitionID].NextRowID;
         }
 
-        public PartitionTxData AddPartition(int partitionID)
+        public PartitionTxData GetPartitionTx(int partitionID)
         {
-            if (PartitionTx == null || partitionID >= PartitionTx.Length)
+            return PartitionTx[partitionID];
+        }
+
+        public int PartitionTxCount { get { return PartitionTx.Count; } }
+
+        public void AddPartition(IFileTxSupport parition)
+        {
+            throw new NotSupportedException();
+        }
+
+        public void AddPartition(PartitionTxData partitionData, int partitionID)
+        {
+            if (PartitionTx == null || partitionID >= PartitionTx.Count)
             {
                 var oldParitions = PartitionTx;
                 PartitionTx = new PartitionTxData[partitionID + 1];
-                for (int i = 0; i < PartitionTx.Length; i++)
+                for (int i = 0; i < PartitionTx.Count; i++)
                 {
-                    if (oldParitions != null && i < oldParitions.Length)
+                    if (oldParitions != null && i < oldParitions.Count)
                     {
                         PartitionTx[i] = oldParitions[i].DeepClone();
                     }
                     else
                     {
-                        PartitionTx[i] = new PartitionTxData
-                        {
-                            AppendOffset = new long[_columnCount],
-                            SymbolData = Enumerable.Range(0, _columnCount)
-                                .Select(dd => new SymbolTxData()).ToArray()
-                        };
+                        PartitionTx[i] = partitionData;
                     }
                 }
             }
-            return PartitionTx[partitionID];
         }
 
-        //public bool IsParitionUpdated(int partitoinID)
-        //{
-        //    if (PartitionTx != null)
-        //    {
-        //        var pd = PartitionTx[partitoinID];
-        //        for (int i = 0; i < pd.AppendOffset.Length; i++)
-        //        {
-        //            if (pd.AppendOffset[i] != _appendOffset[partitoinID][i])
-        //            {
-        //                return true;
-        //            }
-        //        }
-        //    }
-        //    return false;
-        //}
-        
-        public long PrevTxAddress    { get; set; }
+        public long PrevTxAddress { get; set; }
 
-        public bool IsParitionUpdated(int partitionID, TransactionContext lastTransactionLog)
+        public bool IsParitionUpdated(int partitionID, ITransactionContext lastTransactionLog)
         {
             var thisPd = PartitionTx[partitionID];
-            if (lastTransactionLog.PartitionTx == null
-                || lastTransactionLog.PartitionTx.Length <= partitionID)
+            var partitionTx = lastTransactionLog.GetPartitionTx(partitionID);
+
+            if (partitionTx == null || PartitionTx.Count <= partitionID)
             {
                 return true;
             }
-            var lastPd = lastTransactionLog.PartitionTx[partitionID];
+            var lastPd = PartitionTx[partitionID];
 
             for (int i = 0; i < thisPd.AppendOffset.Length; i++)
             {

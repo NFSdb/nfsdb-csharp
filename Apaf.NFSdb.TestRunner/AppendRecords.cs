@@ -29,7 +29,7 @@ namespace Apaf.NFSdb.TestRunner
         {
             Utils.ClearJournal<Quote>();
             const int partitionCount = 1;
-            const int totalCount = (int) 30E6;
+            const int totalCount = (int) 500000;
 
             var sw1 = new Stopwatch();
             sw1.Start();

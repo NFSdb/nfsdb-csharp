@@ -260,7 +260,7 @@ namespace Apaf.NFSdb.Core.Tx
         {
             int value;
             _data.ReadBytes(offset, (byte*)(&value), 0, 4);
-            offset += 8;
+            offset += 4;
             return value;
         }
 

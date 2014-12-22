@@ -56,6 +56,7 @@ namespace Apaf.NFSdb.Core.Column
         public static readonly int SYMBOL_STRING_CACHE_SIZE = 500;
         public static readonly string TEMP_DIRECTORY_PREFIX = "temp";
         public static readonly int HASH_FUNCTION_GROUPING_RATE = 25;
+        public static readonly int AVG_KEYBLOCKS_IN_K_FILE = 25;
         public const int STRING_HASH_CODE_SOLT = 0x7fffffff;
 
         public const int SYMBOL_PARTITION_ID = 0;
@@ -76,7 +77,9 @@ namespace Apaf.NFSdb.Core.Column
         public const int NULL_SYMBOL_VALUE = -1;
         public const int SYMBOL_NOT_FOUND_VALUE = -1;
 
-        public const int MIN_FILE_BIT_HINT = 9;
-        public const int MAX_FILE_BIT_HINT = 63;
+        // 64k is memory mapping granularity for x64 i7
+        public const int MIN_FILE_BIT_HINT = 16;
+        // 128MB max
+        public const int MAX_FILE_BIT_HINT = 27;
     }
 }

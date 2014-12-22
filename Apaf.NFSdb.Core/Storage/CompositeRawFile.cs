@@ -34,6 +34,7 @@ namespace Apaf.NFSdb.Core.Storage
         private const long FILE_HEADER_LENGTH = MetadataConstants.FILE_HEADER_LENGTH;
         private ICompositeFile _compositeFile;
         private readonly object _buffSync = new object();
+        private long _mappedSize;
 
         public CompositeRawFile(string fileName,
             int bitHint,
@@ -43,8 +44,29 @@ namespace Apaf.NFSdb.Core.Storage
             int fileID,
             int columnID,
             EDataType dataType)
+            : this(fileName,
+                bitHint,
+                mmf,
+                access,
+                partitionID,
+                fileID,
+                columnID,
+                dataType,
+                MetadataConstants.MIN_FILE_BIT_HINT)
         {
-            if (bitHint < MetadataConstants.MIN_FILE_BIT_HINT 
+        }
+
+        public CompositeRawFile(string fileName,
+            int bitHint,
+            ICompositeFileFactory mmf,
+            EFileAccess access,
+            int partitionID,
+            int fileID,
+            int columnID,
+            EDataType dataType,
+            int minBitHint)
+        {
+            if (bitHint < minBitHint
                 || bitHint > MetadataConstants.MAX_FILE_BIT_HINT)
             {
                 throw new NFSdbConfigurationException("Calclated size of file {0} " +
@@ -64,7 +86,6 @@ namespace Apaf.NFSdb.Core.Storage
             DataType = dataType;
             Filename = fileName;
         }
-
 
         public void Dispose()
         {
@@ -187,6 +208,7 @@ namespace Apaf.NFSdb.Core.Storage
                 var view = _compositeFile.CreateViewAccessor(bufferOffset, bufferSize);
 #endif
                 _buffers[bufferIndex] = view;
+                Interlocked.Add(ref _mappedSize, bufferSize);
                 return view;
             }
         }
@@ -196,6 +218,7 @@ namespace Apaf.NFSdb.Core.Storage
         public int ColumnID { get; private set; }
         public string Filename { get; private set; }
         public EFileAccess Access { get; private set; }
+        public long MappedSize { get { return _mappedSize; } }
         public EDataType DataType { get; private set; }
 
         public void ReadBytes(long offset, byte[] array, int arrayOffset, int sizeBytes)

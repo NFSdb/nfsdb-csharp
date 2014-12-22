@@ -46,8 +46,7 @@ namespace Apaf.NFSdb.Core.Storage
         private readonly CompositeRawFile _txLogFile;
         private readonly TxLog _txLog;
         private EPartitionType _partitionType;
-        private TransactionContext _lastTransactionLog;
-        private readonly int _columnCount;
+        private ITransactionContext _lastTransactionLog;
 
         public PartitionManager(IJournalMetadata<T> metadata,
             EFileAccess access, ICompositeFileFactory fileFactory)
@@ -66,12 +65,16 @@ namespace Apaf.NFSdb.Core.Storage
 
             _txLog = new TxLog(_txLogFile);
             Configure();
-            _columnCount = _metadata.FileCount;
         }
 
         public EFileAccess Access { get; private set; }
 
         public IEnumerable<IPartition<T>> Partitions
+        {
+            get { return _partitions; }
+        }
+
+        public IEnumerable<IPartitionCore> CorePartitions
         {
             get { return _partitions; }
         }
@@ -90,17 +93,15 @@ namespace Apaf.NFSdb.Core.Storage
             return _partitions[partitionID - 1];
         }
 
+        public IPartitionCore GetCorePartitionByID(int partitionID)
+        {
+            return GetPartitionByID(partitionID);
+        }
+
         public ITransactionContext ReadTxLog()
         {
             lock (_lastTransLogSync)
             {
-                if (_lastTransactionLog != null && Access == EFileAccess.ReadWrite)
-                {
-                    // This is readwrite instace of Journal.
-                    // Any transactions are commited using this instance.
-                    return new TransactionContext(_lastTransactionLog);
-                }
-
                 // Should be re-written using transaction log.
                 if (Access == EFileAccess.Read)
                 {
@@ -119,36 +120,16 @@ namespace Apaf.NFSdb.Core.Storage
                         txRec = null;
                     }
                 }
-
-                var tx = new TransactionContext(_columnCount);
-                for (int i = 0; i < _partitions.Count; i++)
-                {
-                    // Last.
-                    _partitions[i].ReadTxLogFromPartition(tx,
-                        (i == _partitions.Count - 1) ? txRec : null);
-                }
-                _symbolTxSupport.ReadTxLogFromPartition(tx, null);
-
+                var tx = new DeferredTransactionContext(_symbolTxSupport, _partitions, txRec);
                 if (txRec != null)
                 {
                     tx.PrevTxAddress = Math.Max(txRec.PrevTxAddress, TxLog.MIN_TX_ADDRESS) + txRec.Size();
                 }
 
                 // Set state to inital.
-                //
-
-                _lastTransactionLog = new TransactionContext(tx);
+                _lastTransactionLog = tx;
                 return tx;
             }
-        }
-
-        private IEnumerable<IFileTxSupport> AllTxFilesSupport()
-        {
-            foreach (var partition in _partitions)
-            {
-                yield return partition;
-            }
-            yield return _symbolTxSupport;
         }
 
         public void Commit(ITransactionContext tx)
@@ -158,35 +139,32 @@ namespace Apaf.NFSdb.Core.Storage
                 throw new NFSdbCommitFailedException(
                     "Journal opened in readonly mode. Transaction commit is not allowed");
             }
+
             lock (_lastTransLogSync)
             {
-                var processedFiles = new List<IFileTxSupport>(_partitions.Count + 1);
-                var modified = _partitions.Where(p => tx.IsParitionUpdated(p.PartitionID, _lastTransactionLog));
+                var processedFiles = new List<IRollback>(_partitions.Count + 1);
+                var modified = _partitions
+                    .Where(p => tx.IsParitionUpdated(p.PartitionID, _lastTransactionLog))
+                    .ToArray();
 
                 // Non-empty tx.
                 if (modified.Any())
                 {
-                    foreach (var txFile in AllTxFilesSupport())
+                    try
                     {
-                        try
+                        foreach (var txFile in modified)
                         {
-                            txFile.Commit(tx, _lastTransactionLog);
-                            processedFiles.Add(txFile);
+                            processedFiles.Add(txFile.Commit(tx));
                         }
-                        catch (NFSdbCommitFailedException)
+                        processedFiles.Add(_symbolTxSupport.Commit(tx));
+                    }
+                    catch (NFSdbCommitFailedException)
+                    {
+                        foreach (var rb in processedFiles)
                         {
-                            foreach (var rb in processedFiles)
-                            {
-                                try
-                                {
-                                    rb.Commit(_lastTransactionLog, _lastTransactionLog);
-                                }
-                                catch (NFSdbCommitFailedException)
-                                {
-                                }
-                            }
-                            throw;
+                            rb.Rollback();
                         }
+                        throw;
                     }
 
                     try
@@ -199,11 +177,10 @@ namespace Apaf.NFSdb.Core.Storage
                     }
                     catch (Exception ex)
                     {
-                        
                         throw new NFSdbCommitFailedException("Error writing _tx file", ex);
                     }
                 }
-                _lastTransactionLog = (TransactionContext) tx;
+                _lastTransactionLog = tx;
             }
         }
 
@@ -217,15 +194,13 @@ namespace Apaf.NFSdb.Core.Storage
                     var p = _partitions[i];
                     if (p.IsInsidePartition(dateTime))
                     {
-                        long partitionLastTimestamp = 0;
-
                         // Fully rolled back.
-                        if (p.PartitionID >= tx.PartitionTx.Length)
+                        if (p.PartitionID >= tx.PartitionTxCount)
                         {
-                            p.ReadTxLogFromPartition(tx, null);
+                            tx.AddPartition(p.ReadTxLogFromPartition(), p.PartitionID);
                         }
 
-                        partitionLastTimestamp = tx.PartitionTx[p.PartitionID].LastTimestamp;
+                        long partitionLastTimestamp = tx.GetPartitionTx(p.PartitionID).LastTimestamp;
 
                         if (!_metadata.TimestampFieldID.HasValue
                             || timestamp >= partitionLastTimestamp)
@@ -260,12 +235,9 @@ namespace Apaf.NFSdb.Core.Storage
             var partitionID = _partitions.Count + 1;
             var partition = new Partition<T>(_metadata, _fileFactory, Access, startDate,
                 partitionID, paritionDir);    
-            partition.ReadTxLogFromPartition(tx, null);
-            if (partitionID == 1)
-            {
-                _symbolTxSupport.ReadTxLogFromFile(tx);
-            }
+
             _partitions.Add(partition);
+            tx.AddPartition(partition);
             
             return partition;
         }
@@ -287,82 +259,55 @@ namespace Apaf.NFSdb.Core.Storage
                 di.Create();
             }
             ConfigurePartitionType();
-            IEnumerable<string> subDirs = null;
-
-            if (di.Exists)
-            {
-                subDirs = di.EnumerateDirectories().Select(d => d.Name).OrderBy(s => s);
-            }
-
             _partitionType = _settings.PartitionType;
-            if (subDirs != null)
-            {
-                DebugCheckParitionID();
-                int paritionID = SYMBOL_PARTITION_ID + 1;
-                
-                foreach (string subDir in subDirs.OrderBy(s => s))
-                {
-                    if (!subDir.StartsWith(MetadataConstants.TEMP_DIRECTORY_PREFIX))
-                    {
-                        DateTime? startDate = PartitionManagerUtils
-                            .ParseDateFromDirName(subDir, _partitionType);
-
-                        if (startDate.HasValue)
-                        {
-                            _partitions.Add(new Partition<T>(_metadata,
-                                _fileFactory, Access, startDate.Value,
-                                paritionID++, Path.Combine(di.FullName, subDir)));
-                        }
-                        else
-                        {
-                            LOG.ErrorFormat("Invalid directory '{0}' for partition type '{1}'",
-                                Path.Combine(di.FullName, subDir), _partitionType);
-                        }
-                    }
-                }
-            }
+            DiscoverNewPartitions();
         }
 
-        private void DiscoverNewPartitions()
+        private void DiscoverNewPartitions(DirectoryInfo di = null)
         {
-            var di = new DirectoryInfo(_settings.DefaultPath);
-            if (di.Exists)
+            var defaultPath = _settings.DefaultPath;
+            di = di ?? new DirectoryInfo(defaultPath);
+
+            var lastPartitionStart = DateTime.MinValue;
+            var lastParitionID = MetadataConstants.SYMBOL_PARTITION_ID + 1;
+
+            if (_partitions.Count > 0)
             {
-                var subDirs = di.EnumerateDirectories().Select(d => d.Name).OrderBy(s => s);
-                var lastPartitionStart = DateTime.MinValue;
-                var lastParitionID = MetadataConstants.SYMBOL_PARTITION_ID + 1;
+                var lastPartition = _partitions[_partitions.Count - 1];
+                lastParitionID = lastPartition.PartitionID + 1;
+                lastPartitionStart = lastPartition.StartDate;
+            }
 
-                if (_partitions.Count > 0)
+            var subDirs = di.EnumerateDirectories().Select(d => d.Name).OrderBy(s => s);
+            foreach (string subDir in subDirs)
+            {
+                if (!subDir.StartsWith(MetadataConstants.TEMP_DIRECTORY_PREFIX))
                 {
-                    var lastPartition = _partitions[_partitions.Count - 1];
-                    lastParitionID = lastPartition.PartitionID + 1;
-                    lastPartitionStart = lastPartition.StartDate;
-                }
+                    DateTime? startDate = PartitionManagerUtils
+                        .ParseDateFromDirName(subDir, _partitionType);
 
-                foreach (string subDir in subDirs.OrderBy(s => s))
-                {
-                    if (!subDir.StartsWith(MetadataConstants.TEMP_DIRECTORY_PREFIX))
+                    var fullPath = Path.Combine(defaultPath, subDir);
+                    if (startDate.HasValue)
                     {
-                        DateTime? startDate = PartitionManagerUtils
-                            .ParseDateFromDirName(subDir, _partitionType);
-
-                        if (startDate.HasValue && startDate.Value > lastPartitionStart)
+                        if (startDate.Value > lastPartitionStart
+                            || (_partitions.Count == 0 && startDate.Value == DateTime.MinValue))
                         {
                             _partitions.Add(new Partition<T>(_metadata,
                                 _fileFactory, Access, startDate.Value,
-                                lastParitionID++, Path.Combine(di.FullName, subDir)));
+                                lastParitionID++, fullPath));
                         }
-                        else if (!startDate.HasValue)
-                        {
-                            LOG.ErrorFormat("Invalid directory '{0}' for partition type '{1}'",
-                                Path.Combine(di.FullName, subDir), _partitionType);
-                        }
+                    }
+                    else
+                    {
+                        LOG.WarnFormat("Invalid directory '{0}' for partition type '{1}'. " +
+                                       "Will be ignored.", fullPath, _partitionType);
                     }
                 }
             }
         }
 
         [Conditional("DEBUG")]
+        // ReSharper disable once UnusedMember.Local
         private void DebugCheckParitionID()
         {
             // ReSharper disable once CSharpWarnings::CS0162
@@ -374,7 +319,7 @@ namespace Apaf.NFSdb.Core.Storage
 
         private void ConfigurePartitionType()
         {
-            EPartitionType? partitionType = ReadPartitionType();
+            var partitionType = ReadPartitionType();
 
             if (!partitionType.HasValue)
             {
@@ -389,13 +334,13 @@ namespace Apaf.NFSdb.Core.Storage
 
         private void WritePartitionType(EPartitionType value)
         {
-            string path = Path.Combine(_settings.DefaultPath, MetadataConstants.PARTITION_TYPE_FILENAME);
+            var path = Path.Combine(_settings.DefaultPath, MetadataConstants.PARTITION_TYPE_FILENAME);
             File.WriteAllText(path, value.ToString().ToUpper());
         }
 
         private EPartitionType? ReadPartitionType()
         {
-            string path = Path.Combine(_settings.DefaultPath, MetadataConstants.PARTITION_TYPE_FILENAME);
+            var path = Path.Combine(_settings.DefaultPath, MetadataConstants.PARTITION_TYPE_FILENAME);
             try
             {
                 if (File.Exists(path))

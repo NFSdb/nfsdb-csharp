@@ -55,7 +55,7 @@ namespace Apaf.NFSdb.Core.Column
         {
             var offset = rowID * _sizeBytes + ISSET_HEADER_LENGTH;
             _storage.WriteBytes(offset, bitArray, 0, _sizeBytes);
-            tx.PartitionTx[_partitionID].AppendOffset[_fileID] = offset + _sizeBytes;
+            tx.GetPartitionTx(_partitionID).AppendOffset[_fileID] = offset + _sizeBytes;
         }
 
         public int GetByteSize()

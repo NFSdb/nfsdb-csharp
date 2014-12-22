@@ -19,6 +19,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using Apaf.NFSdb.Core.Storage;
+using Apaf.NFSdb.Tests.Common;
 using Apaf.NFSdb.Tests.Storage;
 using Moq;
 
@@ -45,6 +46,14 @@ namespace Apaf.NFSdb.Tests.Core
             get { return _mock; }
         }
 
+        public IEnumerable<IRawFile> Files
+        {
+            get
+            {
+                return _filePart.Values;
+            }
+        }
+
         public ICompositeFile GetFile(string filename)
         {
             return _createdFiles.First(kv => kv.Key.EndsWith(filename)).Value;
@@ -57,17 +66,8 @@ namespace Apaf.NFSdb.Tests.Core
         
         private Mock<ICompositeFileFactory> AppendOffsetStub()
         {
-            var fileNameParts = _fileNameSize.Split('|');
-            var dictSize = new Dictionary<string, long>();
-            foreach (var fileSize in fileNameParts)
-            {
-                var fileSizeArr = fileSize.Trim().Split('-');
-                if (fileSizeArr.Length > 1)
-                {
-                    dictSize[fileSizeArr[0].Trim()] = long.Parse(fileSizeArr[1].Trim());
-                }
-            }
-        
+            var dictSize = TestUtils.SplitNameSize(_fileNameSize);
+
             var stubFileF = new Mock<ICompositeFileFactory>();
             _createdFiles = new Dictionary<string, ICompositeFile>();
             _filePart= new Dictionary<string, IRawFilePart>();
@@ -93,11 +93,16 @@ namespace Apaf.NFSdb.Tests.Core
                                     var fileSub = new Mock<IRawFilePart>();
                                     fileSub.Setup(f => f.WriteInt64(0, It.IsAny<long>()))
                                         .Throws(new ArgumentException("stub exception"));
+                                    fileSub.Setup(f => f.ReadInt64(0)).Returns(keyVal.Value);
+                                    fileSub.Setup(f => f.Filename).Returns(filename);
                                     file = fileSub.Object;
                                 }
                                 else
                                 {
-                                    file = new BufferBinaryReader(new byte[1024]);
+                                    file = new BufferBinaryReader(new byte[1024])
+                                    {
+                                        Filename = filename
+                                    };
                                     file.WriteInt64(0, keyVal.Value);
                                 }
                                 _filePart[filename] = file;
@@ -115,5 +120,6 @@ namespace Apaf.NFSdb.Tests.Core
 
             return stubFileF;
         }
+
     }
 }

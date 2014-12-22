@@ -34,5 +34,7 @@ namespace Apaf.NFSdb.Core
 
         IJournalMetadata<T> Metadata { get; }
         IEnumerable<IPartition<T>> Partitions { get; }
+
+        IJournalDiagnostics Diagnostics {get;}
     }
 }

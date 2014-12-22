@@ -109,7 +109,6 @@ namespace Apaf.NFSdb.IntegrationTests.Writing
             Utils.ClearJournal<Trade>();
             using (var journal = CreateJournal())
             {
-
                 using (var wr = journal.OpenWriteTx())
                 {
                     var symbols = new[]
@@ -147,7 +146,6 @@ namespace Apaf.NFSdb.IntegrationTests.Writing
             {
                 using (var wr = journal.OpenWriteTx())
                 {
-
                     var trade = new Trade();
                     for (int i = 0; i < 1E6; i++)
                     {

@@ -86,42 +86,42 @@ namespace Apaf.NFSdb.Core.Column
         {
             var offset = rowID*_sizeBytes;
             _storage.WriteInt32(offset, value);
-            tx.PartitionTx[_partitionID].AppendOffset[_fileID] = offset + _sizeBytes;
+            tx.GetPartitionTx(_partitionID).AppendOffset[_fileID] = offset + _sizeBytes;
         }
 
         public void SetInt64(long rowID, long value, ITransactionContext tx)
         {
             var offset = rowID * _sizeBytes;
             _storage.WriteInt64(offset, value);
-            tx.PartitionTx[_partitionID].AppendOffset[_fileID] = offset + _sizeBytes;
+            tx.GetPartitionTx(_partitionID).AppendOffset[_fileID] = offset + _sizeBytes;
         }
 
         public void SetInt16(long rowID, short value, ITransactionContext tx)
         {
             var offset = rowID * _sizeBytes;
             _storage.WriteInt16(offset, value);
-            tx.PartitionTx[_partitionID].AppendOffset[_fileID] = offset + _sizeBytes;
+            tx.GetPartitionTx(_partitionID).AppendOffset[_fileID] = offset + _sizeBytes;
         }
 
         public void SetByte(long rowID, byte value, ITransactionContext tx)
         {
             var offset = rowID * _sizeBytes;
             _storage.WriteByte(offset, value);
-            tx.PartitionTx[_partitionID].AppendOffset[_fileID] = offset + _sizeBytes;
+            tx.GetPartitionTx(_partitionID).AppendOffset[_fileID] = offset + _sizeBytes;
         }
 
         public void SetBool(long rowID, bool value, ITransactionContext tx)
         {
             var offset = rowID * _sizeBytes;
             _storage.WriteBool(offset, value);
-            tx.PartitionTx[_partitionID].AppendOffset[_fileID] = offset + _sizeBytes;
+            tx.GetPartitionTx(_partitionID).AppendOffset[_fileID] = offset + _sizeBytes;
         }
 
         public void SetDouble(long rowID, double value, ITransactionContext tx)
         {
             var offset = rowID * _sizeBytes;
             _storage.WriteDouble(offset, value);
-            tx.PartitionTx[_partitionID].AppendOffset[_fileID] = offset + _sizeBytes;
+            tx.GetPartitionTx(_partitionID).AppendOffset[_fileID] = offset + _sizeBytes;
         }
 
         public void SetDateTime(long rowID, DateTime value, ITransactionContext readContext)

@@ -114,7 +114,7 @@ namespace Apaf.NFSdb.Tests.Storage
             _compositeFile.Setup(cf => cf.CreateViewAccessor(0, 8)).Returns(lengthFilePart.Object);
 
             var f = new CompositeRawFile("testfile.d", bitHint, 
-                _copositeFileFactory.Object, EFileAccess.Read, 0, 0, 0, EDataType.Data);
+                _copositeFileFactory.Object, EFileAccess.Read, 0, 0, 0, EDataType.Data, 1);
             return f;
         }
 

@@ -21,6 +21,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading;
 using Apaf.NFSdb.Core.Column;
 using Apaf.NFSdb.Core.Configuration;
 using Apaf.NFSdb.Core.Exceptions;
@@ -32,13 +33,16 @@ namespace Apaf.NFSdb.Core.Storage
 {
     public class Partition<T> : IPartition<T>
     {
-        private readonly IFieldSerializer _fieldSerializer;
-        private readonly ColumnStorage _columnStorage;
-        private readonly DateTime _endDate;
-        private readonly FileTxSupport _txSupport;
-        private readonly IFixedWidthColumn _timestampColumn;
-        private readonly Dictionary<string, ISymbolMapColumn> _symbols;
+        private readonly ICompositeFileFactory _memeorymMappedFileFactory;
+        private readonly EFileAccess _access;
+        private IFieldSerializer _fieldSerializer;
+        private ColumnStorage _columnStorage;
+        private FileTxSupport _txSupport;
+        private IFixedWidthColumn _timestampColumn;
+        private Dictionary<string, ISymbolMapColumn> _symbols;
         private readonly IJournalMetadata<T> _metadata;
+        private bool _isStorageInitialized;
+        private readonly object _syncRoot = new object();
 
         public Partition(IJournalMetadata<T> metadata,
             ICompositeFileFactory memeorymMappedFileFactory,
@@ -46,67 +50,61 @@ namespace Apaf.NFSdb.Core.Storage
             DateTime startDate, int partitionID,
             string path)
         {
-            _columnStorage = new ColumnStorage(metadata.Settings, startDate,
-                access, partitionID, memeorymMappedFileFactory);
-
+            _memeorymMappedFileFactory = memeorymMappedFileFactory;
+            _access = access;
             _metadata = metadata;
-            ColumnSource[] columns = metadata.GetPartitionColums(_columnStorage).ToArray();
-            _symbols = columns
-                .Where(c => c.Metadata.DataType == EFieldType.Symbol)
-                .Select(c => c.Column)
-                .Cast<ISymbolMapColumn>()
-                .ToDictionary(c => c.PropertyName, StringComparer.OrdinalIgnoreCase);
 
-            if (metadata.TimestampFieldID.HasValue)
-            {
-                _timestampColumn = 
-                    (IFixedWidthColumn)columns[metadata.TimestampFieldID.Value].Column;
-            }
-
-            _fieldSerializer = metadata.GetSerializer(columns);
             StartDate = startDate;
-            _endDate = PartitionManagerUtils.GetPartitionEndDate(
+            EndDate = PartitionManagerUtils.GetPartitionEndDate(
                 startDate, metadata.Settings.PartitionType);
-            
             PartitionID = partitionID;
             DirectoryPath = path;
-            _txSupport = new FileTxSupport(partitionID, _columnStorage, metadata);
         }
 
 
         public IColumnStorage Storage { get { return _columnStorage; } }
         public DateTime StartDate { get; private set; }
-        public DateTime EndDate { get { return _endDate; } }
+        public DateTime EndDate { get; private set; }
         public int PartitionID { get; private set; }
         public string DirectoryPath { get; private set; }
 
         public T Read(long rowID, IReadContext readContext)
         {
-            return (T) _fieldSerializer.Read(rowID, readContext);
+            if (!_isStorageInitialized) InitializeStorage();
+
+            return (T)_fieldSerializer.Read(rowID, readContext);
         }
 
         public void Append(T item, ITransactionContext tx)
         {
-            var pd = tx.PartitionTx[PartitionID];
+            if (!_isStorageInitialized) InitializeStorage();
+
+            var pd = tx.GetPartitionTx(PartitionID);
             _fieldSerializer.Write(item, pd.NextRowID, tx);
             pd.NextRowID++;
+            pd.IsAppended = true;
         }
 
         public void Dispose()
         {
-            _columnStorage.Dispose();
+            if (_columnStorage != null)
+            {
+                _columnStorage.Dispose();
+            }
         }
 
-        public void ReadTxLogFromPartition(ITransactionContext tx, TxRec txRec)
+        public PartitionTxData ReadTxLogFromPartition(TxRec txRec = null)
         {
-            _txSupport.ReadTxLogFromPartition(tx, txRec);
+            if (!_isStorageInitialized) InitializeStorage();
+
+            return _txSupport.ReadTxLogFromPartition(txRec);
         }
 
-        public void Commit(ITransactionContext tx, ITransactionContext oldTxContext)
+        public IRollback Commit(ITransactionContext tx)
         {
             // Set respective append offset.
             // Some serializers can skip null fields.
-            var pd = tx.PartitionTx[PartitionID];
+            var pd = tx.GetPartitionTx(PartitionID);
             var count = pd.NextRowID;
             foreach (var file in _columnStorage.AllOpenedFiles())
             {
@@ -118,7 +116,7 @@ namespace Apaf.NFSdb.Core.Storage
                 }
             }
 
-            _txSupport.Commit(tx, oldTxContext);
+            return _txSupport.Commit(tx);
         }
 
         public void SetTxRec(ITransactionContext tx, TxRec rec)
@@ -128,6 +126,8 @@ namespace Apaf.NFSdb.Core.Storage
 
         public long BinarySearchTimestamp(DateTime value, IReadTransactionContext tx)
         {
+            if (!_isStorageInitialized) InitializeStorage();
+
             if (_timestampColumn == null)
             {
                 throw new NFSdbConfigurationException("timestampColumn is not configured for journal in "
@@ -147,35 +147,68 @@ namespace Apaf.NFSdb.Core.Storage
         public IEnumerable<long> GetSymbolRows(string symbol, string value, 
             IReadTransactionContext tx)
         {
-            var symb = SymbolMapColumn(symbol);
+            if (!_isStorageInitialized) InitializeStorage();
+
+            var symb = _symbols[symbol];
             var key = symb.CheckKeyQuick(value, tx);
             return symb.GetValues(key, tx);
         }
 
         public int GetSymbolKey(string symbol, string value, IReadTransactionContext tx)
         {
-            var symb = SymbolMapColumn(symbol);
+            if (!_isStorageInitialized) InitializeStorage();
+
+            var symb = _symbols[symbol];
             var key = symb.CheckKeyQuick(value, tx);
             return key;
         }
 
         public IEnumerable<long> GetSymbolRows(string symbol, int valueKey, IReadTransactionContext tx)
         {
-            var symb = SymbolMapColumn(symbol);
+            if (!_isStorageInitialized) InitializeStorage();
+
+            var symb = _symbols[symbol];
             return symb.GetValues(valueKey, tx);
         }
 
         public long GetSymbolRowCount(string symbol, string value, IReadTransactionContext tx)
         {
-            var symb = SymbolMapColumn(symbol);
+            if (!_isStorageInitialized) InitializeStorage();
+
+            var symb = _symbols[symbol];
             var key = symb.CheckKeyQuick(value, tx);
             return symb.GetCount(key, tx);
         }
 
-        private ISymbolMapColumn SymbolMapColumn(string symbol)
+        private void InitializeStorage()
         {
-            var symb = _symbols[symbol];
-            return symb;
+            lock (_syncRoot)
+            {
+                if (!_isStorageInitialized)
+                {
+                    _columnStorage = new ColumnStorage(_metadata.Settings, StartDate,
+                        _access, PartitionID, _memeorymMappedFileFactory);
+
+                    ColumnSource[] columns = _metadata.GetPartitionColums(_columnStorage).ToArray();
+                    _symbols = columns
+                        .Where(c => c.Metadata.DataType == EFieldType.Symbol)
+                        .Select(c => c.Column)
+                        .Cast<ISymbolMapColumn>()
+                        .ToDictionary(c => c.PropertyName, StringComparer.OrdinalIgnoreCase);
+
+                    if (_metadata.TimestampFieldID.HasValue)
+                    {
+                        _timestampColumn =
+                            (IFixedWidthColumn) columns[_metadata.TimestampFieldID.Value].Column;
+                    }
+
+                    _fieldSerializer = _metadata.GetSerializer(columns);
+                    _txSupport = new FileTxSupport(PartitionID, _columnStorage, _metadata);
+                   
+                    Thread.MemoryBarrier();
+                    _isStorageInitialized = true;
+                }
+            }
         }
     }
 }

@@ -27,6 +27,7 @@ namespace Apaf.NFSdb.Core.Storage
         EDataType DataType { get; }
         string Filename { get; }
         EFileAccess Access { get; }
+        long MappedSize { get; }
 
         void ReadBytes(long offset, byte[] array, int arrayOffset, int sizeBytes);
         unsafe void ReadBytes(long offset, byte* array, int arrayOffset, int sizeBytes);

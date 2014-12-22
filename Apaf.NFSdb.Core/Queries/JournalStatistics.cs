@@ -47,7 +47,7 @@ namespace Apaf.NFSdb.Core.Queries
             var symiFile = _partitionManager.SymbolFileStorage.AllOpenedFiles()
                 .Single(f => f.ColumnID == column.FieldID && f.DataType == EDataType.Symi);
             return (int) (
-                tx.PartitionTx[MetadataConstants.SYMBOL_PARTITION_ID].AppendOffset[symiFile.FileID] 
+                tx.GetPartitionTx(MetadataConstants.SYMBOL_PARTITION_ID).AppendOffset[symiFile.FileID] 
                 / MetadataConstants.STRING_INDEX_FILE_RECORD_SIZE);
         }
     }
