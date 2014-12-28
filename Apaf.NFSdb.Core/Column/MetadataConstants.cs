@@ -57,6 +57,7 @@ namespace Apaf.NFSdb.Core.Column
         public static readonly string TEMP_DIRECTORY_PREFIX = "temp";
         public static readonly int HASH_FUNCTION_GROUPING_RATE = 25;
         public static readonly int AVG_KEYBLOCKS_IN_K_FILE = 25;
+        public static readonly int MIN_SYMBOL_DISTINCT_COUNT = 25;
         public const int STRING_HASH_CODE_SOLT = 0x7fffffff;
 
         public const int SYMBOL_PARTITION_ID = 0;

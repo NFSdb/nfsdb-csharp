@@ -69,8 +69,8 @@ namespace Apaf.NFSdb.IntegrationTests.Reading
                     wr.Append(quote);
                 }
                 wr.Commit();
-                stopwatch.Stop();
             }
+            stopwatch.Stop();
             return stopwatch.Elapsed;
         }
 
@@ -79,7 +79,7 @@ namespace Apaf.NFSdb.IntegrationTests.Reading
             trade.Timestamp = START_TIMESTAMP + incrementMs * i;
             trade.Bid = i * 2.04;
             trade.Bid = i;
-            // trade.BidSize = (int)i;
+            trade.BidSize = (int)i;
             trade.Ask = i * 50.09014;
             trade.AskSize = (int)(i % int.MaxValue);
             trade.Ex = "LXE";
@@ -99,7 +99,8 @@ namespace Apaf.NFSdb.IntegrationTests.Reading
             var totalCount = (int)(5 * GENERATE_RECORDS_COUNT);
             using (var journal = CreateJournal())
             {
-                GenerateRecords(journal, totalCount, 2);
+                var elapsed = GenerateRecords(journal, totalCount, 2);
+                Console.WriteLine(elapsed);
             }
 
             using (var j = OpenJournal(EFileAccess.Read))

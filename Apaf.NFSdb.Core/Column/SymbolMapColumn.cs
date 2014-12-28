@@ -48,6 +48,7 @@ namespace Apaf.NFSdb.Core.Column
             string propertyName, int capacity, int recordCountHint, int maxLen, 
             SymbolCache symbolCache)
         {
+            capacity = Math.Max(capacity, MetadataConstants.MIN_SYMBOL_DISTINCT_COUNT);
             _symiFileID = symi.FileID;
             _globalSymColumn = new StringColumn(symd, symi, maxLen, propertyName);
             _symrIndex = new IndexColumn(symk, symr, capacity, capacity * HASH_FUNCTION_GROUPING_RATE);

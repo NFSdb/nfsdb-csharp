@@ -83,7 +83,9 @@ namespace Apaf.NFSdb.Core.Column
             // Nuber of records per keyblock
             // is a half of statistically expected
             // but minimum size is 10
-            _rowBlockLen = Math.Max(recordCountHint / keycountHint / 2, 10);
+            //_rowBlockLen = Math.Max(recordCountHint / keycountHint / 2, 10);
+            var rowBlockLenBitHint = (int)Math.Floor(Math.Log(Math.Max(recordCountHint / keycountHint / 2, 16), 2.0)) - 1;
+            _rowBlockLen = Math.Max(1 << rowBlockLenBitHint, 16);
             _kData = kData;
 
 

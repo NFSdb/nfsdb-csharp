@@ -15,7 +15,7 @@ namespace Apaf.NFSdb.IntegrationTests.Partition
     {
         private const string FOLDER_PATH = "Large-Journal";
         private const int TOTAL_PARITIONS = 100;
-        private const int TOTAL_COUNT = (int) 50E6;
+        private const int TOTAL_COUNT = (int) 100E6;
         private const int GENERATE_RECORDS_COUNT_PER_PARTITION = TOTAL_COUNT / TOTAL_PARITIONS / 2;
 
         public class LargeJournal

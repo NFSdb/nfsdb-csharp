@@ -366,9 +366,9 @@ namespace Apaf.NFSdb.IntegrationTests.Reading
                         wr.Append(trade);
                     }
                     wr.Commit();
-                    stopwatch.Stop();
                 }
             }
+            stopwatch.Stop();
             Console.WriteLine(stopwatch.Elapsed);
         }
 
