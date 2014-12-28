@@ -19,7 +19,6 @@ using System;
 using System.Diagnostics;
 using System.Linq;
 using Apaf.NFSdb.Core;
-using Apaf.NFSdb.Core.Exceptions;
 using Apaf.NFSdb.Core.Storage;
 using Apaf.NFSdb.Core.Writes;
 using Apaf.NFSdb.TestModel.Model;
@@ -138,7 +137,6 @@ namespace Apaf.NFSdb.IntegrationTests.Writing
         }
 
         [Test]
-        [ExpectedException(typeof(NFSdbLowAddressSpaceException))]
         public void AppendsManyDistinctSymbols()
         {
             Utils.ClearJournal<Trade>();
