@@ -33,6 +33,20 @@ namespace Apaf.NFSdb.IntegrationTests.Reading
     [TestFixture]
     public class QuoteJournalTests
     {
+        private static readonly double _bidRandom;
+        private static readonly double _askRandom;
+        private static readonly int _askSizeRandom;
+        private static readonly int _bidSizeRandom;
+
+        static QuoteJournalTests()
+        {
+            var random = new Random();
+            _bidRandom = random.NextDouble();
+            _askRandom = random.NextDouble();
+            _askSizeRandom = random.Next();
+            _bidSizeRandom = random.Next();
+        }
+
         private const int GENERATE_RECORDS_COUNT = TestUtils.GENERATE_RECORDS_COUNT;
         private static readonly DateTime START = new DateTime(DateTime.Now.AddYears(-1).Year, 
             DateTime.Now.AddYears(-1).Month, 1);
@@ -52,7 +66,8 @@ namespace Apaf.NFSdb.IntegrationTests.Reading
         public void Should_read_all_rows()
         {
             var totalCount = (int)(5*GENERATE_RECORDS_COUNT);
-            GenerateRecords(totalCount, 2);
+            var elapsed = GenerateRecords(totalCount, 2);
+            Console.WriteLine(elapsed);
             using (var j = CreateJournal(EFileAccess.Read))
             {
                 var q = j.OpenReadTx();
@@ -349,27 +364,48 @@ namespace Apaf.NFSdb.IntegrationTests.Reading
             }
         }
 
-        public static void GenerateRecords(int count, int partitionCount)
+        public static TimeSpan GenerateRecords(int count, int partitionCount)
         {
             var increment = GetTimestampIncrement(count, partitionCount);
             Utils.ClearJournal<Quote>();
             var stopwatch = new Stopwatch();
             using (var journal = Utils.CreateJournal<Quote>(EFileAccess.ReadWrite))
             {
+                stopwatch.Start();
                 using (var wr = journal.OpenWriteTx())
                 {
-                    stopwatch.Start();
-                    var trade = new Quote();
-                    for (int i = 0; i < count; i++)
-                    {
-                        GenerateTradeValues(trade, increment, i);
-                        wr.Append(trade);
-                    }
+                    GenerateRecords(count, wr, increment);
                     wr.Commit();
                 }
             }
             stopwatch.Stop();
-            Console.WriteLine(stopwatch.Elapsed);
+            return stopwatch.Elapsed;
+        }
+
+        public static void GenerateRecords(int count, IWriter<Quote> wr, long increment)
+        {
+            var trade = new Quote();
+            trade.Ex = "LXE";
+            trade.Mode = "Fast trading";
+            var timestamp = START_TIMESTAMP;
+            var bidRandom = _bidRandom;
+            var askRandom = _askRandom;
+            var askSizeRandom = _askSizeRandom;
+            var bidSizeRandom = _bidSizeRandom;
+
+            for (int i = 0; i < count; i++)
+            {
+                trade.Timestamp = timestamp;
+                timestamp += increment;
+
+                trade.Bid = i * bidRandom;
+                trade.Ask = i * askRandom;
+                trade.AskSize = i % askSizeRandom;
+                trade.BidSize = i % bidSizeRandom;
+                trade.Sym = SYMBOLS[i%SYMBOLS.Length];
+
+                wr.Append(trade);
+            }
         }
 
         public static long GetTimestampIncrement(long count, int partitionCount)
@@ -380,10 +416,10 @@ namespace Apaf.NFSdb.IntegrationTests.Reading
         public static void GenerateTradeValues(Quote trade, long incrementMs, long i)
         {
             trade.Timestamp = START_TIMESTAMP + incrementMs*i;
-            trade.Bid = i*2.04;
-            trade.Bid = i;
-            trade.Ask = i*50.09014;
-            trade.AskSize = (int) (i % int.MaxValue);
+            trade.Bid = i * _bidRandom;
+            trade.Ask = i * _askRandom;
+            trade.AskSize = (int)(i % _askSizeRandom);
+            trade.BidSize = (int)(i % _bidSizeRandom);
             trade.Ex = "LXE";
             trade.Mode = "Fast trading";
             trade.Sym = SYMBOLS[i%SYMBOLS.Length];

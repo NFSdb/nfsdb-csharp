@@ -17,6 +17,7 @@
 #endregion
 using System;
 using System.Diagnostics;
+using Apaf.NFSdb.Core.Storage;
 using Apaf.NFSdb.IntegrationTests.Reading;
 using Apaf.NFSdb.TestModel.Model;
 using Apaf.NFSdb.TestShared;
@@ -28,14 +29,33 @@ namespace Apaf.NFSdb.TestRunner
         public void Run()
         {
             Utils.ClearJournal<Quote>();
-            const int partitionCount = 1;
-            const int totalCount = (int) 10E6;
-
-            var sw1 = new Stopwatch();
-            sw1.Start();
-            QuoteJournalTests.GenerateRecords(totalCount, partitionCount);
-            sw1.Stop();
-            Console.WriteLine(sw1.Elapsed);
+            const int totalCount = (int) 20e6;
+            Utils.ClearJournal<Quote>();
+            int increment = 1000;
+            using (var journal = Utils.CreateJournal<Quote>(EFileAccess.ReadWrite))
+            {
+                var sw1 = new Stopwatch();
+                const int count = 2;
+                const int startIndex = -2;
+                using (var wr = journal.OpenWriteTx())
+                {
+                    for (int i = startIndex; i < count; i++)
+                    {
+                        if (i == 0)
+                        {
+                            Console.WriteLine(DateTime.Now);
+                            sw1.Start();
+                        }
+                        QuoteJournalTests.GenerateRecords(totalCount, wr, increment);
+                        wr.Commit();
+                        wr.Truncate();
+                    }
+                }
+                sw1.Stop();
+                Console.WriteLine(DateTime.Now);
+                Console.WriteLine(sw1.Elapsed);
+                Console.WriteLine(sw1.Elapsed.TotalMilliseconds / count);
+            }
         }
 
         public string Name

@@ -19,9 +19,11 @@ namespace Apaf.NFSdb.Core.Storage
 {
     public class ReadContext : IReadContext
     {
+        private byte[] _arr1;
+
         public byte[] AllocateByteArray(int size)
         {
-            return new byte[size];
+            return _arr1 ?? (_arr1 = new byte[size]);
         }
 
         public byte[] AllocateByteArray2(int size)

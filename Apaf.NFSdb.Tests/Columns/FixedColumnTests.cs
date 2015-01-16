@@ -174,28 +174,7 @@ namespace Apaf.NFSdb.Tests.Columns
             Assert.That(col.GetByte(offset), Is.EqualTo(value), "Offset " + offset);
             _mockStorage.Verify(m => m.WriteByte(It.IsAny<long>(), It.IsAny<byte>()), Times.Once);
         }
-
-        [TestCase(EFieldType.Int32, 234)]
-        [TestCase(EFieldType.Int64, -234L)]
-        [TestCase(EFieldType.Int16, (short)268)]
-        [TestCase(EFieldType.Byte, (byte)255)]
-        [TestCase(EFieldType.Bool, false)]
-        [TestCase(EFieldType.Double, 12.34)]
-        public void Should_update_transaction_read_offset(EFieldType fieldType, object value)
-        {
-            // Init.
-            var offset = DateTime.Now.Millisecond % 256;
-            var col = CreateCol(fieldType);
-            var tx = TestTxLog.TestContext();
-
-            // Act.
-            var setMethod = typeof(IFixedWidthColumn).GetMethod("Set" + fieldType);
-            setMethod.Invoke(col, new object[] { offset, value, tx });
-
-            // Verify.
-            Assert.That(tx.PartitionTx[0].AppendOffset[0], Is.EqualTo((offset + 1) * fieldType.GetSize()));
-        }
-
+        
         [TestCase(true)]
         [TestCase(false)]
         public void ShouldWriteBool(bool value)

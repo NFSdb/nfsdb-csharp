@@ -128,6 +128,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Collections\ExpandableListTests.cs" />
+    <Compile Include="Collections\ObjHashMapTests.cs" />
     <Compile Include="Columns\ByteArrayTests.cs" />
     <Compile Include="Columns\DateTimeTests.cs" />
     <Compile Include="Columns\ExpressionTests.cs" />

@@ -23,5 +23,6 @@ namespace Apaf.NFSdb.Core.Writes
     {
         void Append(T item);
         void Commit();
+        void Truncate();
     }
 }

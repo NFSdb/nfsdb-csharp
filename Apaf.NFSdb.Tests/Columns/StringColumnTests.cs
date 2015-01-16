@@ -56,6 +56,7 @@ namespace Apaf.NFSdb.Tests.Columns
         {
             var stringCol = CreateStringColumn(maxLen);
             var readContext = TestTxLog.TestContext();
+            readContext.SetCurrentPartition(1);
             stringCol.SetValue(0, value, readContext);
 
             Assert.That(stringCol.GetValue(0, readContext.ReadCache), Is.EqualTo(value));
@@ -143,12 +144,12 @@ namespace Apaf.NFSdb.Tests.Columns
         {
             if (value == null)
             {
-                return StringColumn.LARGE_HEADER_LENGTH;
+                return StringColumn.HEADER_SIZE;
             }
 
             int length = value.Length;
             data.WriteInt32(0, length);
-            return StringColumn.LARGE_HEADER_LENGTH;
+            return StringColumn.HEADER_SIZE;
         }
     }
 }

@@ -60,11 +60,7 @@ namespace Apaf.NFSdb.Core.Column
 
         public virtual unsafe void SetString(long rowID, string value, ITransactionContext tx)
         {
-            if (value == null)
-            {
-                SetBytes(rowID, null, tx);
-            }
-            else
+            if (value != null)
             {
 #if BIGENDIAN
                 var byteArray = tx.ReadCache.AllocateByteArray2(value.Length * 2);
@@ -89,18 +85,60 @@ namespace Apaf.NFSdb.Core.Column
                 fixed (char* chars = value)
                 {
                     var strBytes = (byte*)chars;
-                    SetBytes(rowID, strBytes, 0, value.Length  * 2, tx);
+                    SetBytes(rowID, strBytes, value.Length  * 2, tx);
                 }
 #endif
             }
+            else
+            {
+                SetBytes(rowID, null, tx);
+            }
         }
 
-        public object GetValue(long rowID, IReadContext readContext)
+
+        public unsafe void SetString(long rowID, string value, PartitionTxData tx)
+        {
+            if (value != null)
+            {
+#if BIGENDIAN
+                var byteArray = tx.ReadCache.AllocateByteArray2(value.Length * 2);
+                fixed (byte* src = byteArray)
+                {
+                    var charlen = value.Length;
+                    int pos = 0;
+                    fixed (char* chars = value)
+                    {
+                        var strBytes = (byte*) &chars[0];
+                        for (int i = 0; i < charlen; i++)
+                        {
+                            src[pos++] = strBytes[2 * i + 1];
+                            src[pos++] = strBytes[2 * i];
+                        }
+                    }
+                    DebugCheckEquals(pos, charlen * 2);
+                }
+
+                SetBytes(rowID, byteArray, tx);
+#else
+                fixed (char* chars = value)
+                {
+                    var strBytes = (byte*)chars;
+                    SetBytes(rowID, strBytes, value.Length * 2, tx);
+                }
+#endif
+            }
+            else
+            {
+                SetBytes(rowID, null, 0, tx);
+            }
+        }
+
+        public override object GetValue(long rowID, IReadContext readContext)
         {
             return GetString(rowID, readContext);
         }
 
-        public void SetValue(long rowID, object value, ITransactionContext readContext)
+        public override void SetValue(long rowID, object value, ITransactionContext readContext)
         {
             SetString(rowID, (string)value, readContext);
         }

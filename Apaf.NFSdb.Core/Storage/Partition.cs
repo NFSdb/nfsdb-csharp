@@ -79,7 +79,11 @@ namespace Apaf.NFSdb.Core.Storage
         {
             if (!_isStorageInitialized) InitializeStorage();
 
-            var pd = tx.GetPartitionTx(PartitionID);
+            // Current partition.
+            tx.SetCurrentPartition(PartitionID);
+
+            var pd = tx.GetPartitionTx();
+            tx.SetCurrentPartition(PartitionID);
             _fieldSerializer.Write(item, pd.NextRowID, tx);
             pd.NextRowID++;
             pd.IsAppended = true;

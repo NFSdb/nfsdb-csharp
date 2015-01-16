@@ -15,7 +15,7 @@
 
 <db>
     <journal class="Apaf.NFSdb.TestModel.Model.Quote" defaultPath="quote" timestampColumn="timestamp"
-             partitionType="MONTH" recordCountHint="1000000" openPartitionTTL="180" lagHours="12"
+             partitionType="MONTH" recordCountHint="10000" openPartitionTTL="180" lagHours="12"
              key="sym">
         <sym name="sym" indexed="true" maxsize="4" hintDistinctCount="15"/>
         <sym name="ex" maxsize="2" hintDistinctCount="5" indexed="true"/>

@@ -242,6 +242,16 @@ namespace Apaf.NFSdb.Core.Storage
             return partition;
         }
 
+        public void Truncate(ITransactionContext tx)
+        {
+            foreach (var partition in _partitions)
+            {
+                partition.Dispose();
+                Directory.Delete(partition.DirectoryPath, true);
+            }
+            _partitions.Clear();
+        }
+
         private ColumnStorage InitializeSymbolStorage()
         {
             var symbolStorage = new ColumnStorage(

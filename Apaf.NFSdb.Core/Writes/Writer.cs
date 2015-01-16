@@ -26,10 +26,10 @@ namespace Apaf.NFSdb.Core.Writes
     public class Writer<T> : IWriter<T>
     {
         private readonly IPartitionManager<T> _partitionManager;
-        private readonly object _writeLock;
         private static readonly ILog LOG = LogManager.GetLogger(typeof(Writer<T>));
         private readonly WriterState<T> _writerState;
-        private readonly ITransactionContext _transaction;
+        private object _writeLock;
+        private ITransactionContext _transaction;
 
         public Writer(WriterState<T> writerState, 
             IPartitionManager<T> partitionManager, object writeLock)
@@ -58,13 +58,25 @@ namespace Apaf.NFSdb.Core.Writes
             _partitionManager.Commit(_transaction);
         }
 
+        public void Truncate()
+        {
+            _partitionManager.Truncate(_transaction);
+            _transaction = _partitionManager.ReadTxLog();
+        }
+
         protected void Dispose(bool disposed)
         {
-            if (disposed)
+            var lck = _writeLock;
+            _writeLock = null;
+
+            if (lck != null)
             {
-                GC.SuppressFinalize(this);
+                if (disposed)
+                {
+                    GC.SuppressFinalize(this);
+                }
+                Monitor.Exit(lck);
             }
-            Monitor.Exit(_writeLock);
         }
 
         ~Writer()

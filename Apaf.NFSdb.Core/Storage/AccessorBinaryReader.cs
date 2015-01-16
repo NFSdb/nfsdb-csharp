@@ -17,6 +17,7 @@
 #endregion
 using System;
 using System.IO.MemoryMappedFiles;
+using System.Runtime.InteropServices;
 using log4net;
 
 namespace Apaf.NFSdb.Core.Storage
@@ -31,6 +32,7 @@ namespace Apaf.NFSdb.Core.Storage
         private const byte TRUE = 1;
         private const byte FALSE = 0;
         private static readonly int ALLOCATION_GRANULARITY = AccessorHelper.Info.dwAllocationGranularity;
+        private GCHandle _hndl;
 
         public  AccessorBinaryReader(MemoryMappedViewAccessor view, long bufferOffset,
             long bufferSize)
@@ -49,7 +51,7 @@ namespace Apaf.NFSdb.Core.Storage
 
         private void ResolveMemoryPtr(MemoryMappedViewAccessor view)
         {
-            var num = _bufferOffset%ALLOCATION_GRANULARITY;
+            var num = _bufferOffset % ALLOCATION_GRANULARITY;
             view.SafeMemoryMappedViewHandle.AcquirePointer(ref _memoryPtr);
             _memoryPtr += num;
         }
@@ -62,6 +64,16 @@ namespace Apaf.NFSdb.Core.Storage
         public long BufferOffset
         {
             get { return _bufferOffset; }
+        }
+
+        internal byte* MemoryPtr
+        {
+            get { return _memoryPtr; }
+        }
+
+        public long BufferEnd
+        {
+            get { return _bufferOffset + _bufferSize; }
         }
 
         public int PartitionID
@@ -272,7 +284,7 @@ namespace Apaf.NFSdb.Core.Storage
             {
                 _memoryPtr = null;
                 _view.SafeMemoryMappedViewHandle.ReleasePointer();
-                _view.Dispose();
+                _view.SafeMemoryMappedViewHandle.Dispose();
             }
 
             if (disposed)

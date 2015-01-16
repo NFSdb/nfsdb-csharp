@@ -124,18 +124,30 @@ namespace Apaf.NFSdb.Core.Storage
             {
                 try
                 {
-                    if ((file.DataType == EDataType.Symrk 
-                        || file.DataType == EDataType.Datak) 
+                    if (file.DataType == EDataType.Symrk
                         && txRec.SymbolTableIndexPointers != null)
                     {
                         var blockOffset = txRec.SymbolTableIndexPointers[symrRead++];
                         pd.SymbolData[file.FileID].KeyBlockOffset = blockOffset;
-                        
-                        long keyBlockSize = file.ReadInt64(blockOffset 
-                            + MetadataConstants.K_FILE_ROW_BLOCK_LEN_OFFSET);
+
+                        long keyBlockSize = file.ReadInt64(blockOffset
+                                                           + MetadataConstants.K_FILE_ROW_BLOCK_LEN_OFFSET);
+                        pd.SymbolData[file.FileID].KeyBlockSize = (int) keyBlockSize;
+
+                        pd.AppendOffset[file.FileID] = blockOffset + keyBlockSize;
+                    }
+                    else if (file.DataType == EDataType.Datak
+                        && txRec.IndexPointers != null)
+                    {
+                        var blockOffset = txRec.IndexPointers[file.ColumnID];
+                        pd.SymbolData[file.FileID].KeyBlockOffset = blockOffset;
+
+                        long keyBlockSize = file.ReadInt64(blockOffset
+                                                           + MetadataConstants.K_FILE_ROW_BLOCK_LEN_OFFSET);
                         pd.SymbolData[file.FileID].KeyBlockSize = (int)keyBlockSize;
 
                         pd.AppendOffset[file.FileID] = blockOffset + keyBlockSize;
+                        
                     }
                     else
                     {

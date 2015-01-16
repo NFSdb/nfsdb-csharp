@@ -86,6 +86,21 @@ namespace Apaf.NFSdb.Core.Configuration
             {
                 Name = name,
                 HintDistinctCount = hintDistinctCount,
+                Indexed = true,
+                AvgSize = avgSize > 0 ? avgSize : MetadataConstants.DEFAULT_SYMBOL_AVG_SIZE,
+                MaxSize = maxSize > 0 ? maxSize : MetadataConstants.DEFAULT_SYMBOL_MAX_SIZE,
+            });
+            return this;
+        }
+
+        public JournalBuilder WithUnindexedSymbolColumn(string name, int hintDistinctCount, int avgSize = -1,
+            int maxSize = -1)
+        {
+            _config.Symbols.Add(new SymbolElement
+            {
+                Name = name,
+                HintDistinctCount = hintDistinctCount,
+                Indexed = false,
                 AvgSize = avgSize > 0 ? avgSize : MetadataConstants.DEFAULT_SYMBOL_AVG_SIZE,
                 MaxSize = maxSize > 0 ? maxSize : MetadataConstants.DEFAULT_SYMBOL_MAX_SIZE,
             });

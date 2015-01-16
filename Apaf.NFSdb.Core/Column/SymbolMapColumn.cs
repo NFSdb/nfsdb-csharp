@@ -41,18 +41,18 @@ namespace Apaf.NFSdb.Core.Column
         private readonly IndexColumn _datarIndex;
         private readonly int _dataPartitionID;
         private readonly int _dataFileID;
+        private readonly bool _isIndexed;
 
-        public SymbolMapColumn(IRawFile data, IRawFile datak, IRawFile datar,
-            IRawFile symd, IRawFile symi, 
-            IRawFile symk, IRawFile symr, 
-            string propertyName, int capacity, int recordCountHint, int maxLen, 
+        public SymbolMapColumn(IRawFile data, 
+            IRawFile symd, IRawFile symi,
+            IRawFile symk, IRawFile symr,
+            string propertyName, int capacity, int maxLen,
             SymbolCache symbolCache)
         {
             capacity = Math.Max(capacity, MetadataConstants.MIN_SYMBOL_DISTINCT_COUNT);
             _symiFileID = symi.FileID;
             _globalSymColumn = new StringColumn(symd, symi, maxLen, propertyName);
             _symrIndex = new IndexColumn(symk, symr, capacity, capacity * HASH_FUNCTION_GROUPING_RATE);
-            _datarIndex = new IndexColumn(datak, datar, capacity, recordCountHint);
 
             _data = data;
             _capacity = capacity;
@@ -61,9 +61,18 @@ namespace Apaf.NFSdb.Core.Column
             FieldType = EFieldType.Symbol;
             symbolCache.SetValueCacheCapacity(Math.Min(MetadataConstants.SYMBOL_STRING_CACHE_SIZE, capacity));
 
-
             _dataPartitionID = _data.PartitionID;
             _dataFileID = _data.FileID;
+        }
+
+        public SymbolMapColumn(IRawFile data, IRawFile datak, IRawFile datar,
+            IRawFile symd, IRawFile symi, 
+            IRawFile symk, IRawFile symr, 
+            string propertyName, int capacity, int recordCountHint, int maxLen, 
+            SymbolCache symbolCache) : this(data, symd, symi, symk, symr, propertyName, capacity, maxLen, symbolCache)
+        {
+            _datarIndex = new IndexColumn(datak, datar, capacity, recordCountHint);
+            _isIndexed = true;
         }
 
         public string GetString(long rowID, IReadContext readContext)
@@ -87,31 +96,40 @@ namespace Apaf.NFSdb.Core.Column
         public void SetString(long rowID, string value, ITransactionContext tx)
         {
             int key;
-            if (value == null)
+            if (value != null)
             {
-                key = MetadataConstants.NULL_SYMBOL_VALUE;
+                key = _symbolCache.GetRowID(value);
+                if (key == NOT_FOUND_VALUE)
+                {
+                    key = AddKey(value, tx);
+                }
             }
             else
             {
-                key = _symbolCache.GetRowID(value);
-                if (key < 0)
-                {
-                    var hashKey = HashKey(value, _capacity);
-                    key = CheckKeyQuick(value, hashKey, tx);
-                    if (key == NOT_FOUND_VALUE)
-                    {
-                        var appendOffset = tx.GetPartitionTx(SYMI_PARTITION_ID).AppendOffset[_symiFileID];
-                        key = (int) (appendOffset / STRING_INDEX_FILE_RECORD_SIZE);
-                        
-                        _globalSymColumn.SetString(key, value, tx);
-                        _symrIndex.Add(hashKey, key, tx);
-                    }
-                    _symbolCache.SetRowID(value, key);
-                }
+                key = MetadataConstants.NULL_SYMBOL_VALUE;
             }
             _data.WriteInt32(rowID * INT32_SIZE, key);
-            _datarIndex.Add(key, rowID, tx);
-            tx.GetPartitionTx(_dataPartitionID).AppendOffset[_dataFileID] = (rowID + 1)*INT32_SIZE;
+            if (_isIndexed)
+            {
+                _datarIndex.Add(key, rowID, tx);
+            }
+        }
+
+        private int AddKey(string value, ITransactionContext tx)
+        {
+            var hashKey = HashKey(value, _capacity);
+            var key = CheckKeyQuick(value, hashKey, tx);
+            if (key == NOT_FOUND_VALUE)
+            {
+                var partTx = tx.GetPartitionTx(SYMI_PARTITION_ID);
+                var appendOffset = partTx.AppendOffset[_symiFileID];
+                key = (int) (appendOffset/STRING_INDEX_FILE_RECORD_SIZE);
+
+                _globalSymColumn.SetString(key, value, partTx);
+                _symrIndex.Add(hashKey, key, tx);
+            }
+            _symbolCache.SetRowID(value, key);
+            return key;
         }
 
         public object GetValue(long rowID, IReadContext readContext)

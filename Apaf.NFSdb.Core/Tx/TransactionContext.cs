@@ -27,6 +27,7 @@ namespace Apaf.NFSdb.Core.Tx
     {
         private readonly int _columnCount;
         private readonly ReadContext _readCatch = new ReadContext();
+        private PartitionTxData _currentPartitionTx;
 
         public TransactionContext(int columnCount, PartitionTxData[] partitionData)
         {
@@ -56,9 +57,19 @@ namespace Apaf.NFSdb.Core.Tx
             return PartitionTx[partitionID].NextRowID;
         }
 
+        public PartitionTxData GetPartitionTx()
+        {
+            return _currentPartitionTx;
+        }
+
         public PartitionTxData GetPartitionTx(int partitionID)
         {
             return PartitionTx[partitionID];
+        }
+
+        public void SetCurrentPartition(int partitionID)
+        {
+            _currentPartitionTx = GetPartitionTx(partitionID);
         }
 
         public int PartitionTxCount { get { return PartitionTx.Count; } }

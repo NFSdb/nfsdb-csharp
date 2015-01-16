@@ -26,7 +26,6 @@ namespace Apaf.NFSdb.Core.Column
         private readonly int _sizeBytes;
         private static readonly int ISSET_HEADER_LENGTH = MetadataConstants.ISSET_HEADER_LENGTH;
         private readonly int _fieldSize;
-        private readonly int _partitionID;
         private readonly int _fileID;
 
         public BitsetColumn(IRawFile storage, int sizeBytes)
@@ -34,7 +33,6 @@ namespace Apaf.NFSdb.Core.Column
             FieldType = EFieldType.BitSet;
             _storage = storage;
             _fileID = storage.FileID;
-            _partitionID = storage.PartitionID;
             
             // we shift the number of fields left 6 bits (divide by 64) to see what the length of the
             // array should be
@@ -55,7 +53,7 @@ namespace Apaf.NFSdb.Core.Column
         {
             var offset = rowID * _sizeBytes + ISSET_HEADER_LENGTH;
             _storage.WriteBytes(offset, bitArray, 0, _sizeBytes);
-            tx.GetPartitionTx(_partitionID).AppendOffset[_fileID] = offset + _sizeBytes;
+            tx.GetPartitionTx().AppendOffset[_fileID] = offset + _sizeBytes;
         }
 
         public int GetByteSize()

@@ -115,6 +115,15 @@ namespace Apaf.NFSdb.Tests.Query
                     select q, 1);
         }
 
+        [TestCase("Ex_0", ExpectedResult = "280,260,240,220,200,180,160,140,120,100,80,60,40,20,0")]
+        public string Ex_symbol_list(string andEx)
+        {
+            return ExecuteLambda(
+                items => from q in items
+                         where q.Ex == andEx
+                         select q, 1);
+        }
+
         [TestCase("Symbol_3,Symbol_12", "Ex_3", "", ExpectedResult = "283,263,243,223,203,183,163,143,123,103,83,63,43,23,3")]
         [TestCase("Symbol_3,Symbol_12", "Ex_12", "Ex_3", ExpectedResult = "292,283,272,263,252,243,232,223,212,203,192,183,172,163,152,143,132,123,112,103,92,83,72,63,52,43,32,23,12,3")]
         [TestCase("Symbol_3,Symbol_12", "Ex_12", "", ExpectedResult = "292,272,252,232,212,192,172,152,132,112,92,72,52,32,12")]

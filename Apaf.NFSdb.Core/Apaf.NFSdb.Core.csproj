@@ -123,6 +123,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Collections\ExpandableList.cs" />
+    <Compile Include="Collections\Primes.cs" />
     <Compile Include="Column\BinaryColumn.cs" />
     <Compile Include="Column\BitsetColumn.cs" />
     <Compile Include="Column\ByteArray.cs" />
@@ -134,6 +135,7 @@
     <Compile Include="Column\IndexAddressColumn.cs" />
     <Compile Include="Column\IndexColumn.cs" />
     <Compile Include="Column\IStringColumn.cs" />
+    <Compile Include="Collections\ObjIntHashMap.cs" />
     <Compile Include="Configuration\BinaryElement.cs" />
     <Compile Include="Configuration\DateTimeElement.cs" />
     <Compile Include="Configuration\DateTimeMode.cs" />

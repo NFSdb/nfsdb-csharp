@@ -25,6 +25,8 @@ namespace Apaf.NFSdb.Core.Storage
     public class CompositeRawFile : IRawFile
     {
         private readonly int _bitHint;
+        private const byte TRUE = 1;
+        private const byte FALSE = 0;
         public const int INITIAL_PARTS_COLLECTION_SIZE = 64;
 #if OPTIMIZE
         private AccessorBinaryReader[] _buffers = new AccessorBinaryReader[INITIAL_PARTS_COLLECTION_SIZE];
@@ -35,6 +37,7 @@ namespace Apaf.NFSdb.Core.Storage
         private ICompositeFile _compositeFile;
         private readonly object _buffSync = new object();
         private long _mappedSize;
+        private CurrentBuffer _cachedBuffer;
 
         public CompositeRawFile(string fileName,
             int bitHint,
@@ -157,9 +160,9 @@ namespace Apaf.NFSdb.Core.Storage
         }
 
 #if OPTIMIZE
-        public AccessorBinaryReader GetFilePart(long offset)
+        public unsafe AccessorBinaryReader GetFilePart(long offset)
 #else
-        public IRawFilePart GetFilePart(long offset)
+        public unsafe IRawFilePart GetFilePart(long offset)
 #endif
         {
             var bufferIndex = (int)(offset >> _bitHint);
@@ -203,7 +206,14 @@ namespace Apaf.NFSdb.Core.Storage
                 long bufferOffset = bufferIndex * (long) bufferSize;
 
 #if OPTIMIZE
-                var view = (AccessorBinaryReader)_compositeFile.CreateViewAccessor(bufferOffset, bufferSize);
+                var view = (AccessorBinaryReader)_compositeFile.CreateViewAccessor(bufferOffset, bufferSize); 
+                var cachedBuffer = new CurrentBuffer();
+                cachedBuffer.Start = view.BufferOffset;
+                cachedBuffer.End = view.BufferEnd;
+                cachedBuffer.MemoryPtr = view.MemoryPtr;
+                Thread.MemoryBarrier();
+                _cachedBuffer = cachedBuffer;
+                Thread.MemoryBarrier();
 #else
                 var view = _compositeFile.CreateViewAccessor(bufferOffset, bufferSize);
 #endif
@@ -278,10 +288,31 @@ namespace Apaf.NFSdb.Core.Storage
             return GetFilePart(offset).ReadByte(offset);
         }
 
-        public long ReadInt64(long offset)
+        public unsafe long ReadInt64(long offset)
         {
             offset += FILE_HEADER_LENGTH;
-            var bufferIndex = (int)(offset >> _bitHint);
+#if OPTIMIZE
+            var cachedBuffer = _cachedBuffer;
+            if (cachedBuffer != null && offset >= cachedBuffer.Start && offset < _cachedBuffer.End)
+            {
+
+                var writePtr = (long*) (cachedBuffer.MemoryPtr + offset - cachedBuffer.Start);
+#if BIGENDIAN
+                writePtr[0] = IPAddress.HostToNetworkOrder(value);
+#else
+                return writePtr[0];
+#endif
+            }
+            else
+#endif
+            {
+                return ReadInt64Core(offset);
+            }
+        }
+
+        private long ReadInt64Core(long offset)
+        {
+            var bufferIndex = (int) (offset >> _bitHint);
 
 #if OPTIMIZE
             AccessorBinaryReader buffer = null;
@@ -379,11 +410,31 @@ namespace Apaf.NFSdb.Core.Storage
             }
         }
 
-        public void WriteInt64(long offset, long value)
+        public unsafe void WriteInt64(long offset, long value)
         {
             offset += FILE_HEADER_LENGTH;
-            var bufferIndex = (int)(offset >> _bitHint);
+#if OPTIMIZE
+            var cachedBuffer = _cachedBuffer;
+            if (cachedBuffer != null && offset >= cachedBuffer.Start && offset < _cachedBuffer.End)
+            {
 
+                var writePtr = (long*) (cachedBuffer.MemoryPtr + offset - cachedBuffer.Start);
+#if BIGENDIAN
+                writePtr[0] = IPAddress.HostToNetworkOrder(value);
+#else
+                writePtr[0] = value;
+#endif
+            }
+            else
+#endif
+            {
+                WriteInt64Core(offset, value);
+            }
+        }
+
+        private void WriteInt64Core(long offset, long value)
+        {
+            var bufferIndex = (int) (offset >> _bitHint);
 #if OPTIMIZE
             AccessorBinaryReader buffer = null;
 #else
@@ -402,15 +453,36 @@ namespace Apaf.NFSdb.Core.Storage
             buffer.WriteInt64(offset, value);
         }
 
-        public void WriteInt32(long offset, int value)
+        public unsafe void WriteInt32(long offset, int value)
         {
             offset = offset + FILE_HEADER_LENGTH;
-            var bufferIndex = (int)(offset >> _bitHint);
+#if OPTIMIZE
+            var cachedBuffer = _cachedBuffer;
+            if (cachedBuffer != null && offset >= cachedBuffer.Start && offset < _cachedBuffer.End)
+            {
+
+                var writePtr = (int*)(cachedBuffer.MemoryPtr + offset - cachedBuffer.Start);
+#if BIGENDIAN
+                writePtr[0] = IPAddress.HostToNetworkOrder(value);
+#else
+                writePtr[0] = value;
+#endif
+            }
+            else
+#endif
+            {
+                WriteInt32Core(offset, value);
+            }
+        }
+
+        private void WriteInt32Core(long offset, int value)
+        {
+            var bufferIndex = (int) (offset >> _bitHint);
 
 #if OPTIMIZE
             AccessorBinaryReader buffer = null;
 #else
-            IRawFilePart buffer = null;
+               IRawFilePart buffer = null;
 #endif
             // Check exists.
             if (bufferIndex < _buffers.Length)
@@ -425,10 +497,31 @@ namespace Apaf.NFSdb.Core.Storage
             buffer.WriteInt32(offset, value);
         }
 
-        public void WriteInt16(long offset, short value)
+        public unsafe void WriteInt16(long offset, short value)
         {
             offset = offset + FILE_HEADER_LENGTH;
-            var bufferIndex = (int)(offset >> _bitHint);
+#if OPTIMIZE
+            var cachedBuffer = _cachedBuffer;
+            if (cachedBuffer != null && offset >= cachedBuffer.Start && offset < _cachedBuffer.End)
+            {
+
+                var writePtr = (short*)(cachedBuffer.MemoryPtr + offset - cachedBuffer.Start);
+#if BIGENDIAN
+                writePtr[0] = IPAddress.HostToNetworkOrder(value);
+#else
+                writePtr[0] = value;
+#endif
+            }
+            else
+#endif
+            {
+                WriteInt16Core(offset, value);
+            }
+        }
+
+        private void WriteInt16Core(long offset, short value)
+        {
+            var bufferIndex = (int) (offset >> _bitHint);
 
 #if OPTIMIZE
             AccessorBinaryReader buffer = null;
@@ -448,10 +541,31 @@ namespace Apaf.NFSdb.Core.Storage
             buffer.WriteInt16(offset, value);
         }
 
-        public void WriteByte(long offset, byte value)
+        public unsafe void WriteByte(long offset, byte value)
         {
             offset = offset + FILE_HEADER_LENGTH;
-            var bufferIndex = (int)(offset >> _bitHint);
+#if OPTIMIZE
+            var cachedBuffer = _cachedBuffer;
+            if (cachedBuffer != null && offset >= cachedBuffer.Start && offset < _cachedBuffer.End)
+            {
+
+                var writePtr = cachedBuffer.MemoryPtr + offset - cachedBuffer.Start;
+#if BIGENDIAN
+                writePtr[0] = IPAddress.HostToNetworkOrder(value);
+#else
+                writePtr[0] = value;
+#endif
+            }
+            else
+#endif
+            {
+                WriteByteCore(offset, value);
+            }
+        }
+
+        private void WriteByteCore(long offset, byte value)
+        {
+            var bufferIndex = (int) (offset >> _bitHint);
 
 #if OPTIMIZE
             AccessorBinaryReader buffer = null;
@@ -471,15 +585,36 @@ namespace Apaf.NFSdb.Core.Storage
             buffer.WriteByte(offset, value);
         }
 
-        public void WriteBool(long offset, bool value)
+        public unsafe void WriteBool(long offset, bool value)
         {
             offset = offset + FILE_HEADER_LENGTH;
-            var bufferIndex = (int)(offset >> _bitHint);
+#if OPTIMIZE
+            var cachedBuffer = _cachedBuffer;
+            if (cachedBuffer != null && offset >= cachedBuffer.Start && offset < _cachedBuffer.End)
+            {
+
+                var writePtr = cachedBuffer.MemoryPtr + offset - cachedBuffer.Start;
+#if BIGENDIAN
+                writePtr[0] = IPAddress.HostToNetworkOrder(value);
+#else
+                writePtr[0] = value ? TRUE : FALSE;
+#endif
+            }
+            else
+#endif
+            {
+                WriteBoolCore(offset, value);
+            }
+        }
+
+        private void WriteBoolCore(long offset, bool value)
+        {
+            var bufferIndex = (int) (offset >> _bitHint);
 
 #if OPTIMIZE
             AccessorBinaryReader buffer = null;
 #else
-            IRawFilePart buffer = null;
+                IRawFilePart buffer = null;
 #endif
             // Check exists.
             if (bufferIndex < _buffers.Length)
@@ -494,10 +629,31 @@ namespace Apaf.NFSdb.Core.Storage
             buffer.WriteBool(offset, value);
         }
 
-        public void WriteDouble(long offset, double value)
+        public unsafe void WriteDouble(long offset, double value)
         {
             offset = offset + FILE_HEADER_LENGTH;
-            var bufferIndex = (int)(offset >> _bitHint);
+#if OPTIMIZE
+            var cachedBuffer = _cachedBuffer;
+            if (cachedBuffer != null && offset >= cachedBuffer.Start && offset < _cachedBuffer.End)
+            {
+
+                var writePtr = (double*)(cachedBuffer.MemoryPtr + offset - cachedBuffer.Start);
+#if BIGENDIAN
+                writePtr[0] = IPAddress.HostToNetworkOrder(value);
+#else
+                writePtr[0] = value;
+#endif
+            }
+            else
+#endif
+            {
+                WriteDoubleCore(offset, value);
+            }
+        }
+
+        private void WriteDoubleCore(long offset, double value)
+        {
+            var bufferIndex = (int) (offset >> _bitHint);
 
 #if OPTIMIZE
             AccessorBinaryReader buffer = null;
@@ -543,6 +699,13 @@ namespace Apaf.NFSdb.Core.Storage
         public override string ToString()
         {
             return "CompositeRawFile: " + Filename;
+        }
+
+        private unsafe class CurrentBuffer
+        {
+            public long Start;
+            public long End;
+            public byte* MemoryPtr;
         }
     }
 }

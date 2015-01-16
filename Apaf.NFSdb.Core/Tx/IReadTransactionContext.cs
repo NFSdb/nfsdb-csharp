@@ -22,7 +22,10 @@ namespace Apaf.NFSdb.Core.Tx
     public interface IReadTransactionContext
     {
         IReadContext ReadCache { get; }
-        PartitionTxData GetPartitionTx(int partitionID);
+        PartitionTxData GetPartitionTx();
+        PartitionTxData GetPartitionTx(int partitionId);
+        void SetCurrentPartition(int partitionID);
+
         int PartitionTxCount { get; }
         long GetRowCount(int partitionID);
     }

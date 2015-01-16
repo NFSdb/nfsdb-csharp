@@ -15,32 +15,49 @@
  * limitations under the License.
  */
 #endregion
-using System.Collections.Generic;
+
+using Apaf.NFSdb.Core.Collections;
 using Apaf.NFSdb.Core.Exceptions;
 
 namespace Apaf.NFSdb.Core.Column
 {
     public class SymbolCache
     {
-        private readonly Dictionary<string, int> _cache = new Dictionary<string, int>();
+        // private readonly Dictionary<string, int> _cache;
+        private readonly ObjIntHashMap _cache2;
         private string[] _symbolCache;
         private int[] _cachedKeys;
         private int _cacheCapacity;
 
+        public SymbolCache()
+        {
+            // _cache = new Dictionary<string, int>();
+            _cache2 = new ObjIntHashMap();
+        }
+
+        public SymbolCache(int distinctCount)
+        {
+           // _cache = new Dictionary<string, int>((int) (distinctCount * 1.2));
+           _cache2 = new ObjIntHashMap(distinctCount * 2);
+        }
+
         public int GetRowID(string key)
         {
-            int value;
-            return !_cache.TryGetValue(key, out value) ? -1 : value;
+            //int value;
+            //return !_cache.TryGetValue(key, out value) ? -1 : value;
+            return _cache2.Get(key);
         }
 
         public void SetRowID(string key, int value)
         {
-            _cache[key] = value;
+            //_cache[key] = value;
+            _cache2.Put(key, value);
         }
 
         public void Reset()
         {
-            _cache.Clear();
+            //_cache.Clear();
+            _cache2.Clear();
         }
 
         public bool IsValueCached(int cacheIndex)

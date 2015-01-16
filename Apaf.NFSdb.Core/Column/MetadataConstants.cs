@@ -76,7 +76,7 @@ namespace Apaf.NFSdb.Core.Column
         public const int K_FILE_KEY_BLOCK_OFFSET = 8;
         public const int K_FILE_ROW_BLOCK_LEN_OFFSET = 0;
         public const int NULL_SYMBOL_VALUE = -1;
-        public const int SYMBOL_NOT_FOUND_VALUE = -1;
+        public const int SYMBOL_NOT_FOUND_VALUE = -2;
 
         // 64k is memory mapping granularity for x64 i7
         public const int MIN_FILE_BIT_HINT = 16;

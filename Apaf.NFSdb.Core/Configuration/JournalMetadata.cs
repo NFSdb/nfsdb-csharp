@@ -137,7 +137,8 @@ namespace Apaf.NFSdb.Core.Configuration
             {
                 if (columnMetadata.FieldType == EFieldType.Symbol)
                 {
-                    _symbolCaches[columnMetadata.FieldID] = new SymbolCache();
+                    _symbolCaches[columnMetadata.FieldID] = new SymbolCache(
+                        columnMetadata.HintDistinctCount);
                 }
             }
         }
@@ -219,27 +220,43 @@ namespace Apaf.NFSdb.Core.Configuration
                 else if (cType.FieldType == EFieldType.Symbol)
                 {
                     var colData = columnStorage.GetFile(cType.FileName, fileID++, cType.FieldID, EDataType.Data);
-                    var colDataK = columnStorage.GetFile(cType.FileName, fileID++, cType.FieldID, EDataType.Datak);
-                    var colDataR = columnStorage.GetFile(cType.FileName, fileID++, cType.FieldID, EDataType.Datar);
                     var symData = _symbolStorage.GetFile(cType.FileName, fileID++, cType.FieldID, EDataType.Symd);
                     var symi = _symbolStorage.GetFile(cType.FileName, fileID++, cType.FieldID, EDataType.Symi);
                     var symk = _symbolStorage.GetFile(cType.FileName, fileID++, cType.FieldID, EDataType.Symrk);
                     var symr = _symbolStorage.GetFile(cType.FileName, fileID++, cType.FieldID, EDataType.Symrr);
                     int maxLen = cType.MaxSize;
                     int distinctHintCount = cType.HintDistinctCount;
-                    column = new SymbolMapColumn(
-                        data: colData,
-                        datak: colDataK,
-                        datar: colDataR,
-                        symd: symData,
-                        symi: symi,
-                        symk: symk,
-                        symr: symr,
-                        propertyName: GetPropertyName(cType.FileName),
-                        capacity: distinctHintCount,
-                        recordCountHint: _settings.RecordHint,
-                        maxLen: maxLen,
-                        symbolCache: _symbolCaches[colData.FileID]);
+                    if (cType.Indexed)
+                    {
+                        var colDataK = columnStorage.GetFile(cType.FileName, fileID++, cType.FieldID, EDataType.Datak);
+                        var colDataR = columnStorage.GetFile(cType.FileName, fileID++, cType.FieldID, EDataType.Datar);
+                        column = new SymbolMapColumn(
+                            data: colData,
+                            datak: colDataK,
+                            datar: colDataR,
+                            symd: symData,
+                            symi: symi,
+                            symk: symk,
+                            symr: symr,
+                            propertyName: GetPropertyName(cType.FileName),
+                            capacity: distinctHintCount,
+                            recordCountHint: _settings.RecordHint,
+                            maxLen: maxLen,
+                            symbolCache: _symbolCaches[colData.FileID]);
+                    }
+                    else
+                    {
+                        column = new SymbolMapColumn(
+                            data: colData,
+                            symd: symData,
+                            symi: symi,
+                            symk: symk,
+                            symr: symr,
+                            propertyName: GetPropertyName(cType.FileName),
+                            capacity: distinctHintCount,
+                            maxLen: maxLen,
+                            symbolCache: _symbolCaches[colData.FileID]);
+                    }
                 }
                 else if (cType.FieldType == EFieldType.Binary)
                 {

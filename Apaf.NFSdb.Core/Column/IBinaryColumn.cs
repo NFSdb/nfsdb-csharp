@@ -26,6 +26,8 @@ namespace Apaf.NFSdb.Core.Column
         unsafe int GetBytes(long rowID, byte* value, int startIndex, IReadContext readContext);
 
         void SetBytes(long rowID, byte[] value, ITransactionContext readContext);
-        unsafe void SetBytes(long rowID, byte* value, int startIndex, int length, ITransactionContext readContext);
+        unsafe void SetBytes(long rowID, byte* value, int length, ITransactionContext readContext);
+
+        unsafe void SetBytes(long rowID, byte* value, int length, PartitionTxData readContext);
     }
 }

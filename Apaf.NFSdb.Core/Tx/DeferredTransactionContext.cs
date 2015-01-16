@@ -8,7 +8,8 @@ namespace Apaf.NFSdb.Core.Tx
     {
         private readonly List<IFileTxSupport> _partitions;
         private TxRec _txRec;
-        private readonly List<PartitionTxData> _txData;
+        private PartitionTxData[] _txData;
+        private const int RESERVED_PARTITION_COUNT = 10;
 
         public DeferredTransactionContext(IFileTxSupport symbols, 
             IEnumerable<IFileTxSupport> partitions, TxRec txRec)
@@ -16,14 +17,11 @@ namespace Apaf.NFSdb.Core.Tx
             _partitions = new List<IFileTxSupport> { symbols };
             _partitions.AddRange(partitions);
             _txRec = txRec;
-            _txData = new List<PartitionTxData>(_partitions.Count + 1);
-            for (int i = 0; i < _partitions.Count; i ++)
-            {
-                _txData.Add(null);
-            }
+            _txData = new PartitionTxData[_partitions.Count + 1 + RESERVED_PARTITION_COUNT];
         }
 
         private readonly IReadContext _readCache = new ReadContext();
+        private PartitionTxData _currentParitionTx;
 
         public IReadContext ReadCache
         {
@@ -33,6 +31,11 @@ namespace Apaf.NFSdb.Core.Tx
         public long GetRowCount(int partitionID)
         {
             return GetPartitionTx(partitionID).NextRowID;
+        }
+
+        public PartitionTxData GetPartitionTx()
+        {
+            return _currentParitionTx;
         }
 
         public PartitionTxData GetPartitionTx(int partitionID)
@@ -47,12 +50,22 @@ namespace Apaf.NFSdb.Core.Tx
             return data;
         }
 
+        public void SetCurrentPartition(int partitionID)
+        {
+            _currentParitionTx = GetPartitionTx(partitionID);
+        }
+
         public int PartitionTxCount { get { return _partitions.Count; } }
 
         public void AddPartition(IFileTxSupport parition)
         {
             _partitions.Add(parition);
-            _txData.Add(null);
+            if (_txData.Length < _partitions.Count)
+            {
+                var oldTx = _txData;
+                _txData = new PartitionTxData[_partitions.Count + RESERVED_PARTITION_COUNT];
+                Array.Copy(oldTx, _txData, oldTx.Length);
+            }
             _txRec = null;
         }
 
