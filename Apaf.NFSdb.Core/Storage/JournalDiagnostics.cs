@@ -16,7 +16,7 @@ namespace Apaf.NFSdb.Core.Storage
         public int GetTotalFilesOpen()
         {
             int totalCount = 0;
-            foreach (var partition in _partitionManager.CorePartitions)
+            foreach (var partition in _partitionManager.Partitions)
             {
                 if (partition != null)
                 {
@@ -37,7 +37,7 @@ namespace Apaf.NFSdb.Core.Storage
         public long GetTotalMemoryMapped()
         {
             long totalMemory = 0;
-            foreach (var partition in _partitionManager.CorePartitions)
+            foreach (var partition in _partitionManager.Partitions)
             {
                 if (partition != null)
                 {

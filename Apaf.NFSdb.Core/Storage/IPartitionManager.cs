@@ -16,14 +16,12 @@
  */
 #endregion
 using System;
-using System.Collections.Generic;
 using Apaf.NFSdb.Core.Tx;
 
 namespace Apaf.NFSdb.Core.Storage
 {
     public interface IPartitionManager<T> : IPartitionManagerCore
     {
-        IEnumerable<IPartition<T>> Partitions { get; }
         IPartition<T> GetPartitionByID(int partitionID);
         IPartition<T> GetAppendPartition(DateTime dateTime, ITransactionContext tx);
         void Truncate(ITransactionContext tx);

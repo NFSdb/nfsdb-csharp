@@ -16,6 +16,7 @@
  */
 #endregion
 
+using System;
 using Apaf.NFSdb.Core.Collections;
 using Apaf.NFSdb.Core.Exceptions;
 
@@ -23,59 +24,54 @@ namespace Apaf.NFSdb.Core.Column
 {
     public class SymbolCache
     {
-        // private readonly Dictionary<string, int> _cache;
         private readonly ObjIntHashMap _cache2;
         private string[] _symbolCache;
         private int[] _cachedKeys;
-        private int _cacheCapacity;
+        private int _cacheCapacityBitHint;
 
         public SymbolCache()
         {
-            // _cache = new Dictionary<string, int>();
             _cache2 = new ObjIntHashMap();
         }
 
         public SymbolCache(int distinctCount)
         {
-           // _cache = new Dictionary<string, int>((int) (distinctCount * 1.2));
            _cache2 = new ObjIntHashMap(distinctCount * 2);
         }
 
         public int GetRowID(string key)
         {
-            //int value;
-            //return !_cache.TryGetValue(key, out value) ? -1 : value;
             return _cache2.Get(key);
         }
 
         public void SetRowID(string key, int value)
         {
-            //_cache[key] = value;
             _cache2.Put(key, value);
         }
 
         public void Reset()
         {
-            //_cache.Clear();
             _cache2.Clear();
         }
 
         public bool IsValueCached(int cacheIndex)
         {
             // 0 is default. Increment expected value by 1 to avoid array initialization.
-            var index = cacheIndex%_cacheCapacity;
+            var index = cacheIndex & (_cacheCapacityBitHint - 1);
             return _cachedKeys[index] == cacheIndex + 1;
         }
 
         public string GetCachedValue(int cacheIndex)
         {
-            var index = cacheIndex % _cacheCapacity;
+            var index = cacheIndex & (_cacheCapacityBitHint - 1);
             return _symbolCache[index];
         }
 
         public void SetValueCacheCapacity(int capacity)
         {
-            _cacheCapacity = capacity;
+            _cacheCapacityBitHint = (int)Math.Floor(Math.Log(Math.Max(capacity, 16), 2.0));
+            _cacheCapacityBitHint = Math.Max(_cacheCapacityBitHint, 4);
+            capacity = 1 << _cacheCapacityBitHint;
             if (_cachedKeys != null && _cachedKeys.Length != capacity)
             {
                 throw new NFSdbPartitionException("Symbol cache is initialized using different capcity");
@@ -89,7 +85,7 @@ namespace Apaf.NFSdb.Core.Column
 
         public void AddSymbolValue(int symRowID, string value)
         {
-            var index = symRowID%_cacheCapacity;
+            var index = symRowID & (_cacheCapacityBitHint - 1);
             _cachedKeys[index] = symRowID + 1;
             _symbolCache[index] = value;
         }

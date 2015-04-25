@@ -39,8 +39,6 @@ namespace Apaf.NFSdb.Core.Column
         private readonly IndexColumn _symrIndex;
         private readonly SymbolCache _symbolCache;
         private readonly IndexColumn _datarIndex;
-        private readonly int _dataPartitionID;
-        private readonly int _dataFileID;
         private readonly bool _isIndexed;
 
         public SymbolMapColumn(IRawFile data, 
@@ -60,9 +58,6 @@ namespace Apaf.NFSdb.Core.Column
             PropertyName = propertyName;
             FieldType = EFieldType.Symbol;
             symbolCache.SetValueCacheCapacity(Math.Min(MetadataConstants.SYMBOL_STRING_CACHE_SIZE, capacity));
-
-            _dataPartitionID = _data.PartitionID;
-            _dataFileID = _data.FileID;
         }
 
         public SymbolMapColumn(IRawFile data, IRawFile datak, IRawFile datar,

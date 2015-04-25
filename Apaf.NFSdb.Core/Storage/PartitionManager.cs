@@ -69,12 +69,7 @@ namespace Apaf.NFSdb.Core.Storage
 
         public EFileAccess Access { get; private set; }
 
-        public IEnumerable<IPartition<T>> Partitions
-        {
-            get { return _partitions; }
-        }
-
-        public IEnumerable<IPartitionCore> CorePartitions
+        public IEnumerable<IPartitionCore> Partitions
         {
             get { return _partitions; }
         }

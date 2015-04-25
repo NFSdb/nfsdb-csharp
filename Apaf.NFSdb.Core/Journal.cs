@@ -51,7 +51,7 @@ namespace Apaf.NFSdb.Core
 
         public IEnumerable<IPartition<T>> Partitions
         {
-            get { return _partitionManager.Partitions; }
+            get { return _partitionManager.Partitions.Cast<IPartition<T>>(); }
         }
 
         public IJournalDiagnostics Diagnostics { get; private set; }

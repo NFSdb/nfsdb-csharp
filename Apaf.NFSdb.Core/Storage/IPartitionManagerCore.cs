@@ -7,7 +7,7 @@ namespace Apaf.NFSdb.Core.Storage
     public interface IPartitionManagerCore : IDisposable
     {
         EFileAccess Access { get; }
-        IEnumerable<IPartitionCore> CorePartitions { get; }
+        IEnumerable<IPartitionCore> Partitions { get; }
         IColumnStorage SymbolFileStorage { get; }
         ITxLog TransactionLog { get; }
 

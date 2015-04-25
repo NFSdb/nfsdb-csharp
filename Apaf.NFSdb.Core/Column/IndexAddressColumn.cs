@@ -71,8 +71,8 @@ namespace Apaf.NFSdb.Core.Column
         private readonly int _fileID;
         private readonly int _partitionID;
 
-        private readonly int _rowBlockLen;
         private readonly int _rowBlockSize;
+        private readonly int _rowBlockLenBitHint;
 
         public IndexAddressColumn(IRawFile kData, int capacity, int recordCountHint)
         {
@@ -84,18 +84,19 @@ namespace Apaf.NFSdb.Core.Column
             // is a half of statistically expected
             // but minimum size is 10
             //_rowBlockLen = Math.Max(recordCountHint / keycountHint / 2, 10);
-            var rowBlockLenBitHint = (int)Math.Floor(Math.Log(Math.Max(recordCountHint / keycountHint / 2, 16), 2.0)) - 1;
-            _rowBlockLen = Math.Max(1 << rowBlockLenBitHint, 16);
+            _rowBlockLenBitHint = (int)Math.Floor(Math.Log(Math.Max(recordCountHint / keycountHint / 2, 16), 2.0)) - 1;
+            _rowBlockLenBitHint = Math.Max(_rowBlockLenBitHint, 4);
+            int rowBlockLen = 1 << _rowBlockLenBitHint;
             _kData = kData;
 
 
             if (kData.GetAppendOffset() > 0)
             {
-                _rowBlockLen = _kData.ReadInt32(ROW_BLOK_LEN_ADDRESS_OFFSET);
+                rowBlockLen = _kData.ReadInt32(ROW_BLOK_LEN_ADDRESS_OFFSET);
             }
             else if (kData.Access == EFileAccess.ReadWrite)
             {
-                kData.WriteInt64(0, _rowBlockLen); // 8
+                kData.WriteInt64(0, rowBlockLen); // 8
                 kData.WriteInt64(KEY_BLOCK_ADDRESS_OFFSET, INITIAL_KEYBLOCK_OFFSET); // 8
 
                 const int defaultKeyBlockSize = 0;
@@ -104,7 +105,7 @@ namespace Apaf.NFSdb.Core.Column
                 kData.SetAppendOffset(INITIAL_APPEND_OFFSET);
             }
 
-            _rowBlockSize = _rowBlockLen * 8 + 8;
+            _rowBlockSize = rowBlockLen * 8 + 8;
         }
 
         /// <summary>
@@ -121,11 +122,11 @@ namespace Apaf.NFSdb.Core.Column
         /// <summary>
         /// Number of key records in a key block
         /// </summary>
-        public int RowBlockLen
+        public int RowBlockLenBitHint
         {
             get
             {
-                return _rowBlockLen;
+                return _rowBlockLenBitHint;
             }
         }
         

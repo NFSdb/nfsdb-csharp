@@ -44,13 +44,15 @@ namespace Apaf.NFSdb.Core.Column
         private readonly IRawFile _kData;
         private readonly int _rowBlockLen;
         private readonly int _rowBlockSize;
+        private readonly int _rowBlockLenBitHint;
 
         public IndexColumn(IRawFile kData, IRawFile rData, int capacity, int recordCountHint)
         {
             _rFileID = rData.FileID;
             _kData = kData;
             _indexAddress = new IndexAddressColumn(kData, capacity, recordCountHint);
-            _rowBlockLen = _indexAddress.RowBlockLen;
+            _rowBlockLenBitHint = _indexAddress.RowBlockLenBitHint;
+            _rowBlockLen = 1 << _rowBlockLenBitHint;
             _rowBlockSize = _indexAddress.RowBlockSize;
             _rData = rData;
         }
@@ -66,14 +68,13 @@ namespace Apaf.NFSdb.Core.Column
             var rowCount = _kData.ReadInt64(keyRecOffset + 8);
 
             // Key found.
-            var rowBlockLen = _indexAddress.RowBlockLen;
             var rowBlockSize = _indexAddress.RowBlockSize;
-            var rowBlockCount = (int)(rowCount / rowBlockLen) + 1;
-            var len = (int)(rowCount % rowBlockLen);
+            var rowBlockCount = (int)(rowCount >> _rowBlockLenBitHint) + 1;
+            var len = (int)(rowCount & (_rowBlockLen - 1));
             if (len == 0)
             {
                 rowBlockCount--;
-                len = rowBlockLen;
+                len = _rowBlockLen;
             }
 
             var rowBlockOffset = blockOffset;
@@ -89,7 +90,7 @@ namespace Apaf.NFSdb.Core.Column
 
                 // Next block.
                 rowBlockOffset = _rData.ReadInt64(rowBlockOffset - 8);
-                len = rowBlockLen;
+                len = _rowBlockLen;
             }
         }
 
@@ -112,7 +113,7 @@ namespace Apaf.NFSdb.Core.Column
             var blockOffset = _kData.ReadInt64(keyRecOffset);
             long offset = keyRecOffset + 8;
             var rowCount = _kData.ReadInt64(offset);
-            var cellIndex = (int)(rowCount % _rowBlockLen);
+            var cellIndex = (int)(rowCount & (_rowBlockLen - 1));
             
             if (blockOffset == 0 || cellIndex == 0)
             {
@@ -128,7 +129,7 @@ namespace Apaf.NFSdb.Core.Column
             // Save value in index
             _rData.WriteInt64(blockOffset - _rowBlockSize + 8 * cellIndex, value);
             // Save row count in k file
-            _kData.WriteInt64(offset, ++rowCount);
+            _kData.WriteInt64(offset, rowCount + 1);
         }
     }
 }
