@@ -17,6 +17,7 @@
 #endregion
 using Apaf.NFSdb.Core.Column;
 using Apaf.NFSdb.Core.Exceptions;
+using Apaf.NFSdb.Core.Server;
 using Apaf.NFSdb.Core.Storage;
 using Apaf.NFSdb.Core.Storage.Serializer;
 
@@ -27,6 +28,7 @@ namespace Apaf.NFSdb.Core.Configuration
         private readonly JournalElement _config;
         private bool _serializerNameSet;
         private bool _serializerInstaceSet;
+        private IJournalServer _server;
 
         public JournalBuilder()
         {
@@ -134,10 +136,23 @@ namespace Apaf.NFSdb.Core.Configuration
             return this;
         }
 
+        public JournalBuilder WithJournalServer(IJournalServer server)
+        {
+            _server = server;
+            return this;
+        }
+
+        public JournalBuilder WithPartitionCloseStrategy(EPartitionCloseStrategy strategy)
+        {
+            _config.PartitionCloseStrategy = strategy;
+            return this;
+        }
+
         public IJournal<T> ToJournal<T>(EFileAccess access = EFileAccess.ReadWrite)
         {
             var meta = new JournalMetadata<T>(_config);
-            var partMan = new PartitionManager<T>(meta, access, new CompositeFileFactory());
+            var partMan = new PartitionManager<T>(meta, access, new CompositeFileFactory(), 
+                _server ?? new AsyncJournalServer());
             return new Journal<T>(meta, partMan);
         }
     }

@@ -36,7 +36,7 @@ namespace Apaf.NFSdb.Core.Configuration
         {
             PartitionType = EPartitionType.Default;
             RecordHint = MetadataConstants.DEFAULT_RECORD_HINT;
-            OpenPartitionTTL = MetadataConstants.DEFAULT_OPEN_PARTITION_TTL;
+            OpenPartitionTtl = MetadataConstants.DEFAULT_OPEN_PARTITION_TTL;
             LagHours = MetadataConstants.DEFAULT_LAG_HOURS;
             MaxOpenPartitions = MetadataConstants.DEFAULT_MAX_OPEN_PARTITIONS;
             Strings = new List<StringElement>();
@@ -44,6 +44,7 @@ namespace Apaf.NFSdb.Core.Configuration
             Binaries = new List<BinaryElement>();
             DateTimes = new List<DateTimeElement>();
             SerializerName = MetadataConstants.THRIFT_SERIALIZER_NAME;
+            PartitionCloseStrategy = MetadataConstants.DEFAULT_PARTITION_CLOSE_STRATEGY;
         }
 
         [XmlAttribute("class")]
@@ -62,7 +63,10 @@ namespace Apaf.NFSdb.Core.Configuration
         public int RecordHint { get; set; }
 
         [XmlAttribute("openPartitionTTL")]
-        public int OpenPartitionTTL { get; set; }
+        public int OpenPartitionTtl { get; set; }
+
+        [XmlAttribute("partitionCloseStrategy")]
+        public EPartitionCloseStrategy PartitionCloseStrategy { get; set; }
 
         [XmlAttribute("lagHours")]
         public int LagHours { get; set; }

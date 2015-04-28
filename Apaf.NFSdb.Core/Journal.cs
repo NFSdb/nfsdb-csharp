@@ -49,9 +49,9 @@ namespace Apaf.NFSdb.Core
             get { return _metadata; }
         }
 
-        public IEnumerable<IPartition<T>> Partitions
+        public IEnumerable<IPartitionCore> Partitions
         {
-            get { return _partitionManager.Partitions.Cast<IPartition<T>>(); }
+            get { return _partitionManager.GetOpenPartitions(); }
         }
 
         public IJournalDiagnostics Diagnostics { get; private set; }
@@ -94,11 +94,6 @@ namespace Apaf.NFSdb.Core
         public void Dispose()
         {
             _partitionManager.Dispose();
-        }
-
-        public IEnumerable<IPartitionCore> PartitionsCore
-        {
-            get { return _partitionManager.Partitions; }
         }
     }
 }

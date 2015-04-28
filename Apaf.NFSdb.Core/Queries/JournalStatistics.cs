@@ -36,7 +36,7 @@ namespace Apaf.NFSdb.Core.Queries
 
         public long RowsBySymbolValue(IReadTransactionContext tx, string symbolName, string[] values)
         {
-            return _partitionManager.Partitions.Sum(
+            return _partitionManager.GetOpenPartitions().Sum(
                 part => values.Sum(value => part.GetSymbolRowCount(symbolName, value, tx)));
         }
 

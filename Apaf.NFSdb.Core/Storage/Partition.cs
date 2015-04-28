@@ -62,9 +62,27 @@ namespace Apaf.NFSdb.Core.Storage
         }
 
 
-        public IColumnStorage Storage { get { return _columnStorage; } }
         public DateTime StartDate { get; private set; }
         public DateTime EndDate { get; private set; }
+
+        public int GetOpenFileCount()
+        {
+            if (_columnStorage != null)
+            {
+                return _columnStorage.AllOpenedFiles().Count(f => f.MappedSize > 0);
+            }
+            return 0;
+        }
+
+        public long GetTotalMemoryMapped()
+        {
+            if (_columnStorage != null)
+            {
+                return _columnStorage.AllOpenedFiles().Sum(f => f.MappedSize);
+            }
+            return 0;
+        }
+
         public int PartitionID { get; private set; }
         public string DirectoryPath { get; private set; }
 
@@ -79,9 +97,6 @@ namespace Apaf.NFSdb.Core.Storage
         {
             if (!_isStorageInitialized) InitializeStorage();
 
-            // Current partition.
-            tx.SetCurrentPartition(PartitionID);
-
             var pd = tx.GetPartitionTx();
             tx.SetCurrentPartition(PartitionID);
             _fieldSerializer.Write(item, pd.NextRowID, tx);
@@ -89,12 +104,24 @@ namespace Apaf.NFSdb.Core.Storage
             pd.IsAppended = true;
         }
 
+        public void CloseFiles()
+        {
+            lock (_syncRoot)
+            {
+                _isStorageInitialized = false;
+                Thread.MemoryBarrier();
+
+                if (_columnStorage != null)
+                {
+                    _columnStorage.Dispose();
+                    _columnStorage = null;
+                }
+            }
+        }
+
         public void Dispose()
         {
-            if (_columnStorage != null)
-            {
-                _columnStorage.Dispose();
-            }
+            CloseFiles();
         }
 
         public PartitionTxData ReadTxLogFromPartition(TxRec txRec = null)
@@ -106,6 +133,8 @@ namespace Apaf.NFSdb.Core.Storage
 
         public IRollback Commit(ITransactionContext tx)
         {
+            if (!_isStorageInitialized) InitializeStorage();
+
             // Set respective append offset.
             // Some serializers can skip null fields.
             var pd = tx.GetPartitionTx(PartitionID);
@@ -208,7 +237,7 @@ namespace Apaf.NFSdb.Core.Storage
 
                     _fieldSerializer = _metadata.GetSerializer(columns);
                     _txSupport = new FileTxSupport(PartitionID, _columnStorage, _metadata);
-                   
+
                     Thread.MemoryBarrier();
                     _isStorageInitialized = true;
                 }

@@ -33,8 +33,5 @@ namespace Apaf.NFSdb.Core
         IWriter<T> OpenWriteTx();
 
         IJournalMetadata<T> Metadata { get; }
-        IEnumerable<IPartition<T>> Partitions { get; }
-
-        IJournalDiagnostics Diagnostics {get;}
     }
 }

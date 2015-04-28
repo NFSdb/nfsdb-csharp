@@ -71,6 +71,7 @@ namespace Apaf.NFSdb.Core.Column
         public static readonly string THRIFT_SERIALIZER_NAME = "thrift";
         public static readonly string POCO_SERIALIZER_NAME = "poco";
         public static readonly string DEFAULT_SERIALIZER_NAME = "thrift";
+        public static readonly EPartitionCloseStrategy DEFAULT_PARTITION_CLOSE_STRATEGY = EPartitionCloseStrategy.CloseFullPartitionOnCommit;
 
         public const int K_FILE_KEY_BLOCK_HEADER_SIZE = 16;
         public const int K_FILE_KEY_BLOCK_OFFSET = 8;

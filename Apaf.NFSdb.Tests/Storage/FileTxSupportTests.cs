@@ -90,7 +90,7 @@ namespace Apaf.NFSdb.Tests.Storage
         private ITransactionContext CreateNewTxContext(int fileCount)
         {
             var tx = new TransactionContext(fileCount);
-            var pd = new PartitionTxData(fileCount);
+            var pd = new PartitionTxData(fileCount, 1);
 
             tx.AddPartition(pd, 0);
             return tx;

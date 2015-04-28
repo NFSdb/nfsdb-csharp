@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Linq;
 
 namespace Apaf.NFSdb.Core.Storage
 {
@@ -16,19 +15,11 @@ namespace Apaf.NFSdb.Core.Storage
         public int GetTotalFilesOpen()
         {
             int totalCount = 0;
-            foreach (var partition in _partitionManager.Partitions)
+            foreach (var partition in _partitionManager.GetOpenPartitions())
             {
                 if (partition != null)
                 {
-                    var storage = partition.Storage;
-                    if (storage != null)
-                    {
-                        var allFiles = storage.AllOpenedFiles();
-                        if (allFiles != null)
-                        {
-                            totalCount += allFiles.Count(f => f.MappedSize > 0);
-                        }
-                    }
+                    totalCount += partition.GetOpenFileCount();
                 }
             }
             return totalCount;
@@ -37,19 +28,11 @@ namespace Apaf.NFSdb.Core.Storage
         public long GetTotalMemoryMapped()
         {
             long totalMemory = 0;
-            foreach (var partition in _partitionManager.Partitions)
+            foreach (var partition in _partitionManager.GetOpenPartitions())
             {
                 if (partition != null)
                 {
-                    var storage = partition.Storage;
-                    if (storage != null)
-                    {
-                        var allFiles = storage.AllOpenedFiles();
-                        if (allFiles != null)
-                        {
-                            totalMemory += allFiles.Sum(s => s.MappedSize);
-                        }
-                    }
+                    totalMemory += partition.GetTotalMemoryMapped();
                 }
             }
             return totalMemory;

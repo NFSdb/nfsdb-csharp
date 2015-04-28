@@ -27,7 +27,7 @@ namespace Apaf.NFSdb.Tests.Tx
             const int partitions = 100;
             const int files = 100;
             var paritionTx = Enumerable.Range(0, partitions)
-                .Select(p => new PartitionTxData(files)
+                .Select(p => new PartitionTxData(files, 1)
                 {
                     AppendOffset = new long[files],
                     SymbolData = Enumerable.Range(0, files)

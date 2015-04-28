@@ -20,6 +20,7 @@ using System.IO;
 using System.Linq;
 using Apaf.NFSdb.Core;
 using Apaf.NFSdb.Core.Configuration;
+using Apaf.NFSdb.Core.Server;
 using Apaf.NFSdb.Core.Storage;
 using Apaf.NFSdb.TestModel.Model;
 
@@ -42,7 +43,8 @@ namespace Apaf.NFSdb.TestShared
                 jconf.DefaultPath = Path.Combine(FindJournalsPath(), journalDir);
 
                 var meta = new JournalMetadata<T>(jconf);
-                var partMan = new PartitionManager<T>(meta, access, new CompositeFileFactory());
+                var partMan = new PartitionManager<T>(meta, access, new CompositeFileFactory(),
+                    new AsyncJournalServer());
                 return new Journal<T>(meta, partMan);
             }
         }
@@ -65,7 +67,8 @@ namespace Apaf.NFSdb.TestShared
             jconf.DefaultPath = Path.Combine(FindJournalsPath(), jconf.DefaultPath);
 
             var meta = new JournalMetadata<T>(jconf);
-            var partMan = new PartitionManager<T>(meta, access, new CompositeFileFactory());
+            var partMan = new PartitionManager<T>(meta, access, new CompositeFileFactory(),
+                new AsyncJournalServer());
             return new Journal<T>(meta, partMan);
         }
 

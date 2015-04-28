@@ -25,5 +25,6 @@ namespace Apaf.NFSdb.Core.Storage
     {
         T Read(long rowID, IReadContext readContext);
         void Append(T item, ITransactionContext tx);
+        void CloseFiles();
     }
 }

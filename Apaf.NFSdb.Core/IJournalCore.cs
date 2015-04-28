@@ -22,7 +22,8 @@ namespace Apaf.NFSdb.Core
 {
     public interface IJournalCore
     {
-        IEnumerable<IPartitionCore> PartitionsCore { get; }
+        IEnumerable<IPartitionCore> Partitions { get; }
         IQueryStatistics QueryStatistics { get; }
+        IJournalDiagnostics Diagnostics { get; }
     }
 }

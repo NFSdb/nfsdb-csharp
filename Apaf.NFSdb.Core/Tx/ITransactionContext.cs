@@ -16,6 +16,7 @@
  */
 #endregion
 
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using Apaf.NFSdb.Core.Storage;
@@ -36,8 +37,9 @@ namespace Apaf.NFSdb.Core.Tx
         {
         }
 
-        public PartitionTxData(int columnCount)
+        public PartitionTxData(int columnCount, int partitionID)
         {
+            ParitionID = partitionID;
             AppendOffset = new long[columnCount];
             SymbolData = Enumerable.Range(0, columnCount)
                 .Select(dd => new SymbolTxData()).ToArray();
@@ -49,6 +51,7 @@ namespace Apaf.NFSdb.Core.Tx
         public long[] AppendOffset;
         public IList<SymbolTxData> SymbolData;
         public bool IsAppended;
+        public readonly int ParitionID;
 
         public PartitionTxData DeepClone()
         {

@@ -32,8 +32,6 @@ namespace Apaf.NFSdb.Core.Configuration
 {
     public class JournalMetadata<T> : IJournalMetadata<T>
     {
-        // ReSharper disable once StaticFieldInGenericType
-        private static readonly string ISSET_COLUMN_NAME = MetadataConstants.NULLS_FILE_NAME;
         private readonly IList<ColumnMetadata> _columns;
         private readonly JournalSettings _settings;
 
@@ -366,13 +364,7 @@ namespace Apaf.NFSdb.Core.Configuration
             }
             return cols;
         }
-
-        private static string GetFileName(string properyName)
-        {
-            return properyName.Substring(0, 1).ToLower()
-                   + properyName.Substring(1, properyName.Length - 1);
-        }
-
+        
         private static string GetPropertyName(string name)
         {
             return name.Substring(0, 1).ToUpper()

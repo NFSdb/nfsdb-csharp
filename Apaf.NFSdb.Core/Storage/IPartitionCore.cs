@@ -29,7 +29,8 @@ namespace Apaf.NFSdb.Core.Storage
         DateTime StartDate { get; }
         DateTime EndDate { get; }
 
-        IColumnStorage Storage { get; }
+        int GetOpenFileCount();
+        long GetTotalMemoryMapped();
         long BinarySearchTimestamp(DateTime value, IReadTransactionContext tx);
         
         IEnumerable<long> GetSymbolRows(string symbol, string value, 

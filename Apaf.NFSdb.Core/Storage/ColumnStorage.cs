@@ -29,7 +29,7 @@ namespace Apaf.NFSdb.Core.Storage
         private readonly ICompositeFileFactory _compositeFileFactory;
         private Dictionary<string, IRawFile> _openedFiles = new Dictionary<string, IRawFile>();
         private readonly string _folder;
-        private EFileAccess _access;
+        private readonly EFileAccess _access;
         private readonly int _partitionID;
 
         public ColumnStorage(

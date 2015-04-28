@@ -46,7 +46,7 @@ namespace Apaf.NFSdb.Core.Storage
         {
             long nextRowID = -1L;
             string lastRowIDFilename = null;
-            var pd = new PartitionTxData(_metadata.FileCount);
+            var pd = new PartitionTxData(_metadata.FileCount, _partitionID);
 
             foreach (IRawFile file in _storage.AllOpenedFiles())
             {
@@ -116,7 +116,7 @@ namespace Apaf.NFSdb.Core.Storage
         private PartitionTxData ReadTxLogFromFileAndTxRec(TxRec txRec)
         {
             int symrRead = 0;
-            var pd = new PartitionTxData(_metadata.FileCount);
+            var pd = new PartitionTxData(_metadata.FileCount, _partitionID);
             long nextRowID = RowIDUtil.ToLocalRowID(txRec.JournalMaxRowID);
             pd.NextRowID = nextRowID;
 

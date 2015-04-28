@@ -22,10 +22,12 @@ using Apaf.NFSdb.Core;
 using Apaf.NFSdb.Core.Column;
 using Apaf.NFSdb.Core.Configuration;
 using Apaf.NFSdb.Core.Exceptions;
+using Apaf.NFSdb.Core.Server;
 using Apaf.NFSdb.Core.Storage;
 using Apaf.NFSdb.Core.Tx;
 using Apaf.NFSdb.Tests.Columns.ThriftModel;
 using Apaf.NFSdb.Tests.Common;
+using Moq;
 using NUnit.Framework;
 
 namespace Apaf.NFSdb.Tests.Core
@@ -129,7 +131,7 @@ namespace Apaf.NFSdb.Tests.Core
 
                 // Verify.
                 return string.Join("|",
-                    partMan.Partitions.Select(p => p.StartDate.ToString("yyyy-MM-dd")));
+                    partMan.GetOpenPartitions().Select(p => p.StartDate.ToString("yyyy-MM-dd")));
             }
         }
 
@@ -466,11 +468,11 @@ namespace Apaf.NFSdb.Tests.Core
             CreateSubDirs(paritions, dir.DirName);
             JournalMetadata<T> meta = CreateMetadata<T>(pariPartitionType, dir.DirName,
                 symbols);
-            var part = new PartitionManager<T>(meta, access, compositeFileFactory);
+            var part = new PartitionManager<T>(meta, access, compositeFileFactory, new AsyncJournalServer());
 
             var tx = part.ReadTxLog();
             var readAllPartitions =
-                part.Partitions.Select(p => Tuple.Create(p.PartitionID,
+                part.GetOpenPartitions().Select(p => Tuple.Create(p.PartitionID,
                     tx.GetRowCount(p.PartitionID))).ToArray();
 
             return part;
@@ -488,7 +490,7 @@ namespace Apaf.NFSdb.Tests.Core
             ICompositeFileFactory compositeFileFactory,
             EFileAccess access = EFileAccess.ReadWrite)
         {
-            return new PartitionManager<FewCols>(meta, access, compositeFileFactory);
+            return new PartitionManager<FewCols>(meta, access, compositeFileFactory, new Mock<IJournalServer>().Object);
         }
 
         private void CreateSubDirs(string[] split, string workingDir)
@@ -515,7 +517,7 @@ namespace Apaf.NFSdb.Tests.Core
             string pfile = Path.Combine(defPath, MetadataConstants.PARTITION_TYPE_FILENAME);
             File.WriteAllText(pfile, partitionString);
 
-            return new PartitionManager<Quote>(meta, EFileAccess.Read, new CompositeFileFactory());
+            return new PartitionManager<Quote>(meta, EFileAccess.Read, new CompositeFileFactory(), new Mock<IJournalServer>().Object);
         }
 
         private static JournalMetadata<T> CreateMetadata<T>(EPartitionType configValue,

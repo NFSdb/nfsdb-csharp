@@ -29,11 +29,10 @@ namespace Apaf.NFSdb.Core.Configuration
         private readonly string _keySymbol;
         private readonly int _lagHours;
         private readonly int _maxOpenPartitions;
-        private readonly int _openPartitionTTL;
+        private readonly int _openPartitionTtl;
         private EPartitionType _partitionType;
         private readonly int _recordHint;
         private readonly string _timestampColumn;
-        private const int INT32_SIZE = 4;
 
         public JournalSettings(JournalElement jconf, IEnumerable<ColumnMetadata> actualColumns)
         {
@@ -41,16 +40,19 @@ namespace Apaf.NFSdb.Core.Configuration
             _timestampColumn = jconf.TimestampColumn;
             _keySymbol = jconf.Key;
             _partitionType = jconf.PartitionType;
-            _openPartitionTTL = jconf.OpenPartitionTTL;
+            _openPartitionTtl = jconf.OpenPartitionTtl;
             _maxOpenPartitions = jconf.MaxOpenPartitions;
             _lagHours = jconf.LagHours;
             _columns = actualColumns.ToArray();
             Columns = _columns;
+            PartitionCloseStrategy = jconf.PartitionCloseStrategy;
 
             _recordHint = jconf.RecordHint;
             if (_recordHint <= 0) _recordHint = MetadataConstants.DEFAULT_RECORD_HINT;
 
         }
+
+        public EPartitionCloseStrategy PartitionCloseStrategy { get; private set; }
 
         public IEnumerable<ColumnMetadata> Columns { get; private set; }
 
@@ -79,9 +81,9 @@ namespace Apaf.NFSdb.Core.Configuration
             get { return _recordHint; }
         }
 
-        public int OpenPartitionTTL
+        public int OpenPartitionTtl
         {
-            get { return _openPartitionTTL; }
+            get { return _openPartitionTtl; }
         }
 
         public int MaxOpenPartitions

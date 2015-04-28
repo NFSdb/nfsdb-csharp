@@ -7,11 +7,10 @@ namespace Apaf.NFSdb.Core.Storage
     public interface IPartitionManagerCore : IDisposable
     {
         EFileAccess Access { get; }
-        IEnumerable<IPartitionCore> Partitions { get; }
+        IEnumerable<IPartitionCore> GetOpenPartitions();
         IColumnStorage SymbolFileStorage { get; }
         ITxLog TransactionLog { get; }
 
-        IPartitionCore GetCorePartitionByID(int partitionID);
         ITransactionContext ReadTxLog();
         void Commit(ITransactionContext transaction); 
     }
