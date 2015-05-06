@@ -15,6 +15,7 @@
  * limitations under the License.
  */
 #endregion
+
 namespace Apaf.NFSdb.Core.Tx
 {
     public class TxRec

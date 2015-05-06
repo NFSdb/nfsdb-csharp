@@ -267,9 +267,12 @@
     <Compile Include="Storage\ReadContext.cs" />
     <Compile Include="Tx\ITxLog.cs" />
     <Compile Include="Tx\NJournalInvalidTxAddressException.cs" />
-    <Compile Include="Tx\TransactionContext.cs" />
+    <Compile Include="Tx\PartitionMetadata.cs" />
+    <Compile Include="Tx\PartitionTxLog.cs" />
+    <Compile Include="Tx\PartitionTxRec.cs" />
     <Compile Include="Tx\TxRec.cs" />
     <Compile Include="Tx\TxLog.cs" />
+    <Compile Include="Tx\TxRecExtensions.cs" />
     <Compile Include="Writes\DateUtils.cs" />
     <Compile Include="Writes\IWriter.cs" />
     <Compile Include="Writes\Writer.cs" />

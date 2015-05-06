@@ -133,7 +133,7 @@ namespace Apaf.NFSdb.Core.Storage
 
         public IRollback Commit(ITransactionContext tx)
         {
-            if (!_isStorageInitialized) InitializeStorage();
+            if (!_isStorageInitialized) return null;
 
             // Set respective append offset.
             // Some serializers can skip null fields.
@@ -148,7 +148,6 @@ namespace Apaf.NFSdb.Core.Storage
                     pd.AppendOffset[file.FileID] = count*size;
                 }
             }
-
             return _txSupport.Commit(tx);
         }
 

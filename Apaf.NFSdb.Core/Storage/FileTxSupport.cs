@@ -23,6 +23,7 @@ using Apaf.NFSdb.Core.Configuration;
 using Apaf.NFSdb.Core.Exceptions;
 using Apaf.NFSdb.Core.Queries;
 using Apaf.NFSdb.Core.Tx;
+using Apaf.NFSdb.Core.Writes;
 using log4net;
 
 namespace Apaf.NFSdb.Core.Storage
@@ -117,7 +118,7 @@ namespace Apaf.NFSdb.Core.Storage
         {
             int symrRead = 0;
             var pd = new PartitionTxData(_metadata.FileCount, _partitionID);
-            long nextRowID = RowIDUtil.ToLocalRowID(txRec.JournalMaxRowID);
+            long nextRowID = RowIDUtil.ToLocalRowID(txRec.JournalMaxRowID - 1) + 1;
             pd.NextRowID = nextRowID;
 
             foreach (IRawFile file in _storage.AllOpenedFiles())
@@ -245,12 +246,11 @@ namespace Apaf.NFSdb.Core.Storage
             var columCount = _metadata.Columns.Count();
             if (_partitionID != MetadataConstants.SYMBOL_PARTITION_ID)
             {
-                rec.LastPartitionTimestamp = pd.LastTimestamp;
+                rec.LastPartitionTimestamp = DateUtils.DateTimeToUnixTimeStamp(tx.LastAppendTimestamp);
 
                 // Java NFSdb Journal has paritions from 0 with no reserved id for symbol parition.
                 // Max row ID is rowcount + 1 for compatibility
-                rec.JournalMaxRowID = RowIDUtil.ToRowID(_partitionID - 1,
-                    pd.NextRowID - 1) + 1;
+                rec.JournalMaxRowID = RowIDUtil.ToRowID(_partitionID - 1, pd.NextRowID - 1) + 1;
 
                 rec.IndexPointers = new long[columCount];
                 foreach (var f in _storage.AllOpenedFiles())

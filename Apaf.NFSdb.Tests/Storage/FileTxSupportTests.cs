@@ -4,9 +4,11 @@ using System.Linq;
 using Apaf.NFSdb.Core.Column;
 using Apaf.NFSdb.Core.Configuration;
 using Apaf.NFSdb.Core.Exceptions;
+using Apaf.NFSdb.Core.Queries;
 using Apaf.NFSdb.Core.Storage;
 using Apaf.NFSdb.Core.Tx;
 using Apaf.NFSdb.Tests.Common;
+using Apaf.NFSdb.Tests.Tx;
 using Moq;
 using NUnit.Framework;
 
@@ -15,6 +17,49 @@ namespace Apaf.NFSdb.Tests.Storage
     [TestFixture]
     public class FileTxSupportTests
     {
+        [Test]
+        public void Should_write_tx_rec_last_partition_timestamp()
+        {
+            const int partitionID = 1;
+            const int timestamp = 20200119;
+
+            var ftx = CreateFileTxSupport(CreateFileMocks("i.d-8|s.d-8"), partitionID);
+            var tx = new Mock<ITransactionContext>();
+            tx.Setup(t => t.GetPartitionTx(partitionID)).Returns(new PartitionTxData(2, partitionID)
+            {
+                LastTimestamp = timestamp
+            });
+            var txRec = new TxRec();
+            
+            // Act.
+            ftx.SetTxRec(tx.Object, txRec);
+
+            // Verify.
+            Assert.That(txRec.LastPartitionTimestamp, Is.EqualTo(timestamp));
+        }
+
+        [Test]
+        public void Should_write_tx_rec_journal_max_row_id()
+        {
+            const int partitionID = 1;
+            const int localRowID = 1001;
+
+            var ftx = CreateFileTxSupport(CreateFileMocks("i.d-8|s.d-8"), partitionID);
+            var tx = new Mock<ITransactionContext>();
+            tx.Setup(t => t.GetPartitionTx(partitionID)).Returns(new PartitionTxData(2, partitionID)
+            {
+                NextRowID = localRowID
+            });
+            var txRec = new TxRec();
+
+            // Act.
+            ftx.SetTxRec(tx.Object, txRec);
+
+            // Verify.
+            var expected = RowIDUtil.ToRowID(partitionID - 1, localRowID - 1) + 1;
+            Assert.That(txRec.JournalMaxRowID, Is.EqualTo(expected));
+        }
+
         [TestCase("i.d-8|s.d-8")]
         public void Should_revert_append_offset_on_commit_failure(string fileNameOffset)
         {
@@ -96,7 +141,7 @@ namespace Apaf.NFSdb.Tests.Storage
             return tx;
         }
 
-        private FileTxSupport CreateFileTxSupport(List<Mock<IRawFile>> files)
+        private FileTxSupport CreateFileTxSupport(List<Mock<IRawFile>> files, int partitionID = 0)
         {
             var jornalMeta = new Mock<IJournalMetadataCore>();
             jornalMeta.Setup(j => j.FileCount).Returns(files.Count);
@@ -104,10 +149,10 @@ namespace Apaf.NFSdb.Tests.Storage
             var storage = new Mock<IColumnStorage>();
             storage.Setup(f => f.AllOpenedFiles()).Returns(files.Select(f => f.Object));
 
-            return new FileTxSupport(0, storage.Object, jornalMeta.Object);
+            return new FileTxSupport(partitionID, storage.Object, jornalMeta.Object);
         }
 
-        private static List<Mock<IRawFile>> CreateFileMocks(string fileNameOffset, string failName)
+        private static List<Mock<IRawFile>> CreateFileMocks(string fileNameOffset, string failName = null)
         {
             var files = TestUtils.SplitNameSize(fileNameOffset);
             var fileMocks = new List<Mock<IRawFile>>();

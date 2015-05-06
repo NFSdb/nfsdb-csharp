@@ -20,8 +20,9 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using Apaf.NFSdb.Core.Storage;
+using Apaf.NFSdb.Core.Tx;
 
-namespace Apaf.NFSdb.Core.Tx
+namespace Apaf.NFSdb.Tests.Tx
 {
     public class TransactionContext : ITransactionContext
     {
@@ -124,6 +125,8 @@ namespace Apaf.NFSdb.Core.Tx
 
             return false;
         }
+
+        public DateTime LastAppendTimestamp { get; set; }
 
         public IReadContext ReadCache
         {

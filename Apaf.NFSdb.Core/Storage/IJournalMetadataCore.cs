@@ -28,7 +28,7 @@ namespace Apaf.NFSdb.Core.Configuration
         JournalSettings Settings { get; }
         int? TimestampFieldID { get; }
         ColumnMetadata GetColumnById(int columndID);
-        int GetFieldID(string arg);
+        int GetFieldID(string filename);
         string KeySymbol { get; }
         int FileCount { get; }
     }

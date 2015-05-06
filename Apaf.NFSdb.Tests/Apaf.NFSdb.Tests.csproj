@@ -173,8 +173,11 @@
     <Compile Include="Storage\FileTxSupportTests.cs" />
     <Compile Include="Storage\MemeoryMapReadWriteTests.cs" />
     <Compile Include="Storage\MemoryFileTests.cs" />
+    <Compile Include="Tx\PartitionTxLogTests.cs" />
     <Compile Include="Tx\TestTxLog.cs" />
+    <Compile Include="Tx\TransactionContext.cs" />
     <Compile Include="Tx\TxLogTests.cs" />
+    <Compile Include="Tx\TxRecExtensionsTests.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />
@@ -194,7 +197,6 @@
   </ItemGroup>
   <ItemGroup>
     <Folder Include="BinaryCompatibility\" />
-    <Folder Include="Perfomance\" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <Import Project="$(SolutionDir)\.nuget\nuget.targets" />

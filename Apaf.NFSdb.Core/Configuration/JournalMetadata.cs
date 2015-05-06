@@ -178,12 +178,12 @@ namespace Apaf.NFSdb.Core.Configuration
             return _timestampDelegate;
         }
 
-        public int GetFieldID(string arg)
+        public int GetFieldID(string filename)
         {
             int i = 0;
             foreach (var col in _columns)
             {
-                if (string.Equals(arg, col.FileName, StringComparison.OrdinalIgnoreCase))
+                if (string.Equals(filename, col.FileName, StringComparison.OrdinalIgnoreCase))
                 {
                     return i;
                 }

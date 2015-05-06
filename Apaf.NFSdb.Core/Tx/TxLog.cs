@@ -44,6 +44,7 @@ namespace Apaf.NFSdb.Core.Tx
 
             var tx = new TxRec();
             var offset = GetTxAddress();
+            var initialOffset = offset;
 
             int txSize = ReadInt32(ref offset);
             tx.PrevTxAddress = ReadInt64(ref offset);
@@ -158,7 +159,7 @@ namespace Apaf.NFSdb.Core.Tx
                 if (address == oldAddress && check == oldCheck)
                 {
                     throw new NFSdbInvalidTxAddressException(address,
-                        "Check some does not match address value and does not change on re-read");
+                        "Check sum does not match address value and does not change on re-read");
                 }
 
                 var actual = GetCheckByte(address);

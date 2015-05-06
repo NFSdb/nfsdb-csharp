@@ -9,9 +9,11 @@ namespace Apaf.NFSdb.Core.Storage
         EFileAccess Access { get; }
         IEnumerable<IPartitionCore> GetOpenPartitions();
         IColumnStorage SymbolFileStorage { get; }
-        ITxLog TransactionLog { get; }
+
+        void Truncate(ITransactionContext tx);
 
         ITransactionContext ReadTxLog();
-        void Commit(ITransactionContext transaction); 
+
+        void Commit(ITransactionContext transaction);
     }
 }

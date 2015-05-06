@@ -92,6 +92,9 @@ namespace Apaf.NFSdb.TestShared
                 catch (IOException)
                 {
                 }
+                catch (UnauthorizedAccessException)
+                {
+                }
             }
         }
 

@@ -24,6 +24,5 @@ namespace Apaf.NFSdb.Core.Storage
     {
         IPartition<T> GetPartitionByID(int partitionID);
         IPartition<T> GetAppendPartition(DateTime dateTime, ITransactionContext tx);
-        void Truncate(ITransactionContext tx);
     }
 }

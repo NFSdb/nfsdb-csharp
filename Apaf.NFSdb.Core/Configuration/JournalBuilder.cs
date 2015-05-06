@@ -15,11 +15,14 @@
  * limitations under the License.
  */
 #endregion
+
+using System.IO;
 using Apaf.NFSdb.Core.Column;
 using Apaf.NFSdb.Core.Exceptions;
 using Apaf.NFSdb.Core.Server;
 using Apaf.NFSdb.Core.Storage;
 using Apaf.NFSdb.Core.Storage.Serializer;
+using Apaf.NFSdb.Core.Tx;
 
 namespace Apaf.NFSdb.Core.Configuration
 {
@@ -151,7 +154,9 @@ namespace Apaf.NFSdb.Core.Configuration
         public IJournal<T> ToJournal<T>(EFileAccess access = EFileAccess.ReadWrite)
         {
             var meta = new JournalMetadata<T>(_config);
-            var partMan = new PartitionManager<T>(meta, access, new CompositeFileFactory(), 
+            var fileFactory = new CompositeFileFactory();
+
+            var partMan = new PartitionManager<T>(meta, access, fileFactory,  
                 _server ?? new AsyncJournalServer());
             return new Journal<T>(meta, partMan);
         }

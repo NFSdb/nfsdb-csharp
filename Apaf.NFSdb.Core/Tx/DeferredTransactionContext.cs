@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using Apaf.NFSdb.Core.Storage;
+using Apaf.NFSdb.Core.Writes;
 
 namespace Apaf.NFSdb.Core.Tx
 {
@@ -10,6 +11,8 @@ namespace Apaf.NFSdb.Core.Tx
         private TxRec _txRec;
         private PartitionTxData[] _txData;
         private const int RESERVED_PARTITION_COUNT = 10;
+        private readonly IReadContext _readCache = new ReadContext();
+        private PartitionTxData _currentParitionTx;
 
         public DeferredTransactionContext(IFileTxSupport symbols, 
             IEnumerable<IFileTxSupport> partitions, TxRec txRec)
@@ -18,10 +21,8 @@ namespace Apaf.NFSdb.Core.Tx
             _partitions.AddRange(partitions);
             _txRec = txRec;
             _txData = new PartitionTxData[_partitions.Count + 1 + RESERVED_PARTITION_COUNT];
+            LastAppendTimestamp = txRec != null ? DateUtils.UnixTimestampToDateTime(txRec.LastPartitionTimestamp) : DateTime.MinValue;
         }
-
-        private readonly IReadContext _readCache = new ReadContext();
-        private PartitionTxData _currentParitionTx;
 
         public IReadContext ReadCache
         {
@@ -75,11 +76,13 @@ namespace Apaf.NFSdb.Core.Tx
         }
 
         public long PrevTxAddress { get; set; }
+        public DateTime LastAppendTimestamp { get; set; }
 
         public bool IsParitionUpdated(int partitionID, ITransactionContext lastTransactionLog)
         {
             var data = _txData[partitionID];
             return data != null && data.IsAppended;
         }
+
     }
 }

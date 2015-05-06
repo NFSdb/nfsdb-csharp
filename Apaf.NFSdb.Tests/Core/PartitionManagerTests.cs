@@ -22,6 +22,7 @@ using Apaf.NFSdb.Core;
 using Apaf.NFSdb.Core.Column;
 using Apaf.NFSdb.Core.Configuration;
 using Apaf.NFSdb.Core.Exceptions;
+using Apaf.NFSdb.Core.Queries;
 using Apaf.NFSdb.Core.Server;
 using Apaf.NFSdb.Core.Storage;
 using Apaf.NFSdb.Core.Tx;
@@ -76,9 +77,7 @@ namespace Apaf.NFSdb.Tests.Core
                 public bool s;
             }
         }
-
-        private const int SYMBOL_PARTITION_ID = MetadataConstants.SYMBOL_PARTITION_ID;
-
+        
         [TestCase(EPartitionType.Default, "DEFAULT", ExpectedResult = EPartitionType.Default)]
         [TestCase(EPartitionType.Year, "DAY", ExpectedResult = EPartitionType.Day)]
         [TestCase(EPartitionType.Month, "MONTH", ExpectedResult = EPartitionType.Month)]
@@ -113,239 +112,8 @@ namespace Apaf.NFSdb.Tests.Core
             }
         }
 
-        [TestCase(EPartitionType.Year, "2014|2009|2013", ExpectedResult = "2009-01-01|2013-01-01|2014-01-01")]
-        [TestCase(EPartitionType.Year, "2009|2013", ExpectedResult = "2009-01-01|2013-01-01")]
-        [TestCase(EPartitionType.Day, "2013-02-15|2012-01-01", ExpectedResult = "2012-01-01|2013-02-15")]
-        [TestCase(EPartitionType.Month, "2013-02|2012-01", ExpectedResult = "2012-01-01|2013-02-01")]
-        [TestCase(EPartitionType.Month, "2013-02|Invalid|2012-01", ExpectedResult = "2012-01-01|2013-02-01")]
-        public string Should_create_partitions(EPartitionType configValue,
-            string subDirsString)
-        {
-            using (var tempDir = new DisposableTempDir())
-            {
-                var meta = CreateMetadata<Quote>(configValue, tempDir.DirName);
-                CreateSubDirs(subDirsString.Split('|'), tempDir.DirName);
-
-                // Act.
-                var partMan = CreatePartitionManager(meta, string.Empty);
-
-                // Verify.
-                return string.Join("|",
-                    partMan.GetOpenPartitions().Select(p => p.StartDate.ToString("yyyy-MM-dd")));
-            }
-        }
 
 #if !OPTIMIZE
-        [TestCase("i.d-4|s.d-13|s.i-8|_nulls.d-8|_tx-0", 1)]
-        [TestCase("i.d-8|s.d-0|s.i-16|_nulls.d-16|_tx-0", 2)]
-        [TestCase("i.d-0|s.d-0|s.i-0|_nulls.d-0|_tx-0", 0)]
-        [TestCase("i.d-0|s.d-0|s.i-0|_nulls.d-8|_tx-0", 0,
-            ExpectedException = typeof (NFSdbTransactionStateExcepton))]
-        public void Should_read_tx_context(string fileNameOffset, int count)
-        {
-            using (var tempDir = new DisposableTempDir())
-            {
-                var stubFileF = new CompositeFileFactoryStub(fileNameOffset).Stub;
-                var partMan = CreatePartitionManager<FewCols>(tempDir, stubFileF.Object,
-                    EFileAccess.Read);
-
-                // Act.
-                var txLog = partMan.ReadTxLog();
-
-                // Verify.
-                Assert.That(txLog.GetRowCount(1), Is.EqualTo(count));
-            }
-        }
-
-        [TestCase(19, 19)]
-        [TestCase(20, 20)]
-        [TestCase(0, 0)]
-        public void Should_override_file_offsets_by_tx_values(long lastRowID, int count)
-        {
-            using (var tempDir = new DisposableTempDir())
-            {
-                var ff = new CompositeFileFactoryStub("i.d-8|s.d-0|s.i-16|_nulls.d-16|_tx-0");
-                var partMan = CreatePartitionManager<FewCols>(tempDir, ff.Stub.Object,
-                    EFileAccess.Read);
-
-                // Override Tx.
-                partMan.TransactionLog.Create(new TxRec
-                {
-                    JournalMaxRowID = lastRowID
-                });
-
-                // Act.
-                var txLog = partMan.ReadTxLog();
-
-                // Verify.
-                Assert.That(txLog.GetRowCount(1), Is.EqualTo(count));
-            }
-        }
-
-
-        [TestCase("i.d-4|s.d-13|s.i-8|_nulls.d-8|_tx-0", 1, false)]
-        [TestCase("i.d-8|s.d-345|s.i-16|_nulls.d-16|_tx-0", 2, false)]
-        [TestCase("i.d-4|s.d-13|s.i-8|_nulls.d-8|_tx-0", 1, true)]
-        [TestCase("i.d-8|s.d-345|s.i-16|_nulls.d-16|_tx-0", 2, true)]
-        public void Ucommited_transactions_are_not_visible_to_readers(
-            string fileNameOffset, int count, bool resetTxFile)
-        {
-            using (var tempDir = new DisposableTempDir())
-            {
-                var meta = CreateMetadata<FewCols>(EPartitionType.Default,
-                    tempDir.DirName);
-                CreateSubDirs(new[] {"default"}, tempDir.DirName);
-
-                var ff = new CompositeFileFactoryStub(fileNameOffset);
-                var partMan = CreatePartitionManager(meta, ff.Stub.Object);
-                var writeTx = partMan.ReadTxLog();
-                const int partitionID = 1;
-                writeTx.GetPartitionTx(partitionID).NextRowID++;
-                
-                // Reset tx file to test raw file offsets.
-                if (resetTxFile) ResetAppendOffset(ff); 
-                
-                // Act.
-                var readTx = partMan.ReadTxLog();
-
-                // Verify.
-                Assert.That(readTx.GetRowCount(partitionID), Is.EqualTo(count));
-            }
-        }
-
-        [TestCase("i.d-4|s.d-13|s.i-8|_nulls.d-8|_tx-0", 1, false)]
-        [TestCase("i.d-8|s.d-345|s.i-16|_nulls.d-16|_tx-0", 2, false)]
-        [TestCase("i.d-4|s.d-13|s.i-8|_nulls.d-8|_tx-0", 1, true)]
-        [TestCase("i.d-8|s.d-345|s.i-16|_nulls.d-16|_tx-0", 2, true)]
-        public void Commited_transactions_are_visible_to_readers_same_jounal(
-            string fileNameOffset, int count, bool resetTxFile)
-        {
-            using (var tempDir = new DisposableTempDir())
-            {
-                var ff = new CompositeFileFactoryStub(fileNameOffset);
-                var partMan =
-                    CreatePartitionManager<FewCols>(tempDir, ff.Stub.Object, EFileAccess.ReadWrite);
-
-                var writeTx = partMan.ReadTxLog();
-                const int partitionID = 1;
-                writeTx.GetPartitionTx(partitionID).NextRowID++;
-                writeTx.GetPartitionTx(partitionID).IsAppended = true;
-                partMan.Commit(writeTx);
-
-                // Reset tx file to test raw file offsets.
-                if (resetTxFile) ResetAppendOffset(ff); 
-
-                // Act.
-                ITransactionContext readTx = partMan.ReadTxLog();
-
-                // Verify.
-                Assert.That(readTx.GetRowCount(partitionID), Is.EqualTo(count + 1));
-            }
-        }
-
-        [TestCase("i.d-4|s.d-13|s.i-8|_nulls.d-8|_tx-0", 1, false)]
-        [TestCase("i.d-8|s.d-345|s.i-16|_nulls.d-16|_tx-0", 2, false)]
-        [TestCase("i.d-4|s.d-13|s.i-8|_nulls.d-8|_tx-0", 1, true)]
-        [TestCase("i.d-8|s.d-345|s.i-16|_nulls.d-16|_tx-0", 2, true)]
-        public void Commited_transactions_are_visible_to_readers_different_jounal_instance(
-            string fileNameOffset, int count, bool resetTxFile)
-        {
-            using (var tempDir = new DisposableTempDir())
-            {
-                var ff = new CompositeFileFactoryStub(fileNameOffset);
-                var partMan =
-                    CreatePartitionManager<FewCols>(tempDir, ff.Stub.Object, EFileAccess.ReadWrite);
-                var partManRead =
-                    CreatePartitionManager<FewCols>(tempDir, ff.Stub.Object, EFileAccess.Read);
-
-                var writeTx = partMan.ReadTxLog();
-                const int partitionID = 1;
-                AddRow(writeTx, partitionID);
-
-                partMan.Commit(writeTx);
-
-                // Reset tx file to test raw file offsets.
-                if (resetTxFile) ResetAppendOffset(ff); 
-
-                // Act.
-                var readTx = partManRead.ReadTxLog();
-
-                // Verify.
-                Assert.That(readTx.GetRowCount(partitionID), Is.EqualTo(count + 1));
-            }
-        }
-
-        [TestCase("i.d-4|s.d-13|s.i-8|_nulls.d-8|_tx-0", 1, false)]
-        [TestCase("i.d-8|s.d-345|s.i-16|_nulls.d-16|_tx-0", 2, false)]
-        [TestCase("i.d-4|s.d-13|s.i-8|_nulls.d-8|_tx-0", 1, true)]
-        [TestCase("i.d-8|s.d-345|s.i-16|_nulls.d-16|_tx-0", 2, true)]
-        public void When_commit_fails_all_partitions_are_rolled_back(
-            string fileNameOffset, int count, bool resetTxFile)
-        {
-            using (var tempDir = new DisposableTempDir())
-            {
-                var partitions = new[] {"2014-01", "2014-02"};
-                var ff = new CompositeFileFactoryStub(fileNameOffset, "2014-02\\s.d");
-                var fileFactory = ff.Stub.Object;
-                var partMan =
-                    CreatePartitionManager<FewCols>(
-                        EPartitionType.Month, tempDir, fileFactory, EFileAccess.ReadWrite, partitions);
-
-                // Simulate write.
-                var writeTx = partMan.ReadTxLog();
-                for (int partitionID = 1; partitionID <= partitions.Length; partitionID++)
-                {
-                    // Simulate add row.
-                    AddRow(writeTx, partitionID);
-                }
-
-                try
-                {
-                    // Act.
-                    partMan.Commit(writeTx);
-                }
-                catch (NFSdbCommitFailedException)
-                {
-                    // Reset tx file to test raw file offsets.
-                    if (resetTxFile) ResetAppendOffset(ff);
-
-                    var partManRead =
-                        CreatePartitionManager<FewCols>(
-                            EPartitionType.Month, tempDir, fileFactory, EFileAccess.Read, partitions);
-
-                    // Act.
-                    var readTx = partManRead.ReadTxLog();
-
-                    // Verify.
-                    for (int partitionID = 1; partitionID <= partitions.Length; partitionID++)
-                    {
-                        Assert.That(readTx.GetRowCount(partitionID), Is.EqualTo(count));
-                    }
-                    return;
-                }
-                Assert.Fail("Exception expected but not thrown.");
-            }
-        }
-
-        private static void AddRow(ITransactionContext writeTx, int partitionID, int? skFileId = null)
-        {
-            var pd = writeTx.GetPartitionTx(partitionID);
-            pd.NextRowID++;
-
-            // i.d
-            pd.AppendOffset[0] += 4;
-            if (skFileId.HasValue)
-            {
-                pd.SymbolData[skFileId.Value].KeyBlockOffset += 16;
-                pd.SymbolData[skFileId.Value].KeyBlockSize += 256;
-            }
-            // s.i
-            pd.AppendOffset[2] += 8;
-            // nulls.d
-            pd.AppendOffset[3] += 8;
-            pd.IsAppended = true;
-        }
-
         [TestCase("s.symd-13|s.symi-8|s.symr.r-8|s.symr.k-20|s.d-4|s.r-4|s.k-4|_nulls.d-8|_tx-0", 25)]
         public void Should_read_symbol_key_block_size_tx_context
             (string fileNameOffset, int blockSize)
@@ -372,90 +140,6 @@ namespace Apaf.NFSdb.Tests.Core
                 Assert.That(keyBlockSize, Is.EqualTo(blockSize));
             }
         }
-
-        [TestCase("s.symd-13|s.symi-8|s.symr.r-8|s.symr.k-20|s.d-4|s.r-4|s.k-4|_nulls.d-8|_tx-0", 25, false)]
-        [TestCase("s.symd-13|s.symi-8|s.symr.r-8|s.symr.k-20|s.d-8|s.r-4|s.k-4|_nulls.d-8|_tx-0", 25, false,
-            ExpectedException = typeof(NFSdbTransactionStateExcepton))]
-        [TestCase("s.symd-13|s.symi-8|s.symr.r-8|s.symr.k-20|s.d-4|s.r-4|s.k-4|_nulls.d-8|_tx-0", 25, true)]
-        [TestCase("s.symd-13|s.symi-8|s.symr.r-8|s.symr.k-20|s.d-8|s.r-4|s.k-4|_nulls.d-8|_tx-0", 25, true,
-            ExpectedException = typeof(NFSdbTransactionStateExcepton))]
-        public void Should_commit_symbol_key_size(
-            string fileNameOffset, int blockSize, bool resetTxFile)
-        {
-            using (var tempDir = new DisposableTempDir())
-            {
-                var ff = new CompositeFileFactoryStub(fileNameOffset);
-                var symbols = new[] {"s"};
-                var partMan = CreatePartitionManager<OneSym>(tempDir,
-                    ff.Stub.Object, EFileAccess.ReadWrite, symbols);
- 
-                var partManRead = CreatePartitionManager<OneSym>(tempDir,
-                    ff.Stub.Object, EFileAccess.Read, symbols);
-
-                var kData = partMan.SymbolFileStorage.AllOpenedFiles()
-                    .First(f => f.Filename.EndsWith("s.symr.k"));
-
-                var firstPartition = partMan.Partitions.First();
-
-                var keyBlockOffset = kData.GetAppendOffset();
-                kData.WriteInt64(keyBlockOffset, blockSize);
-                var writeTx = partMan.ReadTxLog();
-
-                // Act.
-                // Set new block size.
-                writeTx.GetPartitionTx(SYMBOL_PARTITION_ID).SymbolData[kData.FileID].KeyBlockSize = blockSize + 23;
-                // Bump partition to change be detected.
-                writeTx.GetPartitionTx(firstPartition.PartitionID).IsAppended = true;
-                
-                partMan.Commit(writeTx);
-
-                // Reset tx file to test raw file offsets.
-                if (resetTxFile) ResetAppendOffset(ff); 
-
-                var readTx = partManRead.ReadTxLog();
-
-                // Verify.
-                long keyBlockSize = readTx.GetPartitionTx(SYMBOL_PARTITION_ID)
-                    .SymbolData[kData.FileID].KeyBlockSize;
-
-                Assert.That(keyBlockSize, Is.EqualTo(blockSize + 23));
-            }
-        }
-
-        [TestCase("s.symd-13|s.symi-8|s.symr.r-8|s.symr.k-20|s.d-4|s.r-4|s.k-4|_nulls.d-8|_tx-0", 25, false)]
-        [TestCase("s.symd-13|s.symi-8|s.symr.r-8|s.symr.k-20|s.d-4|s.r-4|s.k-4|_nulls.d-8|_tx-0", 25, true)]
-        public void Should_remove_key_block_created_flag_after_commit(
-            string fileNameOffset, int blockSize, bool resetTxFile)
-        {
-            using (var tempDir = new DisposableTempDir())
-            {
-                var ff = new CompositeFileFactoryStub(fileNameOffset);
-                var symbols = new[] { "s" };
-                var partMan = CreatePartitionManager<OneSym>(tempDir,
-                    ff.Stub.Object, EFileAccess.ReadWrite, symbols);
-
-                var kData = partMan.SymbolFileStorage.AllOpenedFiles()
-                    .First(f => f.Filename.EndsWith("s.symr.k"));
-
-                var writeTx = partMan.ReadTxLog();
-                writeTx.GetPartitionTx(SYMBOL_PARTITION_ID).SymbolData[kData.FileID].KeyBlockCreated = true;
-
-                // Act.
-                writeTx.GetPartitionTx(SYMBOL_PARTITION_ID)
-                    .SymbolData[kData.FileID].KeyBlockSize = blockSize + 23;
-                
-                partMan.Commit(writeTx);
-
-                // Reset tx file to test raw file offsets.
-                if (resetTxFile) ResetAppendOffset(ff); 
-
-                var readTx = partMan.ReadTxLog();
-
-                // Verify.
-                var keyBlockCreated = readTx.GetPartitionTx(SYMBOL_PARTITION_ID).SymbolData[kData.FileID].KeyBlockCreated;
-                Assert.That(keyBlockCreated, Is.EqualTo(false));
-            }
-        }
 #endif
 
         private PartitionManager<T> CreatePartitionManager<T>(EPartitionType pariPartitionType,
@@ -468,7 +152,10 @@ namespace Apaf.NFSdb.Tests.Core
             CreateSubDirs(paritions, dir.DirName);
             JournalMetadata<T> meta = CreateMetadata<T>(pariPartitionType, dir.DirName,
                 symbols);
-            var part = new PartitionManager<T>(meta, access, compositeFileFactory, new AsyncJournalServer());
+            var txLog = new Mock<ITxLog>();
+            txLog.Setup(s => s.Get()).Returns(new TxRec() { JournalMaxRowID = RowIDUtil.ToRowID(1, 10)});
+
+            var part = new PartitionManager<T>(meta, access, compositeFileFactory, new AsyncJournalServer(), txLog.Object);
 
             var tx = part.ReadTxLog();
             var readAllPartitions =

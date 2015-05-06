@@ -42,17 +42,18 @@ namespace Apaf.NFSdb.Tests.Storage
         public int Should_calculate_bit_hint_for_fixed_columns(int recordCount, string fieldName)
         {
             // Create.
-            var journal = new JournalBuilder()
+            using (var journal = new JournalBuilder()
                 .WithRecordCountHint(recordCount)
                 .WithLocation(".")
-                .ToJournal<TestJournal>();
+                .ToJournal<TestJournal>())
+            {
+                var storage = CreateStorage(journal);
 
-            var storage = CreateStorage(journal);
+                // Act.
+                storage.GetFile(fieldName, 1, 1, EDataType.Data);
 
-            // Act.
-            storage.GetFile(fieldName, 1, 1, EDataType.Data);
-
-            return _bitHint;
+                return _bitHint;
+            }
         }
 
         [TestCase(1000, 50, 256, Result = 16)]
@@ -66,18 +67,20 @@ namespace Apaf.NFSdb.Tests.Storage
         {
             // Create.
             const string fieldName = "stringField";
-            var journal = new JournalBuilder()
+            using (var journal = new JournalBuilder()
                 .WithRecordCountHint(recordCount)
                 .WithStringColumn(fieldName, avSize, maxSize)
                 .WithLocation(".")
-                .ToJournal<TestJournal>();
+                .ToJournal<TestJournal>())
+            {
 
-            var storage = CreateStorage(journal);
+                var storage = CreateStorage(journal);
 
-            // Act.
-            storage.GetFile(fieldName, 1, 1, EDataType.Data);
+                // Act.
+                storage.GetFile(fieldName, 1, 1, EDataType.Data);
 
-            return _bitHint;
+                return _bitHint;
+            }
         }
 
         // Datak
@@ -105,18 +108,19 @@ namespace Apaf.NFSdb.Tests.Storage
         {
             // Create.
             const string fieldName = "symbolField";
-            var journal = new JournalBuilder()
+            using (var journal = new JournalBuilder()
                 .WithRecordCountHint(recordCount)
                 .WithSymbolColumn(fieldName, distinctCount, avgSize)
                 .WithLocation(".")
-                .ToJournal<TestJournal>();
+                .ToJournal<TestJournal>())
+            {
+                var storage = CreateStorage(journal);
 
-            var storage = CreateStorage(journal);
+                // Act.
+                storage.GetFile(fieldName, 1, 1, dataType);
 
-            // Act.
-            storage.GetFile(fieldName, 1, 1, dataType);
-
-            return _bitHint;
+                return _bitHint;
+            }
         }
 
         private ColumnStorage CreateStorage(IJournal<TestJournal> journal)

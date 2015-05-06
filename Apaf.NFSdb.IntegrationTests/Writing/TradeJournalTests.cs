@@ -19,6 +19,7 @@ using System;
 using System.Diagnostics;
 using System.Linq;
 using Apaf.NFSdb.Core;
+using Apaf.NFSdb.Core.Exceptions;
 using Apaf.NFSdb.Core.Storage;
 using Apaf.NFSdb.Core.Writes;
 using Apaf.NFSdb.TestModel.Model;
@@ -98,6 +99,42 @@ namespace Apaf.NFSdb.IntegrationTests.Writing
                 var rd = readJournal.OpenReadTx();
                 var readTrade = rd.All().Single();
                 Assert.That(readTrade.ToString(), Is.EqualTo(trade.ToString()));
+            }
+        }
+
+        [Test]
+        public void Appends_out_of_order()
+        {
+            Utils.ClearJournal<Trade>();
+
+            var trade = new Trade
+            {
+                Cond = "BBL",
+                Ex = "NYSE",
+                Price = 345.09,
+                Size = 300,
+                Sym = null,
+                Stop = 1,
+                Timestamp = DateUtils.DateTimeToUnixTimeStamp(DateTime.Now)
+            };
+
+            using (var journal = CreateJournal())
+            {
+                using (var wr = journal.OpenWriteTx())
+                {
+                    wr.Append(trade);
+                    wr.Commit();
+                }
+            }
+
+            trade.Timestamp -= 1;
+            using (var journal = CreateJournal())
+            {
+                using (var wr = journal.OpenWriteTx())
+                {
+                    Assert.Throws<NFSdbInvalidAppendException>(() => wr.Append(trade));
+                    wr.Commit();
+                }
             }
         }
 

@@ -29,6 +29,7 @@ namespace Apaf.NFSdb.Core.Tx
         void AddPartition(PartitionTxData partitionData, int partitionID);
         long PrevTxAddress { get; set; }
         bool IsParitionUpdated(int partitionID, ITransactionContext lastTransactionLog);
+        DateTime LastAppendTimestamp { get; set; }
     }
 
     public class PartitionTxData
