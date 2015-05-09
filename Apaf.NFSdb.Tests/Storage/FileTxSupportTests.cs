@@ -7,6 +7,7 @@ using Apaf.NFSdb.Core.Exceptions;
 using Apaf.NFSdb.Core.Queries;
 using Apaf.NFSdb.Core.Storage;
 using Apaf.NFSdb.Core.Tx;
+using Apaf.NFSdb.Core.Writes;
 using Apaf.NFSdb.Tests.Common;
 using Apaf.NFSdb.Tests.Tx;
 using Moq;
@@ -25,10 +26,8 @@ namespace Apaf.NFSdb.Tests.Storage
 
             var ftx = CreateFileTxSupport(CreateFileMocks("i.d-8|s.d-8"), partitionID);
             var tx = new Mock<ITransactionContext>();
-            tx.Setup(t => t.GetPartitionTx(partitionID)).Returns(new PartitionTxData(2, partitionID)
-            {
-                LastTimestamp = timestamp
-            });
+            tx.Setup(t => t.LastAppendTimestamp).Returns(DateUtils.UnixTimestampToDateTime(timestamp));
+            tx.Setup(t => t.GetPartitionTx(partitionID)).Returns(new PartitionTxData(2, partitionID));
             var txRec = new TxRec();
             
             // Act.

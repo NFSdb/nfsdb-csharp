@@ -142,43 +142,43 @@ namespace Apaf.NFSdb.Core.Storage
             {
                 lock (_lastTransLogSync)
                 {
-                    var processedFiles = new List<IRollback>(_partitions.Count + 1);
-                    var modified = _partitions
-                        .Where(p => tx.IsParitionUpdated(p.PartitionID, _lastTransactionLog))
-                        .ToArray();
-
-                    // Non-empty tx.
-                    if (modified.Any())
+                    bool isUpdated = false;
+                    bool closeOnCommit =
+                        _settings.PartitionCloseStrategy.HasFlag(EPartitionCloseStrategy.CloseFullPartitionOnCommit);
+                    try
                     {
-                        try
+                        for (int i = _partitions.Count - 1; i >=0; i--)
                         {
-                            foreach (var txFile in modified)
+                            var partition = _partitions[i];
+                            if (tx.IsParitionUpdated(partition.PartitionID, _lastTransactionLog))
                             {
-                                processedFiles.Add(txFile.Commit(tx));
+                                partition.Commit(tx);
+
+                                // If this is not the last written partition
+                                // consider to close.
+                                if (closeOnCommit && isUpdated)
+                                {
+                                    partition.CloseFiles();
+                                }
+                                isUpdated = true;
                             }
-                            processedFiles.Add(_symbolTxSupport.Commit(tx));
-                        }
-                        catch (NFSdbCommitFailedException)
-                        {
-                            foreach (var rb in processedFiles)
-                            {
-                                rb.Rollback();
-                            }
-                            throw;
                         }
 
-                        try
+                        if (isUpdated)
                         {
+                            _symbolTxSupport.Commit(tx);
+
                             var lastPartition = _partitions[_partitions.Count - 1];
                             var rec = new TxRec();
                             lastPartition.SetTxRec(tx, rec);
                             _symbolTxSupport.SetTxRec(tx, rec);
                             _txLog.Create(rec);
                         }
-                        catch (Exception ex)
-                        {
-                            throw new NFSdbCommitFailedException("Error writing _tx file", ex);
-                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        throw new NFSdbCommitFailedException(
+                            "Error commiting transaction. See InnerException for details.", ex);
                     }
                     _lastTransactionLog = tx;
                 }
@@ -214,6 +214,16 @@ namespace Apaf.NFSdb.Core.Storage
                             _metadata.Settings.DefaultPath,
                             tx.LastAppendTimestamp,
                             dateTime);
+                }
+
+                if (_partitions.Count > 0)
+                {
+                    var lastPart = _partitions[_partitions.Count - 1];
+                    if (lastPart.IsInsidePartition(dateTime))
+                    {
+                        SwitchWritePartitionTo(tx, lastPart.PartitionID);
+                        return lastPart;
+                    }
                 }
 
                 var startDate = PartitionManagerUtils.GetPartitionStartDate(dateTime,

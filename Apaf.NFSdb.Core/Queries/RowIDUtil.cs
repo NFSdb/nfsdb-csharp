@@ -36,7 +36,7 @@ namespace Apaf.NFSdb.Core.Queries
 
         public static long ToExternalRowID(int partitionIndex, long localRowID)
         {
-            return (((long)partitionIndex - 1) << 44) + localRowID + 1;
+            return (((long)partitionIndex - 1) << 44) + localRowID;
         }
 
         public static int ToPartitionIDFromExternalRowID(long externalRowID)
