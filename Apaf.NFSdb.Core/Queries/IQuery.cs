@@ -26,6 +26,7 @@ namespace Apaf.NFSdb.Core.Queries
         ResultSet<T> AllBySymbol(string symbol, string value);
         ResultSet<T> AllByKeyOverInterval(string value, DateInterval interval);
         ResultSet<T> AllBySymbolValueOverInterval(string symbol, string values, DateInterval interval);
+        int PartitionCount { get; }
 
         IQueryable<T> Items { get; }
         IQueryable<T> LatestByID { get; }

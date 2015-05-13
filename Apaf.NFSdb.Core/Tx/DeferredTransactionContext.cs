@@ -7,20 +7,22 @@ namespace Apaf.NFSdb.Core.Tx
 {
     public class DeferredTransactionContext : ITransactionContext
     {
-        private readonly List<IFileTxSupport> _partitions;
-        private TxRec _txRec;
-        private PartitionTxData[] _txData;
         private const int RESERVED_PARTITION_COUNT = 10;
         private readonly IReadContext _readCache = new ReadContext();
+        private readonly IPartitionTxSupport _parititions;
+        private IList<int> _paritionIDs;
+        private bool _copied;
         private PartitionTxData _currentParitionTx;
+        private TxRec _txRec;
+        private PartitionTxData[] _txData;
 
-        public DeferredTransactionContext(IFileTxSupport symbols, 
-            IEnumerable<IFileTxSupport> partitions, TxRec txRec)
+        public DeferredTransactionContext(IPartitionTxSupport parititions, 
+            IList<int> paritionIDs, TxRec txRec)
         {
-            _partitions = new List<IFileTxSupport> { symbols };
-            _partitions.AddRange(partitions);
+            _parititions = parititions;
+            _paritionIDs = paritionIDs;
             _txRec = txRec;
-            _txData = new PartitionTxData[_partitions.Count + 1 + RESERVED_PARTITION_COUNT];
+            _txData = new PartitionTxData[paritionIDs.Count + 1 + RESERVED_PARTITION_COUNT];
             LastAppendTimestamp = txRec != null ? DateUtils.UnixTimestampToDateTime(txRec.LastPartitionTimestamp) : DateTime.MinValue;
         }
 
@@ -34,6 +36,16 @@ namespace Apaf.NFSdb.Core.Tx
             return GetPartitionTx(partitionID).NextRowID;
         }
 
+        public IList<int> PartitionIDs
+        {
+            get { return _paritionIDs; }
+        }
+
+        public ILockedParititionReader Read(int paritionID)
+        {
+            return _parititions.ReadLock(paritionID);
+        }
+
         public PartitionTxData GetPartitionTx()
         {
             return _currentParitionTx;
@@ -44,8 +56,8 @@ namespace Apaf.NFSdb.Core.Tx
             var data = _txData[partitionID];
             if (data == null)
             {
-                data = _partitions[partitionID].ReadTxLogFromPartition(
-                    partitionID == _partitions.Count - 1 ? _txRec : null);
+                data = _parititions.GetPartitionTx(partitionID,
+                    partitionID == _paritionIDs[_paritionIDs.Count - 1] ? _txRec : null);
                 _txData[partitionID] = data;
             }
             return data;
@@ -56,15 +68,21 @@ namespace Apaf.NFSdb.Core.Tx
             _currentParitionTx = GetPartitionTx(partitionID);
         }
 
-        public int PartitionTxCount { get { return _partitions.Count; } }
+        public int PartitionTxCount { get { return _paritionIDs.Count; } }
 
-        public void AddPartition(IFileTxSupport parition)
+        public void AddPartition(int paritionID)
         {
-            _partitions.Add(parition);
-            if (_txData.Length < _partitions.Count)
+            if (!_copied)
+            {
+                _paritionIDs = new List<int>(_paritionIDs);
+                _copied = true;
+            }
+
+            _paritionIDs.Add(paritionID);
+            if (_txData.Length < _paritionIDs.Count)
             {
                 var oldTx = _txData;
-                _txData = new PartitionTxData[_partitions.Count + RESERVED_PARTITION_COUNT];
+                _txData = new PartitionTxData[_paritionIDs.Count + RESERVED_PARTITION_COUNT];
                 Array.Copy(oldTx, _txData, oldTx.Length);
             }
             _txRec = null;
@@ -83,6 +101,5 @@ namespace Apaf.NFSdb.Core.Tx
             var data = _txData[partitionID];
             return data != null && data.IsAppended;
         }
-
     }
 }

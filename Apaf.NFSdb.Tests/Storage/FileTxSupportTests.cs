@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using Apaf.NFSdb.Core.Column;
@@ -148,7 +149,7 @@ namespace Apaf.NFSdb.Tests.Storage
             var storage = new Mock<IColumnStorage>();
             storage.Setup(f => f.AllOpenedFiles()).Returns(files.Select(f => f.Object));
 
-            return new FileTxSupport(partitionID, storage.Object, jornalMeta.Object);
+            return new FileTxSupport(partitionID, storage.Object, jornalMeta.Object, DateTime.MinValue, DateTime.MaxValue);
         }
 
         private static List<Mock<IRawFile>> CreateFileMocks(string fileNameOffset, string failName = null)

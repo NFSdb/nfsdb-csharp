@@ -36,7 +36,7 @@ namespace Apaf.NFSdb.Core.Queries.Queryable.PlanItem
             return Timestamps.AllIntervals.Reverse().SelectMany(
                 interval => GetIds(
                     intervalFilter.IteratePartitions(
-                        journal.Partitions.Reverse(), interval, tx))
+                        tx.PartitionIDs.Reverse(), interval, tx))
             );
         }
 
@@ -46,7 +46,7 @@ namespace Apaf.NFSdb.Core.Queries.Queryable.PlanItem
             {
                 for (long l = idRange.High; l >= idRange.Low; l--)
                 {
-                    yield return RowIDUtil.ToRowID(idRange.Partition.PartitionID, l);
+                    yield return RowIDUtil.ToRowID(idRange.PartitionID, l);
                 }
             }
         }

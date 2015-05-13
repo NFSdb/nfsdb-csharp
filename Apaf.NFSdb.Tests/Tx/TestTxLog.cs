@@ -15,6 +15,8 @@
  * limitations under the License.
  */
 #endregion
+
+using System;
 using System.Linq;
 using Apaf.NFSdb.Core.Tx;
 
@@ -26,16 +28,19 @@ namespace Apaf.NFSdb.Tests.Tx
         {
             const int partitions = 100;
             const int files = 100;
+            var today = DateTime.Now.Date;
+
             var paritionTx = Enumerable.Range(0, partitions)
-                .Select(p => new PartitionTxData(files, 1)
+                .Select(p => new PartitionTxData(files, 1, today.AddDays(-200 + p),
+                    today.AddDays(-200 + p + 1))
                 {
                     AppendOffset = new long[files],
                     SymbolData = Enumerable.Range(0, files)
                         .Select(f => new SymbolTxData()).ToArray()
                 }).ToArray();
 
-            var tx = new TransactionContext(100, paritionTx);
+            var tx = new TransactionContext(100, paritionTx, null);
             return tx;
-        } 
+        }
     }
 }

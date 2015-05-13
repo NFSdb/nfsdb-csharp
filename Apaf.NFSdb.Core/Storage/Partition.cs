@@ -43,6 +43,7 @@ namespace Apaf.NFSdb.Core.Storage
         private readonly IJournalMetadata<T> _metadata;
         private bool _isStorageInitialized;
         private readonly object _syncRoot = new object();
+        private int _readRef;
 
         public Partition(IJournalMetadata<T> metadata,
             ICompositeFileFactory memeorymMappedFileFactory,
@@ -65,9 +66,19 @@ namespace Apaf.NFSdb.Core.Storage
         public DateTime StartDate { get; private set; }
         public DateTime EndDate { get; private set; }
 
+        public void AddReadRef()
+        {
+            Interlocked.Increment(ref _readRef);
+        }
+
+        public void RemoveReadRef()
+        {
+            Interlocked.Decrement(ref _readRef);
+        }
+
         public int GetOpenFileCount()
         {
-            if (_columnStorage != null)
+            if (_isStorageInitialized)
             {
                 return _columnStorage.AllOpenedFiles().Count(f => f.MappedSize > 0);
             }
@@ -76,7 +87,7 @@ namespace Apaf.NFSdb.Core.Storage
 
         public long GetTotalMemoryMapped()
         {
-            if (_columnStorage != null)
+            if (_isStorageInitialized)
             {
                 return _columnStorage.AllOpenedFiles().Sum(f => f.MappedSize);
             }
@@ -235,7 +246,7 @@ namespace Apaf.NFSdb.Core.Storage
                     }
 
                     _fieldSerializer = _metadata.GetSerializer(columns);
-                    _txSupport = new FileTxSupport(PartitionID, _columnStorage, _metadata);
+                    _txSupport = new FileTxSupport(PartitionID, _columnStorage, _metadata, StartDate, EndDate);
 
                     Thread.MemoryBarrier();
                     _isStorageInitialized = true;

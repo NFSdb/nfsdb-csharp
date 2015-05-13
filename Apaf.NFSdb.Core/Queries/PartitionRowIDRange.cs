@@ -16,27 +16,25 @@
  */
 #endregion
 
-using Apaf.NFSdb.Core.Storage;
-
 namespace Apaf.NFSdb.Core.Queries
 {
     public class PartitionRowIDRange
     {
-        public PartitionRowIDRange(IPartitionCore part)
+        public PartitionRowIDRange(int partitionID)
         {
-            Partition = part;
+            PartitionID = partitionID;
             Low = 0;
             High = long.MaxValue;
         }
 
-        public PartitionRowIDRange(IPartitionCore part, long low, long high)
+        public PartitionRowIDRange(int partitionID, long low, long high)
         {
-            Partition = part;
+            PartitionID = partitionID;
             Low = low;
             High = high;
         }
 
-        public IPartitionCore Partition { get; private set; }
+        public int PartitionID { get; private set; }
         public long Low { get; private set; }
         public long High { get; private set; }
     }

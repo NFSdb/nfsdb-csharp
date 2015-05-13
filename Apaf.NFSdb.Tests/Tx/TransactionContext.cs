@@ -27,12 +27,14 @@ namespace Apaf.NFSdb.Tests.Tx
     public class TransactionContext : ITransactionContext
     {
         private readonly int _columnCount;
+        private readonly IPartitionCore[] _partitions;
         private readonly ReadContext _readCatch = new ReadContext();
         private PartitionTxData _currentPartitionTx;
 
-        public TransactionContext(int columnCount, PartitionTxData[] partitionData)
+        public TransactionContext(int columnCount, PartitionTxData[] partitionData, IPartitionCore[] partitions = null)
         {
             _columnCount = columnCount;
+            _partitions = partitions;
             PartitionTx = partitionData;
         }
 
@@ -47,8 +49,20 @@ namespace Apaf.NFSdb.Tests.Tx
             if (copyFrom.PartitionTx != null)
             {
                 PartitionTx = copyFrom.PartitionTx
-                    .Select(p => p.DeepClone()).ToArray();
+                    .Select(DeepClone).ToArray();
             }
+        }
+
+        private static PartitionTxData DeepClone(PartitionTxData p)
+        {
+            return new PartitionTxData(p.AppendOffset.Length, p.ParitionID, p.StartDate, p.EndDate)
+            {
+                SymbolData = p.SymbolData.Select(sd => sd.DeepClone()).ToArray(),
+                AppendOffset = p.AppendOffset.ToArray(),
+                LastTimestamp = p.LastTimestamp,
+                NextRowID = p.NextRowID,
+                IsPartitionUpdated = p.IsPartitionUpdated
+            };
         }
 
         public IList<PartitionTxData> PartitionTx { get; private set; }
@@ -56,6 +70,16 @@ namespace Apaf.NFSdb.Tests.Tx
         public long GetRowCount(int partitionID)
         {
             return PartitionTx[partitionID].NextRowID;
+        }
+
+        public IList<int> PartitionIDs
+        {
+            get { return PartitionTx.Select(p => p.ParitionID).ToArray(); }
+        }
+
+        public ILockedParititionReader Read(int paritionID)
+        {
+            return new LockedParititionReader(_partitions[paritionID - 1]);
         }
 
         public PartitionTxData GetPartitionTx()
@@ -90,7 +114,7 @@ namespace Apaf.NFSdb.Tests.Tx
                 {
                     if (oldParitions != null && i < oldParitions.Count)
                     {
-                        PartitionTx[i] = oldParitions[i].DeepClone();
+                        PartitionTx[i] = DeepClone(oldParitions[i]);
                     }
                     else
                     {
@@ -98,6 +122,11 @@ namespace Apaf.NFSdb.Tests.Tx
                     }
                 }
             }
+        }
+
+        public void AddPartition(int paritionID)
+        {
+            throw new NotImplementedException();
         }
 
         public long PrevTxAddress { get; set; }

@@ -16,14 +16,13 @@
  */
 #endregion
 using System.Collections.Generic;
-using Apaf.NFSdb.Core.Storage;
 using Apaf.NFSdb.Core.Tx;
 
 namespace Apaf.NFSdb.Core.Queries
 {
     public interface IPartitionIntervalIterator
     {
-        IEnumerable<PartitionRowIDRange> IteratePartitions(IEnumerable<IPartitionCore> partitions,
+        IEnumerable<PartitionRowIDRange> IteratePartitions(IEnumerable<int> partitionIDs,
             DateInterval interval, IReadTransactionContext transaction);
     }
 }

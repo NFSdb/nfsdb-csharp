@@ -146,9 +146,13 @@
     <Compile Include="Server\AsyncJournalServer.cs" />
     <Compile Include="Storage\IJournalDiagnostics.cs" />
     <Compile Include="Queries\Queryable\SingleItemExpression.cs" />
+    <Compile Include="Storage\ILockedParititionReader.cs" />
     <Compile Include="Storage\IPartitionManagerCore.cs" />
+    <Compile Include="Storage\IPartitionReader.cs" />
+    <Compile Include="Storage\IPartitionTxSupport.cs" />
     <Compile Include="Storage\IRollback.cs" />
     <Compile Include="Storage\JournalDiagnostics.cs" />
+    <Compile Include="Storage\LockedParititionReader.cs" />
     <Compile Include="Storage\Serializer\FixedColumnNullableWrapper.cs" />
     <Compile Include="Storage\Serializer\ISerializerFactory.cs" />
     <Compile Include="Column\ITypeColumnParser.cs" />
@@ -268,8 +272,10 @@
     <Compile Include="Tx\ITxLog.cs" />
     <Compile Include="Tx\NJournalInvalidTxAddressException.cs" />
     <Compile Include="Tx\PartitionMetadata.cs" />
+    <Compile Include="Tx\PartitionTxData.cs" />
     <Compile Include="Tx\PartitionTxLog.cs" />
     <Compile Include="Tx\PartitionTxRec.cs" />
+    <Compile Include="Tx\SymbolTxData.cs" />
     <Compile Include="Tx\TxRec.cs" />
     <Compile Include="Tx\TxLog.cs" />
     <Compile Include="Tx\TxRecExtensions.cs" />

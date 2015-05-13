@@ -15,6 +15,8 @@
  * limitations under the License.
  */
 #endregion
+
+using System.Collections.Generic;
 using Apaf.NFSdb.Core.Storage;
 
 namespace Apaf.NFSdb.Core.Tx
@@ -28,5 +30,7 @@ namespace Apaf.NFSdb.Core.Tx
 
         int PartitionTxCount { get; }
         long GetRowCount(int partitionID);
+        IList<int> PartitionIDs { get; }
+        ILockedParititionReader Read(int paritionID);
     }
 }

@@ -34,20 +34,24 @@ namespace Apaf.NFSdb.Core.Storage
         private readonly int _partitionID;
         private readonly IColumnStorage _storage;
         private readonly IJournalMetadataCore _metadata;
+        private readonly DateTime _startDate;
+        private readonly DateTime _endTime;
         private const int TIMESTAMP_DATA_SIZE = 8;
 
-        public FileTxSupport(int partitionID, IColumnStorage storage, IJournalMetadataCore metadata)
+        public FileTxSupport(int partitionID, IColumnStorage storage, IJournalMetadataCore metadata, DateTime startDate, DateTime endTime)
         {
             _partitionID = partitionID;
             _storage = storage;
             _metadata = metadata;
+            _startDate = startDate;
+            _endTime = endTime;
         }
 
         public PartitionTxData ReadTxLogFromFile()
         {
             long nextRowID = -1L;
             string lastRowIDFilename = null;
-            var pd = new PartitionTxData(_metadata.FileCount, _partitionID);
+            var pd = new PartitionTxData(_metadata.FileCount, _partitionID, _startDate, _endTime);
 
             foreach (IRawFile file in _storage.AllOpenedFiles())
             {
@@ -117,7 +121,7 @@ namespace Apaf.NFSdb.Core.Storage
         private PartitionTxData ReadTxLogFromFileAndTxRec(TxRec txRec)
         {
             int symrRead = 0;
-            var pd = new PartitionTxData(_metadata.FileCount, _partitionID);
+            var pd = new PartitionTxData(_metadata.FileCount, _partitionID, _startDate, _endTime);
             long nextRowID = RowIDUtil.ToLocalRowID(txRec.JournalMaxRowID - 1) + 1;
             pd.NextRowID = nextRowID;
 

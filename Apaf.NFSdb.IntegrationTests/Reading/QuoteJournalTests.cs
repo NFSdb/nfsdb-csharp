@@ -98,7 +98,7 @@ namespace Apaf.NFSdb.IntegrationTests.Reading
                 GenerateRecords(totalCount, 3);
 
                 var r2 = j.OpenReadTx();
-                Assert.That(j.Partitions.Count(), Is.EqualTo(3));
+                Assert.That(r2.PartitionCount, Is.EqualTo(3));
             }
         }
 

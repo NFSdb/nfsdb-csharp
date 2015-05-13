@@ -69,8 +69,8 @@ namespace Apaf.NFSdb.Tests.Query
             using (var qj = Utils.CreateJournal<Quote>(config, EFileAccess.ReadWrite))
             {
                 AppendRecords(qj, startDate, increment);
-                Assert.That(qj.Partitions.Count(), Is.GreaterThan(1));
                 var rdr = qj.OpenReadTx();
+                Assert.That(rdr.PartitionCount, Is.GreaterThan(1));
                 
                 // Act.
                 var result = rdr.AllBySymbol("Sym", sym).Select(q => q.Ask);
@@ -100,8 +100,9 @@ namespace Apaf.NFSdb.Tests.Query
             using (var qj = Utils.CreateJournal<Quote>(config, EFileAccess.ReadWrite))
             {
                 AppendRecords(qj, startDate, increment);
-                Assert.That(qj.Partitions.Count(), Is.GreaterThan(1));
                 var rdr = qj.OpenReadTx();
+                Assert.That(rdr.PartitionCount, Is.GreaterThan(1));
+
                 var fromDate = DateUtils.UnixTimestampToDateTime(startDate + fromDay * millisecsPerday);
                 var toDate = DateUtils.UnixTimestampToDateTime(startDate + toDay * millisecsPerday);
 

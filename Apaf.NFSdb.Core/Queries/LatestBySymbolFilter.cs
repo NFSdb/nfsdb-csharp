@@ -54,54 +54,57 @@ namespace Apaf.NFSdb.Core.Queries
             var latestRowIDs = new long[keysCount];
             foreach (var part in partitions)
             {
-                // Key mapping.
-                if (_keys != null && keysMap == null)
+                using (var partition = tx.Read(part.PartitionID))
                 {
-                    keysMap = new int[_keys.Length];
-                    for (int i = 0; i < _keys.Length; i++)
+                    // Key mapping.
+                    if (_keys != null && keysMap == null)
                     {
-                        keysMap[i] = part.Partition.GetSymbolKey(
-                            _latestBySymbol, _keys[i], tx);
-                    }
-                }
-
-                var allFound = true;
-                for (int i = 0; i < keysCount; i++)
-                {
-                    if (!foundKeys[i])
-                    {
-                        // Symbol D file key.
-                        var key = keysMap == null ? i : keysMap[i];
-                        if (key != MetadataConstants.SYMBOL_NOT_FOUND_VALUE)
+                        keysMap = new int[_keys.Length];
+                        for (int i = 0; i < _keys.Length; i++)
                         {
-                            var rowIDs =
-                                part.Partition.GetSymbolRows(_latestBySymbol, key, tx);
+                            keysMap[i] = partition.GetSymbolKey(
+                                _latestBySymbol, _keys[i], tx);
+                        }
+                    }
 
-                            foreach (var rowID in rowIDs)
+                    var allFound = true;
+                    for (int i = 0; i < keysCount; i++)
+                    {
+                        if (!foundKeys[i])
+                        {
+                            // Symbol D file key.
+                            var key = keysMap == null ? i : keysMap[i];
+                            if (key != MetadataConstants.SYMBOL_NOT_FOUND_VALUE)
                             {
-                                if (rowID >= part.Low && rowID <= part.High)
+                                var rowIDs =
+                                    partition.GetSymbolRows(_latestBySymbol, key, tx);
+
+                                foreach (var rowID in rowIDs)
                                 {
-                                    // Stop search the key.
-                                    foundKeys[i] = true;
-                                    latestRowIDs[i] =
-                                        RowIDUtil.ToRowID(part.Partition.PartitionID, rowID);
-                                    break;
+                                    if (rowID >= part.Low && rowID <= part.High)
+                                    {
+                                        // Stop search the key.
+                                        foundKeys[i] = true;
+                                        latestRowIDs[i] =
+                                            RowIDUtil.ToRowID(part.PartitionID, rowID);
+                                        break;
+                                    }
                                 }
                             }
+                            else
+                            {
+                                // Stop search the invalid value.
+                                foundKeys[i] = true;
+                            }
                         }
-                        else
-                        {
-                            // Stop search the invalid value.
-                            foundKeys[i] = true;
-                        }
+                        allFound &= foundKeys[i];
                     }
-                    allFound &= foundKeys[i];
-                }
 
-                // Early partition scan termination.
-                if (allFound)
-                {
-                    break;
+                    // Early partition scan termination.
+                    if (allFound)
+                    {
+                        break;
+                    }
                 }
             }
 

@@ -15,14 +15,12 @@
  * limitations under the License.
  */
 #endregion
-using System.Collections.Generic;
 using Apaf.NFSdb.Core.Storage;
 
 namespace Apaf.NFSdb.Core
 {
     public interface IJournalCore
     {
-        IEnumerable<IPartitionCore> Partitions { get; }
         IQueryStatistics QueryStatistics { get; }
         IJournalDiagnostics Diagnostics { get; }
     }

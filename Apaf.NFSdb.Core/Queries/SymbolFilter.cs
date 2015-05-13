@@ -44,11 +44,19 @@ namespace Apaf.NFSdb.Core.Queries
             IReadTransactionContext tx)
         {
             var pp = partitions.SelectMany(part =>
-                MergeSorted(
-                    _values
-                    .Select(v => part.Partition.GetSymbolRows(_symbol, v, tx)
-                    .Where(rowid => rowid >= part.Low && rowid <= part.High)
-                    .Select(row => RowIDUtil.ToRowID(part.Partition.PartitionID, row))).ToArray()));
+                {
+                    using (var partition = tx.Read(part.PartitionID))
+                    {
+                        return MergeSorted(
+                            _values
+                                .Select(symbolValue => partition.GetSymbolRows(_symbol, symbolValue, tx)
+                                    // Sorted from high to low.
+                                    .TakeWhile(rowid => rowid >= part.Low)
+                                    .Where(rowid => rowid <= part.High)
+                                    .Select(row => RowIDUtil.ToRowID(part.PartitionID, row)))
+                                .ToArray());
+                    }
+                });
             
             return pp;
         }

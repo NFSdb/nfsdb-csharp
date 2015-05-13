@@ -138,6 +138,43 @@ namespace Apaf.NFSdb.IntegrationTests.Writing
             }
         }
 
+
+        [Test]
+        public void ShouldWriteAfterTruncate()
+        {
+            Utils.ClearJournal<Trade>();
+
+            var trade = new Trade
+            {
+                Cond = "BBL",
+                Ex = "NYSE",
+                Price = 345.09,
+                Size = 300,
+                Sym = null,
+                Stop = 1,
+                Timestamp = DateUtils.DateTimeToUnixTimeStamp(DateTime.Now)
+            };
+
+            using (var journal = CreateJournal())
+            {
+                using (var wr = journal.OpenWriteTx())
+                {
+                    wr.Append(trade);
+                    wr.Truncate();
+                    wr.Commit();
+                }
+            }
+
+            using (var journal = CreateJournal())
+            {
+                using (var wr = journal.OpenWriteTx())
+                {
+                    wr.Append(trade);
+                    wr.Commit();
+                }
+            }
+        }
+
         [Test]
         [Category("Performance")]
         public void Append_1M_trades_speed()

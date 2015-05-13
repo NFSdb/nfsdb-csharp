@@ -49,11 +49,6 @@ namespace Apaf.NFSdb.Core
             get { return _metadata; }
         }
 
-        public IEnumerable<IPartitionCore> Partitions
-        {
-            get { return _partitionManager.GetOpenPartitions(); }
-        }
-
         public IJournalDiagnostics Diagnostics { get; private set; }
 
         public IQueryStatistics QueryStatistics { get { return _stats; } }

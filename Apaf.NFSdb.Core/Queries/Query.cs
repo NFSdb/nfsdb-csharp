@@ -50,10 +50,15 @@ namespace Apaf.NFSdb.Core.Queries
             var intervalFilter = new PartitionIntervalIterator();
             var symbolFilter = new SymbolFilter(symbol, value);
             var parititionsFiltered = intervalFilter.IteratePartitions(
-                _journal.Partitions.Reverse(), interval, _transactionContext);
+                _transactionContext.PartitionIDs.Reverse(), interval, _transactionContext);
             var ids = symbolFilter.Filter(parititionsFiltered, _transactionContext);
 
             return new ResultSet<T>(_journal, _transactionContext.ReadCache, ids);
+        }
+
+        public int PartitionCount
+        {
+            get { return _transactionContext.PartitionTxCount; }
         }
 
         public IQueryable<T> Items
@@ -79,8 +84,8 @@ namespace Apaf.NFSdb.Core.Queries
         public ResultSet<T> All()
         {
             var paritionsAndMaxVals =
-                _journal.Partitions.Select(p => Tuple.Create(p.PartitionID, 
-                    _transactionContext.GetRowCount(p.PartitionID))).ToArray();
+                _transactionContext.PartitionIDs.Select(p => Tuple.Create(p, 
+                    _transactionContext.GetRowCount(p))).ToArray();
 
             long count = paritionsAndMaxVals.Sum(i => i.Item2);
             var ids = paritionsAndMaxVals.SelectMany(i => CreateRange(i.Item1, i.Item2));
@@ -90,8 +95,8 @@ namespace Apaf.NFSdb.Core.Queries
         public ResultSet<T> Enumerate()
         {
             var paritionsAndMaxVals =
-                _journal.Partitions.Select(p => Tuple.Create(p.PartitionID,
-                    _transactionContext.GetRowCount(p.PartitionID)));
+                _transactionContext.PartitionIDs.Select(p => Tuple.Create(p,
+                    _transactionContext.GetRowCount(p)));
 
             var ids = paritionsAndMaxVals.SelectMany(i => CreateRange(i.Item1, i.Item2));
             return new ResultSet<T>(_journal, _transactionContext.ReadCache, ids);

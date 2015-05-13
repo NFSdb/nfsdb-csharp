@@ -30,7 +30,7 @@ using log4net;
 
 namespace Apaf.NFSdb.Core.Storage
 {
-    public class PartitionManager<T> : IPartitionManager<T>
+    public class PartitionManager<T> : IPartitionManager<T>, IPartitionTxSupport
     {
         // ReSharper disable once StaticFieldInGenericType
         private static readonly ILog LOG = LogManager.GetLogger(typeof (PartitionManagerUtils));
@@ -59,7 +59,7 @@ namespace Apaf.NFSdb.Core.Storage
             _server = server;
 
             _symbolStorage = InitializeSymbolStorage();
-            _symbolTxSupport = new FileTxSupport(SYMBOL_PARTITION_ID, _symbolStorage, _metadata);
+            _symbolTxSupport = new FileTxSupport(SYMBOL_PARTITION_ID, _symbolStorage, _metadata, DateTime.MinValue, DateTime.MinValue);
 
             if (txLog == null)
             {
@@ -117,7 +117,7 @@ namespace Apaf.NFSdb.Core.Storage
                     // Should be re-written using transaction log.
                     ReconcilePartitionsWithDisk(txRec);
 
-                    var tx = new DeferredTransactionContext(_symbolTxSupport, _partitions, txRec);
+                    var tx = new DeferredTransactionContext(this, CopyParititionIDs(), txRec);
                     if (txRec != null)
                     {
                         tx.PrevTxAddress = Math.Max(txRec.PrevTxAddress, TxLog.MIN_TX_ADDRESS) + txRec.Size();
@@ -128,6 +128,16 @@ namespace Apaf.NFSdb.Core.Storage
                     return tx;
                 }
             }
+        }
+
+        private IList<int> CopyParititionIDs()
+        {
+            var partitionIDs = new List<int>(_partitions.Count);
+            for (int i = 0; i < _partitions.Count; i++)
+            {
+                partitionIDs.Add(_partitions[i].PartitionID);
+            }
+            return partitionIDs;
         }
 
         public void Commit(ITransactionContext tx)
@@ -240,7 +250,7 @@ namespace Apaf.NFSdb.Core.Storage
                     partitionID, paritionDir);
 
                 _partitions.Add(partition);
-                tx.AddPartition(partition);
+                tx.AddPartition(partitionID);
                 SwitchWritePartitionTo(tx, partitionID);
 
                 return partition;
@@ -291,12 +301,19 @@ namespace Apaf.NFSdb.Core.Storage
         {
             lock (_partitions)
             {
-                foreach (var partition in _partitions)
+                lock (_lastTransLogSync)
                 {
-                    partition.Dispose();
-                    Directory.Delete(partition.DirectoryPath, true);
+                    _txLog.Create(new TxRec());
+
+                    foreach (var partition in _partitions)
+                    {
+                        partition.Dispose();
+                        Directory.Delete(partition.DirectoryPath, true);
+                    }
+                    _partitions.Clear();
+                    _lastTransactionLog = null;
                 }
-                _partitions.Clear();
+
             }
         }
 
@@ -444,6 +461,29 @@ namespace Apaf.NFSdb.Core.Storage
                 _partitions.Clear();
 
                 _symbolStorage.Dispose();
+            }
+        }
+
+        public PartitionTxData GetPartitionTx(int partitionID, TxRec txRec)
+        {
+            if (partitionID == 0)
+            {
+                return _symbolTxSupport.ReadTxLogFromPartition(txRec);
+            }
+
+            lock (_partitions)
+            {
+                return _partitions[partitionID - 1].ReadTxLogFromPartition(txRec);
+            }
+        }
+
+        public ILockedParititionReader ReadLock(int paritionID)
+        {
+            lock (_partitions)
+            {
+                var p =_partitions[paritionID - 1];
+                p.AddReadRef();
+                return new LockedParititionReader(p);
             }
         }
     }

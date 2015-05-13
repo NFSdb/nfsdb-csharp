@@ -19,7 +19,6 @@ using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
-using Apaf.NFSdb.Core;
 using Apaf.NFSdb.Core.Queries;
 using Apaf.NFSdb.Core.Storage;
 using Apaf.NFSdb.Core.Tx;
@@ -64,10 +63,10 @@ namespace Apaf.NFSdb.Tests.Query
             }
 
             var resultIter = 
-                iter.IteratePartitions(partitions, di, _tx);
+                iter.IteratePartitions(partitions.Select(p => p.PartitionID), di, _tx);
             
             return string.Join(",",
-                resultIter.Select(p => string.Format("{0}", p.Partition.PartitionID)));
+                resultIter.Select(p => string.Format("{0}", p.PartitionID)));
         }
 
 
@@ -99,7 +98,7 @@ namespace Apaf.NFSdb.Tests.Query
             }
 
             var resultIter =
-                iter.IteratePartitions(partitions, di, _tx);
+                iter.IteratePartitions(partitions.Select(p => p.PartitionID), di, _tx);
 
             return string.Join(",",
                 resultIter.Select(p => string.Format("{0}-{1}", p.Low, p.High)));
@@ -126,7 +125,8 @@ namespace Apaf.NFSdb.Tests.Query
             var partIncr = (long)(to - from).TotalMilliseconds/count;
             var recIncr = (long)recordsDelay.TotalMilliseconds;
             var partId = 1;
-            _tx = TestTxLog.TestContext();
+            var partTxs = new List<PartitionTxData>();
+            partTxs.Add(new PartitionTxData(100, 0, DateTime.MinValue, DateTime.MaxValue));
 
             while (tsmp < end)
             {
@@ -136,10 +136,15 @@ namespace Apaf.NFSdb.Tests.Query
                     partTsmps.Add(tsmp); 
                     tsmp += recIncr;
                 }
-                _tx.PartitionTx[partId].NextRowID = partTsmps.Count;
+                partTxs.Add(new PartitionTxData(100, partId,
+                    DateUtils.UnixTimestampToDateTime(partStart), 
+                    DateUtils.UnixTimestampToDateTime(partStart + partIncr)));
+
+                partTxs[partId].NextRowID = partTsmps.Count;
                 res.Add(MockPartition(partTsmps, partStart, partStart + partIncr, partId++));
                 partStart += partIncr;
             }
+            _tx = new TransactionContext(100, partTxs.ToArray(), res.ToArray());
 
             return res.ToArray();
         }

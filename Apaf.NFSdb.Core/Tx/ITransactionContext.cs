@@ -17,78 +17,13 @@
 #endregion
 
 using System;
-using System.Collections.Generic;
-using System.Linq;
-using Apaf.NFSdb.Core.Storage;
-
 namespace Apaf.NFSdb.Core.Tx
 {
     public interface ITransactionContext : IReadTransactionContext
     {
-        void AddPartition(IFileTxSupport parition);
-        void AddPartition(PartitionTxData partitionData, int partitionID);
+        void AddPartition(int paritionID);
         long PrevTxAddress { get; set; }
         bool IsParitionUpdated(int partitionID, ITransactionContext lastTransactionLog);
         DateTime LastAppendTimestamp { get; set; }
-    }
-
-    public class PartitionTxData
-    {
-        private PartitionTxData()
-        {
-        }
-
-        public PartitionTxData(int columnCount, int partitionID)
-        {
-            ParitionID = partitionID;
-            AppendOffset = new long[columnCount];
-            SymbolData = Enumerable.Range(0, columnCount)
-                .Select(dd => new SymbolTxData()).ToArray();
-        }
-
-        public bool IsPartitionUpdated;
-        public long NextRowID;
-        public long LastTimestamp;
-        public long[] AppendOffset;
-        public IList<SymbolTxData> SymbolData;
-        public bool IsAppended;
-        public readonly int ParitionID;
-
-        public PartitionTxData DeepClone()
-        {
-            var c = new PartitionTxData
-            {
-                IsPartitionUpdated = IsPartitionUpdated,
-                NextRowID = NextRowID,
-                LastTimestamp = LastTimestamp,
-                AppendOffset = AppendOffset.ToList().ToArray(),
-                SymbolData = SymbolData.Select(
-                    sd => sd.DeepClone()).ToArray()
-            };
-            return c;
-        }
-    }
-
-    public class SymbolTxData
-    {
-        public SymbolTxData()
-        {
-        }
-
-        public SymbolTxData(bool isKeyCreated, int blockSize, long blockOffset)
-        {
-            KeyBlockCreated = isKeyCreated;
-            KeyBlockSize = blockSize;
-            KeyBlockOffset = blockOffset;
-        }
-
-        public bool KeyBlockCreated;
-        public int KeyBlockSize;
-        public long KeyBlockOffset;
-
-        public SymbolTxData DeepClone()
-        {
-            return new SymbolTxData(false, KeyBlockSize, KeyBlockOffset);
-        }
     }
 }
