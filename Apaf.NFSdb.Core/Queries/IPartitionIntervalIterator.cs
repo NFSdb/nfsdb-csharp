@@ -22,7 +22,7 @@ namespace Apaf.NFSdb.Core.Queries
 {
     public interface IPartitionIntervalIterator
     {
-        IEnumerable<PartitionRowIDRange> IteratePartitions(IEnumerable<int> partitionIDs,
+        IList<PartitionRowIDRange> IteratePartitions(IEnumerable<int> partitionIDs,
             DateInterval interval, IReadTransactionContext transaction);
     }
 }

@@ -15,11 +15,13 @@
  * limitations under the License.
  */
 #endregion
+
+using System;
 using System.Linq;
 
 namespace Apaf.NFSdb.Core.Queries
 {
-    public interface IQuery<T>
+    public interface IQuery<T> : IDisposable
     {
         ResultSet<T> All();
         ResultSet<T> Enumerate();

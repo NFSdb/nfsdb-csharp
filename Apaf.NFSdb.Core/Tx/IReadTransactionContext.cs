@@ -16,12 +16,13 @@
  */
 #endregion
 
+using System;
 using System.Collections.Generic;
 using Apaf.NFSdb.Core.Storage;
 
 namespace Apaf.NFSdb.Core.Tx
 {
-    public interface IReadTransactionContext
+    public interface IReadTransactionContext : IDisposable
     {
         IReadContext ReadCache { get; }
         PartitionTxData GetPartitionTx();
@@ -31,6 +32,8 @@ namespace Apaf.NFSdb.Core.Tx
         int PartitionTxCount { get; }
         long GetRowCount(int partitionID);
         IList<int> PartitionIDs { get; }
-        ILockedParititionReader Read(int paritionID);
+
+        IPartitionTxSupport Partitions { get; }
+        IPartitionReader Read(int partitionID);
     }
 }

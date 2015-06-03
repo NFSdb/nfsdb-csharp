@@ -15,6 +15,8 @@
  * limitations under the License.
  */
 #endregion
+
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
@@ -22,7 +24,7 @@ using Apaf.NFSdb.Core.Storage;
 
 namespace Apaf.NFSdb.Core.Queries
 {
-    public class ResultSet<T> : IEnumerable<T>
+    public class ResultSet<T> : IEnumerable<T>, IDisposable
     {
         public enum Order
         {
@@ -32,28 +34,16 @@ namespace Apaf.NFSdb.Core.Queries
 
         private readonly IJournal<T> _journal;
         private readonly IReadContext _readContext;
+        private readonly IPartitionTxSupport _transaction;
         private readonly IEnumerable<long> _rowIDs;
 
-        public ResultSet(IJournal<T> journal, IReadContext readContext, IEnumerable<long> rowIDs)
+        internal ResultSet(IJournal<T> journal, IReadContext readContext, IEnumerable<long> rowIDs, IPartitionTxSupport transaction, long? length = null)
         {
             _journal = journal;
             _readContext = readContext;
             _rowIDs = rowIDs;
-        }
-
-        public ResultSet(IJournal<T> journal, IReadContext readContext, IEnumerable<long> rowIDs, long length)
-        {
-            _journal = journal;
-            _readContext = readContext;
-            _rowIDs = rowIDs;
+            _transaction = transaction;
             Length = length;
-        }
-
-        public ResultSet(Journal<T> journal, IReadContext readContext)
-        {
-            _journal = journal;
-            _readContext = readContext;
-            _rowIDs = new long[] {};
         }
 
         public long? Length { get; protected set; }
@@ -80,7 +70,12 @@ namespace Apaf.NFSdb.Core.Queries
 
         public RandomAccessResultSet<T> ToRandomAccess()
         {
-            return new RandomAccessResultSet<T>(_journal, _rowIDs.ToArray(), _readContext);
+            long[] rowIDs = _rowIDs.ToArray();
+            return new RandomAccessResultSet<T>(_journal, rowIDs, _readContext, _transaction);
+        }
+
+        public void Dispose()
+        {
         }
     }
 }

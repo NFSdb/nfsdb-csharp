@@ -35,7 +35,7 @@ namespace Apaf.NFSdb.Core.Queries
             _keys = keys;
         }
 
-        public IEnumerable<long> Filter(IEnumerable<PartitionRowIDRange> partitions, 
+        public IEnumerable<long> Filter(IEnumerable<PartitionRowIDRange> partitions,
             IReadTransactionContext tx)
         {
             int keysCount;
@@ -54,57 +54,55 @@ namespace Apaf.NFSdb.Core.Queries
             var latestRowIDs = new long[keysCount];
             foreach (var part in partitions)
             {
-                using (var partition = tx.Read(part.PartitionID))
+                var partition = tx.Read(part.PartitionID);
+                // Key mapping.
+                if (_keys != null && keysMap == null)
                 {
-                    // Key mapping.
-                    if (_keys != null && keysMap == null)
+                    keysMap = new int[_keys.Length];
+                    for (int i = 0; i < _keys.Length; i++)
                     {
-                        keysMap = new int[_keys.Length];
-                        for (int i = 0; i < _keys.Length; i++)
-                        {
-                            keysMap[i] = partition.GetSymbolKey(
-                                _latestBySymbol, _keys[i], tx);
-                        }
+                        keysMap[i] = partition.GetSymbolKey(
+                            _latestBySymbol, _keys[i], tx);
                     }
+                }
 
-                    var allFound = true;
-                    for (int i = 0; i < keysCount; i++)
+                var allFound = true;
+                for (int i = 0; i < keysCount; i++)
+                {
+                    if (!foundKeys[i])
                     {
-                        if (!foundKeys[i])
+                        // Symbol D file key.
+                        var key = keysMap == null ? i : keysMap[i];
+                        if (key != MetadataConstants.SYMBOL_NOT_FOUND_VALUE)
                         {
-                            // Symbol D file key.
-                            var key = keysMap == null ? i : keysMap[i];
-                            if (key != MetadataConstants.SYMBOL_NOT_FOUND_VALUE)
-                            {
-                                var rowIDs =
-                                    partition.GetSymbolRows(_latestBySymbol, key, tx);
+                            var rowIDs =
+                                partition.GetSymbolRows(_latestBySymbol, key, tx);
 
-                                foreach (var rowID in rowIDs)
+                            foreach (var rowID in rowIDs)
+                            {
+                                if (rowID >= part.Low && rowID <= part.High)
                                 {
-                                    if (rowID >= part.Low && rowID <= part.High)
-                                    {
-                                        // Stop search the key.
-                                        foundKeys[i] = true;
-                                        latestRowIDs[i] =
-                                            RowIDUtil.ToRowID(part.PartitionID, rowID);
-                                        break;
-                                    }
+                                    // Stop search the key.
+                                    foundKeys[i] = true;
+                                    latestRowIDs[i] =
+                                        RowIDUtil.ToRowID(part.PartitionID, rowID);
+                                    break;
                                 }
                             }
-                            else
-                            {
-                                // Stop search the invalid value.
-                                foundKeys[i] = true;
-                            }
                         }
-                        allFound &= foundKeys[i];
+                        else
+                        {
+                            // Stop search the invalid value.
+                            foundKeys[i] = true;
+                        }
                     }
+                    allFound &= foundKeys[i];
+                }
 
-                    // Early partition scan termination.
-                    if (allFound)
-                    {
-                        break;
-                    }
+                // Early partition scan termination.
+                if (allFound)
+                {
+                    break;
                 }
             }
 
@@ -115,7 +113,7 @@ namespace Apaf.NFSdb.Core.Queries
                 // Not found.
                 // Rest is greater and returned.
                 if (latestRowIDs[i] == 0) yield break;
-                
+
                 // Found.
                 yield return latestRowIDs[i];
             }

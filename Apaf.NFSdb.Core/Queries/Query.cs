@@ -53,7 +53,7 @@ namespace Apaf.NFSdb.Core.Queries
                 _transactionContext.PartitionIDs.Reverse(), interval, _transactionContext);
             var ids = symbolFilter.Filter(parititionsFiltered, _transactionContext);
 
-            return new ResultSet<T>(_journal, _transactionContext.ReadCache, ids);
+            return ResultSetFactory.Create(_journal, _transactionContext.ReadCache, ids, _transactionContext.Partitions);
         }
 
         public int PartitionCount
@@ -89,7 +89,7 @@ namespace Apaf.NFSdb.Core.Queries
 
             long count = paritionsAndMaxVals.Sum(i => i.Item2);
             var ids = paritionsAndMaxVals.SelectMany(i => CreateRange(i.Item1, i.Item2));
-            return new ResultSet<T>(_journal, _transactionContext.ReadCache, ids, count);
+            return ResultSetFactory.Create(_journal, _transactionContext.ReadCache, ids, count, _transactionContext.Partitions);
         }
 
         public ResultSet<T> Enumerate()
@@ -99,7 +99,7 @@ namespace Apaf.NFSdb.Core.Queries
                     _transactionContext.GetRowCount(p)));
 
             var ids = paritionsAndMaxVals.SelectMany(i => CreateRange(i.Item1, i.Item2));
-            return new ResultSet<T>(_journal, _transactionContext.ReadCache, ids);
+            return ResultSetFactory.Create(_journal, _transactionContext.ReadCache, ids, _transactionContext.Partitions);
         }
 
         private IEnumerable<long> CreateRange(int partitionIndex, long itemsCount)
@@ -113,6 +113,11 @@ namespace Apaf.NFSdb.Core.Queries
         internal void RefreshContext(ITransactionContext transactionContext)
         {
             _transactionContext = transactionContext;
+        }
+
+        public void Dispose()
+        {
+            _transactionContext.Dispose();
         }
     }
 }

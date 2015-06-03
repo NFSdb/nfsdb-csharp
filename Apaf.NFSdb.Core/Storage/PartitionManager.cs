@@ -30,7 +30,7 @@ using log4net;
 
 namespace Apaf.NFSdb.Core.Storage
 {
-    public class PartitionManager<T> : IPartitionManager<T>, IPartitionTxSupport
+    public class PartitionManager<T> : IPartitionManager<T>
     {
         // ReSharper disable once StaticFieldInGenericType
         private static readonly ILog LOG = LogManager.GetLogger(typeof (PartitionManagerUtils));
@@ -117,7 +117,7 @@ namespace Apaf.NFSdb.Core.Storage
                     // Should be re-written using transaction log.
                     ReconcilePartitionsWithDisk(txRec);
 
-                    var tx = new DeferredTransactionContext(this, CopyParititionIDs(), txRec);
+                    var tx = new DeferredTransactionContext(null, this, CopyParititionIDs(), txRec);
                     if (txRec != null)
                     {
                         tx.PrevTxAddress = Math.Max(txRec.PrevTxAddress, TxLog.MIN_TX_ADDRESS) + txRec.Size();
@@ -463,28 +463,57 @@ namespace Apaf.NFSdb.Core.Storage
                 _symbolStorage.Dispose();
             }
         }
+//
+//        public PartitionTxData GetPartitionTx(int partitionID, TxRec txRec)
+//        {
+//            if (partitionID == 0)
+//            {
+//                return _symbolTxSupport.ReadTxLogFromPartition(txRec);
+//            }
+//
+//            lock (_partitions)
+//            {
+//                return _partitions[partitionID - 1].ReadTxLogFromPartition(txRec);
+//            }
+//        }
 
-        public PartitionTxData GetPartitionTx(int partitionID, TxRec txRec)
-        {
-            if (partitionID == 0)
-            {
-                return _symbolTxSupport.ReadTxLogFromPartition(txRec);
-            }
-
-            lock (_partitions)
-            {
-                return _partitions[partitionID - 1].ReadTxLogFromPartition(txRec);
-            }
-        }
-
-        public ILockedParititionReader ReadLock(int paritionID)
+        public IPartitionReader Read(int paritionID)
         {
             lock (_partitions)
             {
                 var p =_partitions[paritionID - 1];
-                p.AddReadRef();
-                return new LockedParititionReader(p);
+                return p;
             }
+        }
+
+        public void ReleaseParitionLocks()
+        {
+            throw new NotImplementedException();
+        }
+
+        public void ReleaseParitionLock(int paritionID)
+        {
+            throw new NotImplementedException();
+        }
+
+        public void ReleaseParitionLocks(IList<int> paritionIDs)
+        {
+            throw new NotImplementedException();
+        }
+
+        public void AcquirePartitionLocks()
+        {
+            throw new NotImplementedException();
+        }
+
+        public void AcquireParitionLock(int partitionID)
+        {
+            throw new NotImplementedException();
+        }
+
+        public void AcquirePartitionLocks(IList<int> paritionIDs)
+        {
+            throw new NotImplementedException();
         }
     }
 }

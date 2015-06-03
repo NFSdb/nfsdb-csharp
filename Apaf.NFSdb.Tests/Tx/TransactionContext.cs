@@ -77,9 +77,11 @@ namespace Apaf.NFSdb.Tests.Tx
             get { return PartitionTx.Select(p => p.ParitionID).ToArray(); }
         }
 
-        public ILockedParititionReader Read(int paritionID)
+        public IPartitionTxSupport Partitions { get; private set; }
+
+        public IPartitionReader Read(int partitionID)
         {
-            return new LockedParititionReader(_partitions[paritionID - 1]);
+            throw new NotImplementedException();
         }
 
         public PartitionTxData GetPartitionTx()
@@ -160,6 +162,11 @@ namespace Apaf.NFSdb.Tests.Tx
         public IReadContext ReadCache
         {
             get { return _readCatch; }
+        }
+
+        public void Dispose()
+        {
+            throw new NotImplementedException();
         }
     }
 }

@@ -48,8 +48,8 @@ namespace Apaf.NFSdb.Core.Queries.Queryable
             {
                 _planHead = new TimestampRangePlanItem(DateInterval.Any);
             }
-            var result = new ResultSet<T>(_journal, _tx.ReadCache, 
-                _planHead.Execute(_journal, _tx));
+            var result = new ResultSet<T>(_journal, _tx.ReadCache,
+                _planHead.Execute(_journal, _tx), _tx.Partitions);
 
             // Bind call.
             if (_takeSingle)
@@ -162,17 +162,14 @@ namespace Apaf.NFSdb.Core.Queries.Queryable
                             RebuildWithLatest(intersc.Left, latestBySymbol), 
                             intersc.Right);
                 }
-                else if (AddLatestToColumnScan(intersc.Right, latestBySymbol))
+                if (AddLatestToColumnScan(intersc.Right, latestBySymbol))
                 {
                     return new IntersectPlanItem(intersc.Left,
                         RebuildWithLatest(intersc.Right, latestBySymbol));
                 }
-                else
-                {
-                    throw new InvalidOperationException("One of the Intersect path " +
-                                                        "supposed to be reduced with" +
-                                                        " Latest by symbol plan");
-                }
+                throw new InvalidOperationException("One of the Intersect path " +
+                                                    "supposed to be reduced with" +
+                                                    " Latest by symbol plan");
             }
 
             var union = planHead as UnionPlanItem;

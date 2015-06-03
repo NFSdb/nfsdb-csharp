@@ -15,48 +15,64 @@
  * limitations under the License.
  */
 #endregion
+
 using System.Collections.Generic;
+using Apaf.NFSdb.Core.Storage;
 using Apaf.NFSdb.Core.Tx;
 
 namespace Apaf.NFSdb.Core.Queries
 {
     public class PartitionIntervalIterator : IPartitionIntervalIterator
     {
-        public IEnumerable<PartitionRowIDRange> IteratePartitions(IEnumerable<int> partitionsIDs,
+        public IList<PartitionRowIDRange> IteratePartitions(IEnumerable<int> partitionsIDs,
             DateInterval interval, IReadTransactionContext tx)
         {
+            var result = new List<PartitionRowIDRange>();
             foreach (var partitionID in partitionsIDs)
             {
                 long low = long.MaxValue;
                 long hi = long.MinValue;
                 var partt = tx.GetPartitionTx(partitionID);
 
-                if (interval.Start < partt.StartDate)
+                IPartitionReader reader = null;
+                bool locked = false;
+                if (partt.StartDate <= interval.Start && interval.Start < partt.EndDate
+                    || partt.StartDate <= interval.End && interval.End < partt.EndDate)
                 {
-                    low = 0;
+                    tx.Partitions.AcquirePartitionLock(partitionID);
+                    locked = true;
                 }
-                else if (partt.StartDate <= interval.Start && interval.Start < partt.EndDate)
+
+                try
                 {
-                    using (var reader = tx.Read(partitionID))
+                    if (locked)
                     {
+                        reader = tx.Read(partitionID);
+                    }
+
+                    if (interval.Start < partt.StartDate)
+                    {
+                        low = 0;
+                    }
+                    else if (partt.StartDate <= interval.Start && interval.Start < partt.EndDate)
+                    {
+                        // ReSharper disable once PossibleNullReferenceException
                         low = reader.BinarySearchTimestamp(interval.Start, tx);
                         if (low < 0)
                         {
                             low = ~low;
                         }
                     }
-                }
 
-                // Interval and partition end days
-                // are both exclusive
-                if (interval.End >= partt.EndDate)
-                {
-                    hi = tx.GetRowCount(partitionID) - 1;
-                }
-                else if (partt.StartDate <= interval.End && interval.End < partt.EndDate)
-                {
-                    using (var reader = tx.Read(partitionID))
+                    // Interval and partition end days
+                    // are both exclusive
+                    if (interval.End >= partt.EndDate)
                     {
+                        hi = tx.GetRowCount(partitionID) - 1;
+                    }
+                    else if (partt.StartDate <= interval.End && interval.End < partt.EndDate)
+                    {
+                        // ReSharper disable once PossibleNullReferenceException
                         hi = reader.BinarySearchTimestamp(interval.End, tx);
                         if (hi < 0)
                         {
@@ -68,12 +84,21 @@ namespace Apaf.NFSdb.Core.Queries
                         }
                     }
                 }
+                finally
+                {
+                    // Release partition if it will not be used.
+                    if (locked && !(low <= hi))
+                    {
+                        tx.Partitions.ReleaseParitionLock(partitionID);
+                    }
+                }
 
                 if (low <= hi)
                 {
-                    yield return new PartitionRowIDRange(partitionID, low, hi);
+                    result.Add(new PartitionRowIDRange(partitionID, low, hi));
                 }
             }
+            return result;
         }
     }
 }

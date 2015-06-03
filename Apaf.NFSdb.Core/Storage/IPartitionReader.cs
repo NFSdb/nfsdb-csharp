@@ -19,5 +19,7 @@ namespace Apaf.NFSdb.Core.Storage
             IReadTransactionContext tx);
 
         long GetSymbolRowCount(string symbol, string value, IReadTransactionContext tx);
+
+        PartitionTxData ReadTxLogFromPartition(TxRec txRec);
     }
 }

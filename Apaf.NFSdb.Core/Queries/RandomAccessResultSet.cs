@@ -25,18 +25,22 @@ namespace Apaf.NFSdb.Core.Queries
     {
         private readonly long[] _idArray;
         private readonly IReadContext _rx;
+        // ReSharper disable once StaticFieldInGenericType
+        private static readonly long[] EMPTY_IDS = new long[0];
 
-        public RandomAccessResultSet(IJournal<T> journal, long[] rowIDs, IReadContext rx) : base(journal, rx, rowIDs)
+        public RandomAccessResultSet(IJournal<T> journal, long[] rowIDs, IReadContext rx, IPartitionTxSupport ptx)
+            : base(journal, rx, rowIDs, ptx, rowIDs.Length)
         {
             _idArray = rowIDs;
             _rx = rx;
             Length = rowIDs.Length;
         }
 
-        public RandomAccessResultSet(Journal<T> journal, IReadContext rx) : base(journal, rx)
+        public RandomAccessResultSet(Journal<T> journal, IReadContext rx, IPartitionTxSupport ptx)
+            : base(journal, rx, EMPTY_IDS, ptx, 0)
         {
             _rx = rx;
-            _idArray = new long[0];
+            _idArray = EMPTY_IDS;
             Length = 0;
         }
 

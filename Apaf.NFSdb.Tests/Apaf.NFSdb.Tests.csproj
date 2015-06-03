@@ -138,6 +138,8 @@
     <Compile Include="Columns\PocoModel\Trade.cs" />
     <Compile Include="Common\DisposableTempDir.cs" />
     <Compile Include="Common\TestUtils.cs" />
+    <Compile Include="Concurrency\SharedExclusiveLockTests.cs" />
+    <Compile Include="Performance\InterlockedTests.cs" />
     <Compile Include="Serializer\ThriftObjectSerializerTests.cs" />
     <Compile Include="Columns\StringColumnTests.cs" />
     <Compile Include="Columns\SymbolMapColumnTests.cs" />
