@@ -39,7 +39,7 @@ namespace Apaf.NFSdb.Core.Queries
                 if (partt.StartDate <= interval.Start && interval.Start < partt.EndDate
                     || partt.StartDate <= interval.End && interval.End < partt.EndDate)
                 {
-                    tx.Partitions.AcquirePartitionLock(partitionID);
+                    tx.TxPartitions.AcquireReadLock(partitionID);
                     locked = true;
                 }
 
@@ -89,7 +89,7 @@ namespace Apaf.NFSdb.Core.Queries
                     // Release partition if it will not be used.
                     if (locked && !(low <= hi))
                     {
-                        tx.Partitions.ReleaseParitionLock(partitionID);
+                        tx.TxPartitions.ReleaseReadLock(partitionID);
                     }
                 }
 

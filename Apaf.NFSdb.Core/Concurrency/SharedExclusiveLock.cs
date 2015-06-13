@@ -11,7 +11,7 @@ namespace Apaf.NFSdb.Core.Concurrency
         public Queue<WaitItem> WaitQueue = new Queue<WaitItem>();
         public int QueueLenght;
 
-        public bool AcquireRead(AutoResetEvent waiter, bool enqueue)
+        public bool AcquireRead(EventWaitHandle waiter, bool enqueue = true)
         {
             int currentRead; 
             do
@@ -121,7 +121,7 @@ namespace Apaf.NFSdb.Core.Concurrency
             }
         }
 
-        public bool AcquireWrite(AutoResetEvent waiter, bool enqueue)
+        public bool AcquireWrite(EventWaitHandle waiter, bool enqueue = true)
         {
             do
             {
@@ -169,7 +169,7 @@ namespace Apaf.NFSdb.Core.Concurrency
 
         public struct WaitItem
         {
-            public AutoResetEvent WaitHandle;
+            public EventWaitHandle WaitHandle;
             public bool IsRead;
         } 
     }

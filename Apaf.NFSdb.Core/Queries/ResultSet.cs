@@ -34,10 +34,10 @@ namespace Apaf.NFSdb.Core.Queries
 
         private readonly IJournal<T> _journal;
         private readonly IReadContext _readContext;
-        private readonly IPartitionTxSupport _transaction;
+        private readonly ITxPartitionLock _transaction;
         private readonly IEnumerable<long> _rowIDs;
 
-        internal ResultSet(IJournal<T> journal, IReadContext readContext, IEnumerable<long> rowIDs, IPartitionTxSupport transaction, long? length = null)
+        internal ResultSet(IJournal<T> journal, IReadContext readContext, IEnumerable<long> rowIDs, ITxPartitionLock transaction, long? length = null)
         {
             _journal = journal;
             _readContext = readContext;

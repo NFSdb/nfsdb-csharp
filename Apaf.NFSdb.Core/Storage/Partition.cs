@@ -109,7 +109,6 @@ namespace Apaf.NFSdb.Core.Storage
             if (!_isStorageInitialized) InitializeStorage();
 
             var pd = tx.GetPartitionTx();
-            tx.SetCurrentPartition(PartitionID);
             _fieldSerializer.Write(item, pd.NextRowID, tx);
             pd.NextRowID++;
             pd.IsAppended = true;
@@ -140,6 +139,11 @@ namespace Apaf.NFSdb.Core.Storage
             if (!_isStorageInitialized) InitializeStorage();
 
             return _txSupport.ReadTxLogFromPartition(txRec);
+        }
+
+        object IPartitionReader.Read(long toLocalRowID, IReadContext readContext)
+        {
+            return Read(toLocalRowID, readContext);
         }
 
         public IRollback Commit(ITransactionContext tx)

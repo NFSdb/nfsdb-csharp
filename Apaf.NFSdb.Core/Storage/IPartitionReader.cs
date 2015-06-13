@@ -4,7 +4,7 @@ using Apaf.NFSdb.Core.Tx;
 
 namespace Apaf.NFSdb.Core.Storage
 {
-    public interface IPartitionReader
+    public interface IPartitionReader : IFileTxSupport
     {
         int GetOpenFileCount();
         long GetTotalMemoryMapped();
@@ -20,6 +20,6 @@ namespace Apaf.NFSdb.Core.Storage
 
         long GetSymbolRowCount(string symbol, string value, IReadTransactionContext tx);
 
-        PartitionTxData ReadTxLogFromPartition(TxRec txRec);
+        object Read(long toLocalRowID, IReadContext readContext);
     }
 }

@@ -27,13 +27,13 @@ namespace Apaf.NFSdb.Core.Tx
         IReadContext ReadCache { get; }
         PartitionTxData GetPartitionTx();
         PartitionTxData GetPartitionTx(int partitionId);
-        void SetCurrentPartition(int partitionID);
+        PartitionTxData SetCurrentPartition(int partitionID);
 
         int PartitionTxCount { get; }
         long GetRowCount(int partitionID);
         IList<int> PartitionIDs { get; }
 
-        IPartitionTxSupport Partitions { get; }
+        ITxPartitionLock TxPartitions { get; }
         IPartitionReader Read(int partitionID);
     }
 }

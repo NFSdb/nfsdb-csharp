@@ -1,4 +1,5 @@
-﻿using System.Threading;
+﻿using System;
+using System.Threading;
 using Apaf.NFSdb.Core.Concurrency;
 
 namespace Apaf.NFSdb.Core.Storage
@@ -21,9 +22,33 @@ namespace Apaf.NFSdb.Core.Storage
             }
         }
 
+        public void SizeToPartitionID(int partitionID)
+        {
+            int newLength = partitionID + 1;
+            if (newLength > _capacity)
+            {
+                _capacity = newLength + ADDITIONAL_CAPACITY;
+                var newLocks = new SharedExclusiveLock[_capacity];
+                Array.Copy(_locks, newLocks, _locks.Length);
+                newLocks[newLength - 1] = new SharedExclusiveLock();
+
+                Thread.MemoryBarrier();
+                _locks = newLocks;
+            }
+            else
+            {
+                for (int i = _length; i < newLength; i++)
+                {
+                    _locks[i] = new SharedExclusiveLock();
+                }
+            }
+
+            _length = newLength;
+        }
+
         public bool AcquireReadPartitionLock(AutoResetEvent waiter, int partitionID)
         {
-            return _locks[partitionID].AcquireRead(waiter, true);
+            return _locks[partitionID].AcquireRead(waiter);
         }
 
         public void ReleaseReadPartitionLock(int partitionID)
@@ -33,7 +58,7 @@ namespace Apaf.NFSdb.Core.Storage
 
         public bool AcquireWritePartitionLock(AutoResetEvent waiter, int partitionID)
         {
-            return _locks[partitionID].AcquireWrite(waiter, true);
+            return _locks[partitionID].AcquireWrite(waiter);
         }
 
         public void ReleaseWritePartitionLock(int partitionID)

@@ -354,7 +354,7 @@ namespace Apaf.NFSdb.IntegrationTests.Reading
 
                     if (commitFlag && recorsToAppend != 0)
                     {
-                        var errorString = string.Format("Total commited {0}, seed {1}", totalCommitedRecords, seed);
+                        var errorString = string.Format("Total commited {0}, seed {1}, iteration {2}", totalCommitedRecords, seed, n);
                         var rtx = reader.OpenReadTx();
                         Assert.That(rtx.All().Length, Is.EqualTo(totalCommitedRecords), errorString);
                         var last = rtx.All().Last();

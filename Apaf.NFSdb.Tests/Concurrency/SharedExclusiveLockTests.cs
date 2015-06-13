@@ -2,6 +2,7 @@
 using System.Diagnostics;
 using System.Linq;
 using System.Threading;
+using System.Threading.Tasks;
 using Apaf.NFSdb.Core.Concurrency;
 using NUnit.Framework;
 
@@ -10,74 +11,110 @@ namespace Apaf.NFSdb.Tests.Concurrency
     [TestFixture]
     public class SharedExclusiveLockTests
     {
-        [Test]
-        public void ShouldAllowMultipleReads()
+        private SharedExclusiveLock CreateLock()
         {
-            var lk = CreateLock();
-            lk.AcquireRead(new AutoResetEvent(false), true);
-            
-            var secondRead = lk.AcquireRead(new AutoResetEvent(false), true);
-            Assert.That(secondRead, Is.EqualTo(true));
+            return new SharedExclusiveLock();
         }
 
         [Test]
-        public void ShouldEnqueueWriteAfterRead()
+        public void ShouldAllowMultipleReads()
         {
-            var lk = CreateLock();
-            lk.AcquireRead(new AutoResetEvent(false), true);
+            SharedExclusiveLock lk = CreateLock();
+            lk.AcquireRead(new AutoResetEvent(false));
 
-            var write = lk.AcquireWrite(new AutoResetEvent(false), true);
-            Assert.That(write, Is.EqualTo(false));
+            bool secondRead = lk.AcquireRead(new AutoResetEvent(false));
+            Assert.That(secondRead, Is.EqualTo(true));
         }
 
         [Test]
         public void ShouldEnqueueReadAfterWrite()
         {
-            var lk = CreateLock();
-            lk.AcquireWrite(new AutoResetEvent(false), true);
+            SharedExclusiveLock lk = CreateLock();
+            lk.AcquireWrite(new AutoResetEvent(false));
 
-            var secondRead = lk.AcquireRead(new AutoResetEvent(false), true);
+            bool secondRead = lk.AcquireRead(new AutoResetEvent(false));
             Assert.That(secondRead, Is.EqualTo(false));
+        }
+
+        [Test]
+        public void ShouldEnqueueWriteAfterRead()
+        {
+            SharedExclusiveLock lk = CreateLock();
+            lk.AcquireRead(new AutoResetEvent(false));
+
+            bool write = lk.AcquireWrite(new AutoResetEvent(false));
+            Assert.That(write, Is.EqualTo(false));
+        }
+
+        [Test]
+        public void ShouldResumeAllReadersWhenWriterIsReleased()
+        {
+            SharedExclusiveLock lk = CreateLock();
+
+            // First write.
+            lk.AcquireWrite(new AutoResetEvent(false));
+
+            const int readers = 10;
+            var readerWaters = new AutoResetEvent[readers];
+
+            for (int i = 0; i < readers; i++)
+            {
+                readerWaters[i] = new AutoResetEvent(false);
+                bool wait = lk.AcquireRead(readerWaters[i]);
+
+                Assert.That(wait, Is.EqualTo(false));
+            }
+
+            // Release first writer.
+            lk.ReleaseWrite();
+
+            // Should be set.
+            Stopwatch sw = Stopwatch.StartNew();
+            WaitHandle.WaitAll(readerWaters.Cast<WaitHandle>().ToArray(),
+                TimeSpan.FromSeconds(5));
+
+            sw.Stop();
+
+            Assert.That(sw.Elapsed, Is.LessThan(TimeSpan.FromSeconds(0.5)));
         }
 
         [Test]
         public void ShouldResumeWriteWhenNoReader()
         {
-            var lk = CreateLock();
-            lk.AcquireRead(new AutoResetEvent(false), true);
+            SharedExclusiveLock lk = CreateLock();
+            lk.AcquireRead(new AutoResetEvent(false));
 
             var writeEvent = new AutoResetEvent(false);
-            lk.AcquireWrite(writeEvent, true);
+            lk.AcquireWrite(writeEvent);
             writeEvent.Reset();
 
             lk.ReleaseRead();
 
             // Should be set.
-            var sw = Stopwatch.StartNew();
+            Stopwatch sw = Stopwatch.StartNew();
             writeEvent.WaitOne(TimeSpan.FromSeconds(5));
             sw.Stop();
 
             Assert.That(sw.Elapsed, Is.LessThan(TimeSpan.FromSeconds(0.5)));
         }
 
-
         [Test]
         public void ShouldResumeWriteWhenReadersHitZero()
         {
-            var lk = CreateLock();
+            SharedExclusiveLock lk = CreateLock();
 
             // First read.
-            lk.AcquireRead(new AutoResetEvent(false), true);
+            lk.AcquireRead(new AutoResetEvent(false));
 
             // First write.
             var writeEvent = new AutoResetEvent(false);
-            lk.AcquireWrite(writeEvent, true);
+            lk.AcquireWrite(writeEvent);
 
             // Get N readers.
             const int readers = 10;
             for (int i = 0; i < readers; i++)
             {
-                lk.AcquireRead(new AutoResetEvent(false), true);
+                lk.AcquireRead(new AutoResetEvent(false));
             }
 
             // Release N readers.
@@ -91,25 +128,24 @@ namespace Apaf.NFSdb.Tests.Concurrency
             lk.ReleaseRead();
 
             // Should be set.
-            var sw = Stopwatch.StartNew();
+            Stopwatch sw = Stopwatch.StartNew();
             writeEvent.WaitOne(TimeSpan.FromSeconds(5));
             sw.Stop();
 
             Assert.That(sw.Elapsed, Is.LessThan(TimeSpan.FromSeconds(0.5)));
         }
 
-
         [Test]
         public void ShouldResumeWriteWhenWriterIsReleased()
         {
-            var lk = CreateLock();
+            SharedExclusiveLock lk = CreateLock();
 
             // First write.
-            lk.AcquireWrite(new AutoResetEvent(false), true);
+            lk.AcquireWrite(new AutoResetEvent(false));
 
             // Second write.
             var writeEvent = new AutoResetEvent(false);
-            var wait = lk.AcquireWrite(writeEvent, true);
+            bool wait = lk.AcquireWrite(writeEvent);
 
             Assert.That(wait, Is.EqualTo(false));
 
@@ -118,7 +154,7 @@ namespace Apaf.NFSdb.Tests.Concurrency
             lk.ReleaseWrite();
 
             // Should be set.
-            var sw = Stopwatch.StartNew();
+            Stopwatch sw = Stopwatch.StartNew();
             writeEvent.WaitOne(TimeSpan.FromSeconds(5));
             sw.Stop();
 
@@ -126,40 +162,50 @@ namespace Apaf.NFSdb.Tests.Concurrency
         }
 
         [Test]
-        public void ShouldResumeAllReadersWhenWriterIsReleased()
+        public void ShouldTumbleTryReadWrite()
         {
-            var lk = CreateLock();
+            SharedExclusiveLock lk = CreateLock();
 
-            // First write.
-            lk.AcquireWrite(new AutoResetEvent(false), true);
+            const int threads = 100;
+            const int sumCount = (int) 10E6;
+            long totalSum = 0;
+            AutoResetEvent[] waters = Enumerable.Range(0, threads)
+                .Select(i => new AutoResetEvent(false))
+                .ToArray();
 
-            const int readers = 10;
-            var readerWaters = new AutoResetEvent[readers];
+            Stopwatch sw = Stopwatch.StartNew();
+            const long sumToMillion = (long) (sumCount - 1)*(sumCount)/2;
 
-            for (int i = 0; i < readers; i++)
+            Parallel.For(0, threads, i =>
             {
-                readerWaters[i] = new AutoResetEvent(false);
-                var wait = lk.AcquireRead(readerWaters[i], true);
+                bool needWait = i == 3 ? !lk.AcquireWrite(waters[i]) : !lk.AcquireRead(waters[i]);
+                if (needWait)
+                {
+                    waters[i].WaitOne(TimeSpan.FromMinutes(2));
+                }
 
-                Assert.That(wait, Is.EqualTo(false));
-            }
+                long sum = 0;
 
-            // Release first writer.
-            lk.ReleaseWrite();
+                // Make CPU busy.
+                for (int j = 0; j < sumCount; j++)
+                {
+                    sum += j;
+                }
+                Interlocked.Add(ref totalSum, sum);
 
-            // Should be set.
-            var sw = Stopwatch.StartNew();
-            WaitHandle.WaitAll(readerWaters.Cast<WaitHandle>().ToArray(),
-                TimeSpan.FromSeconds(5));
+                if (i == 3)
+                {
+                    lk.ReleaseWrite();
+                }
+                else
+                {
+                    lk.ReleaseRead();
+                }
+            });
 
             sw.Stop();
-
-            Assert.That(sw.Elapsed, Is.LessThan(TimeSpan.FromSeconds(0.5)));
-        }
-
-        private SharedExclusiveLock CreateLock()
-        {
-            return new SharedExclusiveLock();
+            Assert.That(sw.Elapsed, Is.LessThan(TimeSpan.FromSeconds(10)));
+            Assert.That(totalSum, Is.EqualTo(sumToMillion*threads));
         }
     }
 }

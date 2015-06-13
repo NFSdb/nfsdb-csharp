@@ -28,7 +28,7 @@ namespace Apaf.NFSdb.Core.Queries
         // ReSharper disable once StaticFieldInGenericType
         private static readonly long[] EMPTY_IDS = new long[0];
 
-        public RandomAccessResultSet(IJournal<T> journal, long[] rowIDs, IReadContext rx, IPartitionTxSupport ptx)
+        public RandomAccessResultSet(IJournal<T> journal, long[] rowIDs, IReadContext rx, ITxPartitionLock ptx)
             : base(journal, rx, rowIDs, ptx, rowIDs.Length)
         {
             _idArray = rowIDs;
@@ -36,7 +36,7 @@ namespace Apaf.NFSdb.Core.Queries
             Length = rowIDs.Length;
         }
 
-        public RandomAccessResultSet(Journal<T> journal, IReadContext rx, IPartitionTxSupport ptx)
+        public RandomAccessResultSet(Journal<T> journal, IReadContext rx, ITxPartitionLock ptx)
             : base(journal, rx, EMPTY_IDS, ptx, 0)
         {
             _rx = rx;

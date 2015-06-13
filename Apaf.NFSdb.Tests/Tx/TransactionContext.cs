@@ -55,7 +55,7 @@ namespace Apaf.NFSdb.Tests.Tx
 
         private static PartitionTxData DeepClone(PartitionTxData p)
         {
-            return new PartitionTxData(p.AppendOffset.Length, p.ParitionID, p.StartDate, p.EndDate)
+            return new PartitionTxData(p.AppendOffset.Length, p.PartitionID, p.StartDate, p.EndDate)
             {
                 SymbolData = p.SymbolData.Select(sd => sd.DeepClone()).ToArray(),
                 AppendOffset = p.AppendOffset.ToArray(),
@@ -74,10 +74,10 @@ namespace Apaf.NFSdb.Tests.Tx
 
         public IList<int> PartitionIDs
         {
-            get { return PartitionTx.Select(p => p.ParitionID).ToArray(); }
+            get { return PartitionTx.Select(p => p.PartitionID).ToArray(); }
         }
 
-        public IPartitionTxSupport Partitions { get; private set; }
+        public ITxPartitionLock TxPartitions { get; private set; }
 
         public IPartitionReader Read(int partitionID)
         {

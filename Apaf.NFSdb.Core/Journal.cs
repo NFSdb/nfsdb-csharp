@@ -77,8 +77,8 @@ namespace Apaf.NFSdb.Core
         public T Read(long rowID, IReadContext readContext)
         {
             int partitionIndex = RowIDUtil.ToPartitionIndex(rowID);
-            IPartition<T> partition = _partitionManager.GetPartitionByID(partitionIndex);
-            return partition.Read(RowIDUtil.ToLocalRowID(rowID), readContext);
+            var partition = _partitionManager.Read(partitionIndex);
+            return (T) partition.Read(RowIDUtil.ToLocalRowID(rowID), readContext);
         }
 
         public IEnumerable<T> Read(IEnumerable<long> rowIDs, IReadContext readContext)

@@ -7,7 +7,9 @@ namespace Apaf.NFSdb.Core.Storage
     public interface IPartitionManagerCore : IDisposable
     {
         EFileAccess Access { get; }
+
         IEnumerable<IPartitionCore> GetOpenPartitions();
+
         IColumnStorage SymbolFileStorage { get; }
 
         void Truncate(ITransactionContext tx);
@@ -18,5 +20,8 @@ namespace Apaf.NFSdb.Core.Storage
 
         IPartitionReader Read(int paritionID);
 
+        IFileTxSupport ReadTx(int paritionID);
+
+        void Recycle(TxReusableState state);
     }
 }

@@ -14,7 +14,7 @@ namespace Apaf.NFSdb.Core.Tx
 
         public PartitionTxData(int columnCount, int partitionID, DateTime startDate, DateTime endDate)
         {
-            ParitionID = partitionID;
+            PartitionID = partitionID;
             StartDate = startDate;
             EndDate = endDate;
             AppendOffset = new long[columnCount];
@@ -28,7 +28,7 @@ namespace Apaf.NFSdb.Core.Tx
         public long[] AppendOffset;
         public IList<SymbolTxData> SymbolData;
         public bool IsAppended;
-        public readonly int ParitionID;
+        public readonly int PartitionID;
         public readonly DateTime StartDate;
         public readonly DateTime EndDate;
     }

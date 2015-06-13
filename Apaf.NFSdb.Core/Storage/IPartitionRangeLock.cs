@@ -9,5 +9,7 @@ namespace Apaf.NFSdb.Core.Storage
 
         bool AcquireWritePartitionLock(AutoResetEvent waiter, int partitionID);
         void ReleaseWritePartitionLock(int partitionID);
+
+        void SizeToPartitionID(int size);
     }
 }
