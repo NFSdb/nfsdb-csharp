@@ -16,15 +16,15 @@
  */
 #endregion
 
-using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using Apaf.NFSdb.Core.Storage;
+using Apaf.NFSdb.Core.Tx;
 
 namespace Apaf.NFSdb.Core.Queries
 {
-    public class ResultSet<T> : IEnumerable<T>, IDisposable
+    public class ResultSet<T> : IEnumerable<T>
     {
         public enum Order
         {
@@ -32,30 +32,36 @@ namespace Apaf.NFSdb.Core.Queries
             Desc
         }
 
-        private readonly IJournal<T> _journal;
-        private readonly IReadContext _readContext;
-        private readonly ITxPartitionLock _transaction;
         private readonly IEnumerable<long> _rowIDs;
+        private readonly IReadTransactionContext _tx;
 
-        internal ResultSet(IJournal<T> journal, IReadContext readContext, IEnumerable<long> rowIDs, ITxPartitionLock transaction, long? length = null)
+        internal ResultSet(IEnumerable<long> rowIDs, IReadTransactionContext tx, long? length = null)
         {
-            _journal = journal;
-            _readContext = readContext;
             _rowIDs = rowIDs;
-            _transaction = transaction;
+            _tx = tx;
             Length = length;
         }
 
         public long? Length { get; protected set; }
 
-        public IJournal<T> Journal
-        {
-            get { return _journal; }
-        }
-
         private IEnumerable<T> Read()
         {
-            return _journal.Read(_rowIDs, _readContext);
+            int lastPartitionID = -1;
+            IPartitionReader lastPartitionReader = null;
+
+            foreach (var rowID in _rowIDs)
+            {
+                int partitionID = RowIDUtil.ToPartitionIndex(rowID);
+                if (partitionID != lastPartitionID)
+                {
+                    lastPartitionReader = _tx.Read(partitionID);
+                    lastPartitionID = partitionID;
+                }
+                long localRowID = RowIDUtil.ToLocalRowID(rowID);
+                
+                // ReSharper disable once PossibleNullReferenceException
+                yield return (T)lastPartitionReader.Read(localRowID, _tx.ReadCache);
+            }
         }
 
         public IEnumerator<T> GetEnumerator()
@@ -71,11 +77,7 @@ namespace Apaf.NFSdb.Core.Queries
         public RandomAccessResultSet<T> ToRandomAccess()
         {
             long[] rowIDs = _rowIDs.ToArray();
-            return new RandomAccessResultSet<T>(_journal, rowIDs, _readContext, _transaction);
-        }
-
-        public void Dispose()
-        {
+            return new RandomAccessResultSet<T>(rowIDs, _tx);
         }
     }
 }

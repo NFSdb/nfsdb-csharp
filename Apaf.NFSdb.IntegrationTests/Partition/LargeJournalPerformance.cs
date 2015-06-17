@@ -98,7 +98,8 @@ namespace Apaf.NFSdb.IntegrationTests.Partition
                 .WithSymbolColumn("Mode", 20, 20, 20)
                 .WithTimestampColumn("Timestamp")
                 .WithPartitionCloseStrategy(EPartitionCloseStrategy.FullPartitionCloseAsynchronously)
-                .ToJournal<LargeJournal>(access);
+                .WithAccess(access)
+                .ToJournal<LargeJournal>();
         }
 
         private IJournal<LargeJournal> CreateJournal(EFileAccess access = EFileAccess.ReadWrite)

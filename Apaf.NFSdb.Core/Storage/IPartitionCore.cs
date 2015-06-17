@@ -20,14 +20,12 @@ using System;
 
 namespace Apaf.NFSdb.Core.Storage
 {
-    public interface IPartitionCore : IPartitionReader
+    public interface IPartitionCore : IPartitionReader, IDisposable
     {
         int PartitionID { get; }
         string DirectoryPath { get; }
         DateTime StartDate { get; }
         DateTime EndDate { get; }
-
-        void AddReadRef();
-        void RemoveReadRef();
+        void CloseFiles();
     }
 }

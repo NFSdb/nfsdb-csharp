@@ -17,7 +17,6 @@
 #endregion
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Threading;
 using Apaf.NFSdb.Core.Configuration;
 using Apaf.NFSdb.Core.Queries;
@@ -32,16 +31,16 @@ namespace Apaf.NFSdb.Core
         private readonly IPartitionManager<T> _partitionManager;
         private readonly object _writeLock = new object();
         private readonly WriterState<T> _writerState;
-        private IQueryStatistics _stats;
+        private readonly IQueryStatistics _stats;
 
-        public Journal(IJournalMetadata<T> metadata,
+        internal Journal(IJournalMetadata<T> metadata,
             IPartitionManager<T> partitionManager)
         {
             _metadata = metadata;
             _partitionManager = partitionManager;
             _writerState = new WriterState<T>(metadata);
-            _stats = new JournalStatistics<T>(_partitionManager, metadata);
-            Diagnostics = new JournalDiagnostics(_partitionManager);
+            _stats = new JournalStatistics<T>((IUnsafePartitionManager)_partitionManager, metadata);
+            Diagnostics = new JournalDiagnostics((IUnsafePartitionManager)_partitionManager);
         }
 
         public IJournalMetadata<T> Metadata
@@ -72,18 +71,6 @@ namespace Apaf.NFSdb.Core
             }
             Monitor.Enter(_writeLock);
             return new Writer<T>(_writerState, _partitionManager, _writeLock);
-        }
-
-        public T Read(long rowID, IReadContext readContext)
-        {
-            int partitionIndex = RowIDUtil.ToPartitionIndex(rowID);
-            var partition = _partitionManager.Read(partitionIndex);
-            return (T) partition.Read(RowIDUtil.ToLocalRowID(rowID), readContext);
-        }
-
-        public IEnumerable<T> Read(IEnumerable<long> rowIDs, IReadContext readContext)
-        {
-            return rowIDs.Select(id => Read(id, readContext));
         }
 
         public void Dispose()

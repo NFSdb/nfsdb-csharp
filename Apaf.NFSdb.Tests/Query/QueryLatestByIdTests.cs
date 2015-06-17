@@ -128,7 +128,7 @@ namespace Apaf.NFSdb.Tests.Query
             }
         }
 
-        private static void AppendRecords(Journal<Quote> qj, long startDate, long increment)
+        private static void AppendRecords(IJournal<Quote> qj, long startDate, long increment)
         {
             using (var wr = qj.OpenWriteTx())
             {

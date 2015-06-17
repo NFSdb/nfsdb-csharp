@@ -35,61 +35,45 @@ namespace Apaf.NFSdb.Core.Queries
                 var partt = tx.GetPartitionTx(partitionID);
 
                 IPartitionReader reader = null;
-                bool locked = false;
-                if (partt.StartDate <= interval.Start && interval.Start < partt.EndDate
-                    || partt.StartDate <= interval.End && interval.End < partt.EndDate)
+                bool inUse = partt.StartDate <= interval.Start && interval.Start < partt.EndDate
+                             || partt.StartDate <= interval.End && interval.End < partt.EndDate;
+
+                if (inUse)
                 {
-                    tx.TxPartitions.AcquireReadLock(partitionID);
-                    locked = true;
+                    reader = tx.Read(partitionID);
                 }
 
-                try
+                if (interval.Start < partt.StartDate)
                 {
-                    if (locked)
+                    low = 0;
+                }
+                else if (partt.StartDate <= interval.Start && interval.Start < partt.EndDate)
+                {
+                    // ReSharper disable once PossibleNullReferenceException
+                    low = reader.BinarySearchTimestamp(interval.Start, tx);
+                    if (low < 0)
                     {
-                        reader = tx.Read(partitionID);
-                    }
-
-                    if (interval.Start < partt.StartDate)
-                    {
-                        low = 0;
-                    }
-                    else if (partt.StartDate <= interval.Start && interval.Start < partt.EndDate)
-                    {
-                        // ReSharper disable once PossibleNullReferenceException
-                        low = reader.BinarySearchTimestamp(interval.Start, tx);
-                        if (low < 0)
-                        {
-                            low = ~low;
-                        }
-                    }
-
-                    // Interval and partition end days
-                    // are both exclusive
-                    if (interval.End >= partt.EndDate)
-                    {
-                        hi = tx.GetRowCount(partitionID) - 1;
-                    }
-                    else if (partt.StartDate <= interval.End && interval.End < partt.EndDate)
-                    {
-                        // ReSharper disable once PossibleNullReferenceException
-                        hi = reader.BinarySearchTimestamp(interval.End, tx);
-                        if (hi < 0)
-                        {
-                            hi = ~hi - 1;
-                        }
-                        else
-                        {
-                            hi = hi - 1;
-                        }
+                        low = ~low;
                     }
                 }
-                finally
+
+                // Interval and partition end days
+                // are both exclusive
+                if (interval.End >= partt.EndDate)
                 {
-                    // Release partition if it will not be used.
-                    if (locked && !(low <= hi))
+                    hi = tx.GetRowCount(partitionID) - 1;
+                }
+                else if (partt.StartDate <= interval.End && interval.End < partt.EndDate)
+                {
+                    // ReSharper disable once PossibleNullReferenceException
+                    hi = reader.BinarySearchTimestamp(interval.End, tx);
+                    if (hi < 0)
                     {
-                        tx.TxPartitions.ReleaseReadLock(partitionID);
+                        hi = ~hi - 1;
+                    }
+                    else
+                    {
+                        hi = hi - 1;
                     }
                 }
 

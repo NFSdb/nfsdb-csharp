@@ -56,7 +56,7 @@ namespace Apaf.NFSdb.IntegrationTests.Reading
         public static readonly string[] SYMBOLS = new[]
         {"AGK.L", "BP.L", "TLW.L", "ABF.L", "LLOY.L", "BT-A.L", "WTB.L", "RRS.L", "ADM.L", "GKN.L", "HSBA.L"};
 
-        private Journal<Quote> CreateJournal(EFileAccess access = EFileAccess.ReadWrite)
+        private IJournal<Quote> CreateJournal(EFileAccess access = EFileAccess.ReadWrite)
         {
             return Utils.CreateJournal<Quote>(access);
         }
@@ -195,58 +195,7 @@ namespace Apaf.NFSdb.IntegrationTests.Reading
                 }
             }
         }
-
-        [Test]
-        public void Read_records_match_written_records_parallel()
-        {
-            const int partitionCount = 3;
-            const int totalCount = GENERATE_RECORDS_COUNT;
-            GenerateRecords(totalCount, partitionCount);
-
-            using (var j = CreateJournal())
-            {
-                var q = j.OpenReadTx();
-                var increment = GetTimestampIncrement(totalCount, partitionCount);
-                var writtenRec = new Quote();
-                var all = q.All().ToRandomAccess();
-                var part = Partitioner.Create(0, all.Length.Value);
-
-                var sw = new Stopwatch();
-                sw.Start();
-                int readCorrectly = 0;
-                object syncLock = new object();
-
-                try
-                {
-
-                    Parallel.ForEach(part,
-                        (fromto, state, a) =>
-                        {
-                            for (long i = fromto.Item1; i < fromto.Item2; i++)
-                            {
-                                lock (syncLock)
-                                {
-                                    var readQuote = all.Read((int) i);
-
-                                    var writtenQuote = new Quote();
-                                    GenerateTradeValues(writtenQuote, increment, readQuote.AskSize);
-                                    Assert.AreEqual(writtenQuote.ToString(),
-                                        readQuote.ToString());
-                                    Interlocked.Increment(ref readCorrectly);
-                                }
-                            }
-                        });
-
-                    sw.Stop();
-                    Console.WriteLine(sw.Elapsed);
-                }
-                finally
-                {
-                    Console.WriteLine("Read correctly " + readCorrectly);
-                }
-            }
-        }
-
+        
         [Test]
         public void Concurrent_writes_visible_to_readers()
         {

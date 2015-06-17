@@ -31,7 +31,7 @@ namespace Apaf.NFSdb.IntegrationTests.Writing
     [TestFixture]
     public class TradeJournalTests
     {
-        private Journal<Trade> CreateJournal()
+        private IJournal<Trade> CreateJournal()
         {
             return Utils.CreateJournal<Trade>(EFileAccess.ReadWrite);
         }

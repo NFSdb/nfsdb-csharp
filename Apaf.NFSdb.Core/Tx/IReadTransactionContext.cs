@@ -33,7 +33,9 @@ namespace Apaf.NFSdb.Core.Tx
         long GetRowCount(int partitionID);
         IList<int> PartitionIDs { get; }
 
-        ITxPartitionLock TxPartitions { get; }
         IPartitionReader Read(int partitionID);
+        void LockAllPartitionsShared();
+        
+        void ReleaseAllLocks();
     }
 }

@@ -52,7 +52,8 @@ namespace Apaf.NFSdb.IntegrationTests.Reading
                 .WithSymbolColumn("Ex", 20, 20, 20)
                 .WithSymbolColumn("Mode", 20, 20, 20)
                 .WithTimestampColumn("Timestamp")
-                .ToJournal<PocoQuote>(access);
+                .WithAccess(access)
+                .ToJournal<PocoQuote>();
         }
 
         public static TimeSpan GenerateRecords(IJournal<PocoQuote> journal, int count, int partitionCount)

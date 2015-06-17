@@ -61,7 +61,7 @@ namespace Apaf.NFSdb.Core.Writes
 
         public void Truncate()
         {
-            _partitionManager.Truncate(_transaction);
+            throw new NotImplementedException();
             _transaction = _partitionManager.ReadTxLog();
         }
 

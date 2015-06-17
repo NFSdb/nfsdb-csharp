@@ -66,16 +66,6 @@ namespace Apaf.NFSdb.Core.Storage
         public DateTime StartDate { get; private set; }
         public DateTime EndDate { get; private set; }
 
-        public void AddReadRef()
-        {
-            Interlocked.Increment(ref _readRef);
-        }
-
-        public void RemoveReadRef()
-        {
-            Interlocked.Decrement(ref _readRef);
-        }
-
         public int GetOpenFileCount()
         {
             if (_isStorageInitialized)

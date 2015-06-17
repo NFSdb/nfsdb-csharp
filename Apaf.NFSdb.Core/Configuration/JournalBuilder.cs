@@ -16,13 +16,11 @@
  */
 #endregion
 
-using System.IO;
 using Apaf.NFSdb.Core.Column;
 using Apaf.NFSdb.Core.Exceptions;
 using Apaf.NFSdb.Core.Server;
 using Apaf.NFSdb.Core.Storage;
 using Apaf.NFSdb.Core.Storage.Serializer;
-using Apaf.NFSdb.Core.Tx;
 
 namespace Apaf.NFSdb.Core.Configuration
 {
@@ -32,11 +30,19 @@ namespace Apaf.NFSdb.Core.Configuration
         private bool _serializerNameSet;
         private bool _serializerInstaceSet;
         private IJournalServer _server;
+        private EFileAccess _access;
 
         public JournalBuilder()
         {
+            _access = EFileAccess.ReadWrite;
             _config = new JournalElement();
             _config.SerializerName = MetadataConstants.POCO_SERIALIZER_NAME;
+        }
+
+        public JournalBuilder(JournalElement configuration) 
+        {
+            _access = EFileAccess.ReadWrite;
+            _config = configuration;
         }
 
         public JournalBuilder WithRecordCountHint(int recordCount)
@@ -151,12 +157,18 @@ namespace Apaf.NFSdb.Core.Configuration
             return this;
         }
 
-        public IJournal<T> ToJournal<T>(EFileAccess access = EFileAccess.ReadWrite)
+        public JournalBuilder WithAccess(EFileAccess access)
+        {
+            _access = access;
+            return this;
+        }
+
+        public IJournal<T> ToJournal<T>()
         {
             var meta = new JournalMetadata<T>(_config);
             var fileFactory = new CompositeFileFactory();
 
-            var partMan = new PartitionManager<T>(meta, access, fileFactory,  
+            var partMan = new PartitionManager<T>(meta, _access, fileFactory,  
                 _server ?? new AsyncJournalServer());
             return new Journal<T>(meta, partMan);
         }

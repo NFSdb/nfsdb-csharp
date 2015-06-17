@@ -32,14 +32,9 @@ namespace Apaf.NFSdb.Tests.Tx
 
             var paritionTx = Enumerable.Range(0, partitions)
                 .Select(p => new PartitionTxData(files, 1, today.AddDays(-200 + p),
-                    today.AddDays(-200 + p + 1))
-                {
-                    AppendOffset = new long[files],
-                    SymbolData = Enumerable.Range(0, files)
-                        .Select(f => new SymbolTxData()).ToArray()
-                }).ToArray();
+                    today.AddDays(-200 + p + 1))).ToArray();
 
-            var tx = new TransactionContext(100, paritionTx, null);
+            var tx = new TransactionContext(100, paritionTx, null, null);
             return tx;
         }
     }

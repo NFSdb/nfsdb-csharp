@@ -16,7 +16,7 @@ namespace Apaf.NFSdb.Core.Tx
         private bool _inUse;
         private readonly AutoResetEvent _waiter = new AutoResetEvent(false);
 
-        public SaveLockWrapper(IPartitionRangeLock partitionManager)
+        public SaveLockWrapper(IPartitionRangeLock partitionManager) :this(TimeSpan.FromHours(1))
         {
             _partitionManager = partitionManager;
             _maxWait = TimeSpan.FromHours(1);
@@ -87,7 +87,7 @@ namespace Apaf.NFSdb.Core.Tx
 
                 if (!_partitionManager.AcquireReadPartitionLock(_waiter, partitionID))
                 {
-                    if (_waiter.WaitOne(_maxWait))
+                    if (!_waiter.WaitOne(_maxWait))
                     {
                         throw new NFSdbLockTimeoutException("Max wait interval {0} expired on " +
                                                             "waiting to acquire read long on" +
@@ -121,7 +121,7 @@ namespace Apaf.NFSdb.Core.Tx
 
                 if (!_partitionManager.AcquireReadPartitionLock(_waiter, partitionID))
                 {
-                    if (_waiter.WaitOne(_maxWait))
+                    if (!_waiter.WaitOne(_maxWait))
                     {
                         throw new NFSdbLockTimeoutException("Max wait interval {0} expired on " +
                                                             "waiting to acquire read long on" +

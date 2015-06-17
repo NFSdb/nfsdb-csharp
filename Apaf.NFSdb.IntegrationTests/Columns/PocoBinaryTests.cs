@@ -36,7 +36,8 @@ namespace Apaf.NFSdb.IntegrationTests.Columns
                 .WithLocation(directoryPath)
                 .WithSymbolColumn("Path", 10000, 20, 20)
                 .WithTimestampColumn("Timestamp")
-                .ToJournal<File>(access);
+                .WithAccess(access)
+                .ToJournal<File>();
         }
 
         [Test]

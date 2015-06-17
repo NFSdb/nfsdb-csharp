@@ -16,12 +16,10 @@
  */
 #endregion
 using System;
-using System.ComponentModel;
 using System.IO;
 using System.IO.MemoryMappedFiles;
 using System.Runtime.InteropServices;
 using System.Threading;
-using Apaf.NFSdb.Core.Column;
 using Apaf.NFSdb.Core.Exceptions;
 using Microsoft.Win32.SafeHandles;
 

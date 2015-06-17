@@ -48,8 +48,7 @@ namespace Apaf.NFSdb.Core.Queries.Queryable
             {
                 _planHead = new TimestampRangePlanItem(DateInterval.Any);
             }
-            var result = new ResultSet<T>(_journal, _tx.ReadCache,
-                _planHead.Execute(_journal, _tx), _tx.TxPartitions);
+            var result = new ResultSet<T>(_planHead.Execute(_journal, _tx), _tx);
 
             // Bind call.
             if (_takeSingle)

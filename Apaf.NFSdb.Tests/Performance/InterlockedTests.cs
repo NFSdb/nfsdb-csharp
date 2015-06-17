@@ -7,6 +7,7 @@ using NUnit.Framework;
 namespace Apaf.NFSdb.Tests.Performance
 {
     [TestFixture]
+    [Explicit]
     public class InterlockedTests
     {
         [Test]

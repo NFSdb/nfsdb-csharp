@@ -46,7 +46,7 @@ namespace Apaf.NFSdb.IntegrationTests.Columns
                 jb = jb.WithEpochDateTimeColumn("Modified")
                     .WithEpochDateTimeColumn("Created");
             }
-            return jb.ToJournal<File>(access);
+            return jb.WithAccess(access).ToJournal<File>();
         }
 
         public void GenerateFile(File item, long timestampIncr, int i)

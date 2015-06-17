@@ -16,15 +16,13 @@
  */
 #endregion
 
-using System;
 using Apaf.NFSdb.Core.Tx;
 
 namespace Apaf.NFSdb.Core.Storage
 {
-    public interface IPartition<T> : IPartitionCore, IDisposable, IFileTxSupport
+    public interface IPartition<T> : IPartitionCore
     {
         T Read(long rowID, IReadContext readContext);
         void Append(T item, ITransactionContext tx);
-        void CloseFiles();
     }
 }

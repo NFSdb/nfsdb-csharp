@@ -19,8 +19,8 @@ using System;
 using System.IO;
 using System.Linq;
 using Apaf.NFSdb.Core;
+using Apaf.NFSdb.Core.Column;
 using Apaf.NFSdb.Core.Configuration;
-using Apaf.NFSdb.Core.Server;
 using Apaf.NFSdb.Core.Storage;
 using Apaf.NFSdb.TestModel.Model;
 
@@ -28,25 +28,12 @@ namespace Apaf.NFSdb.TestShared
 {
     public static class Utils
     {
-        public static Journal<T> CreateJournal<T>(EFileAccess access = EFileAccess.Read, string subdir = null)
+        public static IJournal<T> CreateJournal<T>(EFileAccess access = EFileAccess.Read, string subdir = null)
         {
-            using (Stream dbXml = typeof(Quote).Assembly.GetManifestResourceStream(
-                "Apaf.NFSdb.TestModel.Resources.nfsdb.xml"))
-            {
-                var dbElement = new ConfigurationReader().ReadConfiguration(dbXml);
-                var jconf = dbElement.Journals.Single(j => j.Class.EndsWith(typeof(T).Name));
-                var journalDir = jconf.DefaultPath;
-                if (subdir != null)
-                {
-                    journalDir = Path.Combine(subdir, journalDir);
-                }
-                jconf.DefaultPath = Path.Combine(FindJournalsPath(), journalDir);
-
-                var meta = new JournalMetadata<T>(jconf);
-                var partMan = new PartitionManager<T>(meta, access, new CompositeFileFactory(),
-                    new AsyncJournalServer());
-                return new Journal<T>(meta, partMan);
-            }
+            return new JournalBuilder(ReadConfig<T>())
+                .WithSerializerFactoryName(MetadataConstants.THRIFT_SERIALIZER_NAME)
+                .WithAccess(access)
+                .ToJournal<T>();
         }
 
         public static JournalElement ReadConfig<T>()
@@ -61,15 +48,11 @@ namespace Apaf.NFSdb.TestShared
             }
         }
 
-        public static Journal<T> CreateJournal<T>(JournalElement config, EFileAccess access = EFileAccess.Read)
+        public static IJournal<T> CreateJournal<T>(JournalElement config, EFileAccess access = EFileAccess.Read)
         {
-            var jconf = config;
-            jconf.DefaultPath = Path.Combine(FindJournalsPath(), jconf.DefaultPath);
-
-            var meta = new JournalMetadata<T>(jconf);
-            var partMan = new PartitionManager<T>(meta, access, new CompositeFileFactory(),
-                new AsyncJournalServer());
-            return new Journal<T>(meta, partMan);
+            return new JournalBuilder(ReadConfig<T>())
+                    .WithSerializerFactoryName(MetadataConstants.THRIFT_SERIALIZER_NAME)
+                    .ToJournal<T>();
         }
 
         public static void ClearJournal<T>(string folderPath = null)

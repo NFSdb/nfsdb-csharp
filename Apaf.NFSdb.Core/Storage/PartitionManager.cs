@@ -31,7 +31,7 @@ using log4net;
 
 namespace Apaf.NFSdb.Core.Storage
 {
-    public class PartitionManager<T> : IPartitionManager<T>
+    public class PartitionManager<T> : IPartitionManager<T>, IUnsafePartitionManager
     {
         // ReSharper disable once StaticFieldInGenericType
         private static readonly ILog LOG = LogManager.GetLogger(typeof (PartitionManagerUtils));
@@ -89,6 +89,11 @@ namespace Apaf.NFSdb.Core.Storage
         }
 
         public EFileAccess Access { get; private set; }
+
+        public IPartitionCore GetPartition(int paritionID)
+        {
+            return GetPartitionByID(paritionID);
+        }
 
         public IEnumerable<IPartitionCore> GetOpenPartitions()
         {
@@ -335,27 +340,27 @@ namespace Apaf.NFSdb.Core.Storage
             }
         }
 
-        public void Truncate(ITransactionContext tx)
-        {
-            throw new NotImplementedException();
-
-//            lock (_partitions)
-//            {
-//                lock (_lastTransLogSync)
-//                {
-//                    _txLog.Create(new TxRec());
-//
-//                    foreach (var partition in _partitions)
-//                    {
-//                        partition.Dispose();
-//                        Directory.Delete(partition.DirectoryPath, true);
-//                    }
-//                    _partitions.Clear();
-//                    _lastTransactionLog = null;
-//                }
-//
-//            }
-        }
+        //public void Truncate(ITransactionContext tx)
+        //{
+        //    try
+        //    {
+        //        tx.LockAllParititionsExclusive();
+        //        for (int i = 0; i < tx.PartitionIDs.Count; i++)
+        //        {
+        //            var partition = GetPartitionByID(i);
+        //            if (partition != null)
+        //            {
+        //                partition.Dispose();
+        //                Directory.Delete(partition.DirectoryPath, true);
+                        
+        //            }
+        //        }
+        //    }
+        //    finally
+        //    {
+        //        tx.ReleaseAllLocks();
+        //    }
+        //}
 
         private ColumnStorage InitializeSymbolStorage()
         {

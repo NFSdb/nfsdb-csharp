@@ -25,10 +25,10 @@ namespace Apaf.NFSdb.Core.Queries
 {
     public class JournalStatistics<T> : IQueryStatistics
     {
-        private readonly IPartitionManager<T> _partitionManager;
+        private readonly IUnsafePartitionManager _partitionManager;
         private readonly IJournalMetadata<T> _metadata;
 
-        public JournalStatistics(IPartitionManager<T> partitionManager, IJournalMetadata<T> metadata)
+        internal JournalStatistics(IUnsafePartitionManager partitionManager, IJournalMetadata<T> metadata)
         {
             _partitionManager = partitionManager;
             _metadata = metadata;
@@ -36,7 +36,7 @@ namespace Apaf.NFSdb.Core.Queries
 
         public long RowsBySymbolValue(IReadTransactionContext tx, string symbolName, string[] values)
         {
-            return _partitionManager.GetOpenPartitions().Sum(
+            return _partitionManager.GetOpenPartitions().Where(part => part != null).Sum(
                 part => values.Sum(value => part.GetSymbolRowCount(symbolName, value, tx)));
         }
 

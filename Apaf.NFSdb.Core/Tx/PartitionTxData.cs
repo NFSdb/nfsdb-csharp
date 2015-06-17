@@ -25,8 +25,8 @@ namespace Apaf.NFSdb.Core.Tx
         public bool IsPartitionUpdated;
         public long NextRowID;
         public long LastTimestamp;
-        public long[] AppendOffset;
-        public IList<SymbolTxData> SymbolData;
+        public readonly long[] AppendOffset;
+        public readonly IList<SymbolTxData> SymbolData;
         public bool IsAppended;
         public readonly int PartitionID;
         public readonly DateTime StartDate;

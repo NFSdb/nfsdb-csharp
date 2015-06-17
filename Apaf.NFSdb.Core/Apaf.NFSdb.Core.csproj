@@ -155,6 +155,7 @@
     <Compile Include="Storage\IPartitionReader.cs" />
     <Compile Include="Storage\ITxPartitionLock.cs" />
     <Compile Include="Storage\IRollback.cs" />
+    <Compile Include="Storage\IUnsafePartitionManager.cs" />
     <Compile Include="Storage\JournalDiagnostics.cs" />
     <Compile Include="Storage\PartitionRangeLock.cs" />
     <Compile Include="Storage\Serializer\FixedColumnNullableWrapper.cs" />
@@ -228,6 +229,7 @@
     <Compile Include="Storage\IFileTxSupport.cs" />
     <Compile Include="Storage\StorageSizeUtils.cs" />
     <Compile Include="Tx\DeferredTransactionContext.cs" />
+    <Compile Include="Tx\IPartitionAccess.cs" />
     <Compile Include="Tx\IReadTransactionContext.cs" />
     <Compile Include="Tx\ITransactionContext.cs" />
     <Compile Include="Storage\PartitionManager.cs" />

@@ -28,13 +28,15 @@ namespace Apaf.NFSdb.Tests.Tx
     {
         private readonly int _columnCount;
         private readonly IPartitionCore[] _partitions;
+        private readonly ITxPartitionLock _partitionLock;
         private readonly ReadContext _readCatch = new ReadContext();
         private PartitionTxData _currentPartitionTx;
 
-        public TransactionContext(int columnCount, PartitionTxData[] partitionData, IPartitionCore[] partitions = null)
+        public TransactionContext(int columnCount, PartitionTxData[] partitionData, IPartitionCore[] partitions, ITxPartitionLock partitionLock)
         {
             _columnCount = columnCount;
             _partitions = partitions;
+            _partitionLock = partitionLock;
             PartitionTx = partitionData;
         }
 
@@ -55,14 +57,19 @@ namespace Apaf.NFSdb.Tests.Tx
 
         private static PartitionTxData DeepClone(PartitionTxData p)
         {
-            return new PartitionTxData(p.AppendOffset.Length, p.PartitionID, p.StartDate, p.EndDate)
+            var r = new PartitionTxData(p.AppendOffset.Length, p.PartitionID, p.StartDate, p.EndDate)
             {
-                SymbolData = p.SymbolData.Select(sd => sd.DeepClone()).ToArray(),
-                AppendOffset = p.AppendOffset.ToArray(),
                 LastTimestamp = p.LastTimestamp,
                 NextRowID = p.NextRowID,
                 IsPartitionUpdated = p.IsPartitionUpdated
             };
+
+            for (int i = 0; i < p.AppendOffset.Length; i++)
+            {
+                r.AppendOffset[i] = p.AppendOffset[i];
+                r.SymbolData[i] = p.SymbolData[i].DeepClone();
+            }
+            return r;
         }
 
         public IList<PartitionTxData> PartitionTx { get; private set; }
@@ -77,9 +84,21 @@ namespace Apaf.NFSdb.Tests.Tx
             get { return PartitionTx.Select(p => p.PartitionID).ToArray(); }
         }
 
-        public ITxPartitionLock TxPartitions { get; private set; }
+        public ITxPartitionLock TxPartitions
+        {
+            get { return _partitionLock; }
+        }
 
         public IPartitionReader Read(int partitionID)
+        {
+            return _partitions.Single(p => p.PartitionID == partitionID);
+        }
+
+        public void LockAllPartitionsShared()
+        {
+        }
+
+        public void ReleaseAllLocks()
         {
             throw new NotImplementedException();
         }
@@ -94,9 +113,9 @@ namespace Apaf.NFSdb.Tests.Tx
             return PartitionTx[partitionID];
         }
 
-        public void SetCurrentPartition(int partitionID)
+        public PartitionTxData SetCurrentPartition(int partitionID)
         {
-            _currentPartitionTx = GetPartitionTx(partitionID);
+            return _currentPartitionTx = GetPartitionTx(partitionID);
         }
 
         public int PartitionTxCount { get { return PartitionTx.Count; } }
@@ -158,6 +177,10 @@ namespace Apaf.NFSdb.Tests.Tx
         }
 
         public DateTime LastAppendTimestamp { get; set; }
+        public T RunInExclusivePartitionLock<T>(int partitionID, Func<IPartitionCore, T> action)
+        {
+            throw new NotImplementedException();
+        }
 
         public IReadContext ReadCache
         {

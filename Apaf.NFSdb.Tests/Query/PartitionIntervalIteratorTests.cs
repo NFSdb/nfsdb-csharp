@@ -144,7 +144,7 @@ namespace Apaf.NFSdb.Tests.Query
                 res.Add(MockPartition(partTsmps, partStart, partStart + partIncr, partId++));
                 partStart += partIncr;
             }
-            _tx = new TransactionContext(100, partTxs.ToArray(), res.ToArray());
+            _tx = new TransactionContext(100, partTxs.ToArray(), res.ToArray(), new Mock<ITxPartitionLock>().Object);
 
             return res.ToArray();
         }

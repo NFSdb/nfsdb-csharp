@@ -4,9 +4,9 @@ namespace Apaf.NFSdb.Core.Storage
 {
     public class JournalDiagnostics : IJournalDiagnostics
     {
-        private readonly IPartitionManagerCore _partitionManager;
+        private readonly IUnsafePartitionManager _partitionManager;
 
-        public JournalDiagnostics(IPartitionManagerCore partitionManager)
+        internal JournalDiagnostics(IUnsafePartitionManager partitionManager)
         {
             if (partitionManager == null) throw new ArgumentNullException("partitionManager");
             _partitionManager = partitionManager;

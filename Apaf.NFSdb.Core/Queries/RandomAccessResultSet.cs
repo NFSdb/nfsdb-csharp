@@ -15,130 +15,71 @@
  * limitations under the License.
  */
 #endregion
-using System;
-using System.Linq;
+using System.Collections.Generic;
 using Apaf.NFSdb.Core.Storage;
+using Apaf.NFSdb.Core.Tx;
 
 namespace Apaf.NFSdb.Core.Queries
 {
+    internal static class RandomAccessResultSetInternal
+    {
+        public static readonly long[] EMPTY_IDS = new long[0];
+        public static readonly IReadContext NON_SHARED_READ_CONTEXT = new MutithreadedReadContext();
+
+        internal class MutithreadedReadContext : IReadContext
+        {
+            public byte[] AllocateByteArray(int size)
+            {
+                return new byte[size];
+            }
+
+            public byte[] AllocateByteArray2(int size)
+            {
+                return new byte[size];
+            }
+
+            public byte[] AllocateByteArray3(int size)
+            {
+                return new byte[size];
+            }
+        }
+    }
+
     public class RandomAccessResultSet<T> : ResultSet<T>
     {
-        private readonly long[] _idArray;
-        private readonly IReadContext _rx;
-        // ReSharper disable once StaticFieldInGenericType
-        private static readonly long[] EMPTY_IDS = new long[0];
+        private readonly IList<long> _idArray;
+        private readonly IReadTransactionContext _tx;
 
-        public RandomAccessResultSet(IJournal<T> journal, long[] rowIDs, IReadContext rx, ITxPartitionLock ptx)
-            : base(journal, rx, rowIDs, ptx, rowIDs.Length)
+        public RandomAccessResultSet(IList<long> rowIDs, IReadTransactionContext tx)
+            : base(rowIDs, tx, rowIDs.Count)
         {
             _idArray = rowIDs;
-            _rx = rx;
-            Length = rowIDs.Length;
+            _tx = tx;
+            Length = rowIDs.Count;
         }
 
-        public RandomAccessResultSet(Journal<T> journal, IReadContext rx, ITxPartitionLock ptx)
-            : base(journal, rx, EMPTY_IDS, ptx, 0)
+        public RandomAccessResultSet() : base(RandomAccessResultSetInternal.EMPTY_IDS, null, 0)
         {
-            _rx = rx;
-            _idArray = EMPTY_IDS;
+            _idArray = RandomAccessResultSetInternal.EMPTY_IDS;
             Length = 0;
         }
 
-        public long[] GetRowIDs()
+        public IList<long> GetRowIDs()
         {
             return _idArray;
         }
 
         public T Read(int rsIndex)
         {
-            return Journal.Read(_idArray[rsIndex], _rx);
+            long rowID = _idArray[rsIndex];
+            int partitionID = RowIDUtil.ToPartitionIndex(rowID);
+            long localRowID = RowIDUtil.ToLocalRowID(rowID);
+            return (T)_tx.Read(partitionID).Read(localRowID, RandomAccessResultSetInternal.NON_SHARED_READ_CONTEXT);
         }
 
         public long GetRowID(int index)
         {
             return _idArray[index];
         }
-
-        public ResultSet<T> Sort(Order order, params string[] columnNames)
-        {
-            return Sort(order, ColumnIndices(columnNames));
-        }
-
-        public ResultSet<T> Sort(Order order, int[] columnIndices)
-        {
-            if (_idArray.Length > 0)
-            {
-                var comparer = Journal.GetRecordsComparer(columnIndices);
-                Array.Sort(_idArray, comparer);
-                // QuickSort(order, 0, _idArray.Length - 1, comparer);
-            }
-            return this;
-        }
-
-        public ResultSet<T> Sort()
-        {
-            if (Journal.Metadata.TimestampFieldID.HasValue)
-            {
-                var timestampName = Journal.Metadata
-                    .GetColumnById(Journal.Metadata.TimestampFieldID.Value).FileName;
-
-                Sort(Order.Asc, new[] { timestampName });
-            }
-            return this;
-        }
-
-        private int[] ColumnIndices(params string[] columnNames)
-        {
-            return columnNames.Select(Journal.Metadata.GetFieldID).ToArray();
-        }
-
-        //public void QuickSort(Order order, int start, int end, IComparer<long> comparer)
-        //{
-        //    int pIndex = start + (end - start) / 2;
-        //    long pivot = _idArray[pIndex];
-
-        //    int multiplier = 1;
-
-        //    if (order == Order.Desc)
-        //    {
-        //        multiplier = -1;
-        //    }
-
-        //    int i = start;
-        //    int j = end;
-
-        //    while (i <= j)
-        //    {
-
-        //        while (multiplier * comparer.Compare(_idArray[i], pivot) < 0)
-        //        {
-        //            i++;
-        //        }
-
-        //        while (multiplier * comparer.Compare(pivot, _idArray[j]) < 0)
-        //        {
-        //            j--;
-        //        }
-
-        //        if (i <= j)
-        //        {
-        //            long temp = _idArray[i];
-        //            _idArray[i] = _idArray[j];
-        //            _idArray[j] = temp;
-        //            i++;
-        //            j--;
-        //        }
-        //    }
-        //    if (start < j)
-        //    {
-        //        QuickSort(order, start, j, comparer);
-        //    }
-
-        //    if (i < end)
-        //    {
-        //        QuickSort(order, i, end, comparer);
-        //    }
-        //}
-
     }
 }

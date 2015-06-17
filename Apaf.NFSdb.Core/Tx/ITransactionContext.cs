@@ -17,6 +17,8 @@
 #endregion
 
 using System;
+using Apaf.NFSdb.Core.Storage;
+
 namespace Apaf.NFSdb.Core.Tx
 {
     public interface ITransactionContext : IReadTransactionContext
@@ -25,5 +27,6 @@ namespace Apaf.NFSdb.Core.Tx
         long PrevTxAddress { get; set; }
         bool IsParitionUpdated(int partitionID, ITransactionContext lastTransactionLog);
         DateTime LastAppendTimestamp { get; set; }
+        T RunInExclusivePartitionLock<T>(int partitionID, Func<IPartitionCore, T> action);
     }
 }

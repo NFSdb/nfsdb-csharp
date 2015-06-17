@@ -10,7 +10,7 @@ namespace Apaf.NFSdb.Core.Tx
         private const int RESERVED_PARTITION_COUNT = 10;
         private readonly IReadContext _readCache = new ReadContext();
         private readonly ITxPartitionLock _parititionLock;
-        private readonly IPartitionManagerCore _paritionManager;
+        private readonly IUnsafePartitionManager _paritionManager;
         private readonly TxReusableState _reusableState;
         private readonly IList<int> _paritionIDs;
 
@@ -18,7 +18,7 @@ namespace Apaf.NFSdb.Core.Tx
         private TxRec _txRec;
         private PartitionTxData[] _txData;
 
-        public DeferredTransactionContext(TxReusableState reusableState, IPartitionManagerCore paritionManager, TxRec txRec)
+        internal DeferredTransactionContext(TxReusableState reusableState, IUnsafePartitionManager paritionManager, TxRec txRec)
         {
             _reusableState = reusableState;
             _parititionLock = _reusableState.PartitionLock;
@@ -45,11 +45,48 @@ namespace Apaf.NFSdb.Core.Tx
             get { return _paritionIDs; }
         }
 
-        public ITxPartitionLock TxPartitions { get { return _parititionLock; } }
+        public ITxPartitionLock TxPartitions
+        {
+            get { return _parititionLock; }
+        }
 
         public IPartitionReader Read(int partitionID)
         {
-            return _paritionManager.Read(partitionID);
+            return _paritionManager.GetPartition(partitionID);
+        }
+
+        public void LockAllPartitionsShared()
+        {
+            int i = 0;
+            try
+            {
+                while (i < _paritionIDs.Count)
+                {
+                    var p = _paritionManager.GetPartition(_paritionIDs[i]);
+                    if (p != null)
+                    {
+                        _parititionLock.AcquireReadLock(_paritionIDs[i]);
+                        i++;
+                    }
+                    else
+                    {
+                        _paritionIDs.RemoveAt(i);
+                    }
+                }
+            }
+            catch (Exception)
+            {
+                for (int j = 0; j < i; j++)
+                {
+                    _parititionLock.ReleaseReadLock(_paritionIDs[j]);
+                }
+                throw;
+            }
+        }
+
+        public void ReleaseAllLocks()
+        {
+            _parititionLock.Free();
         }
 
         public PartitionTxData GetPartitionTx()
@@ -91,6 +128,21 @@ namespace Apaf.NFSdb.Core.Tx
         
         public long PrevTxAddress { get; set; }
         public DateTime LastAppendTimestamp { get; set; }
+
+        public T RunInExclusivePartitionLock<T>(int partitionID, Func<IPartitionCore, T> action)
+        {
+            try
+            {
+                throw new NotImplementedException();
+                _parititionLock.AcquireWriteLock(partitionID);
+                //_paritionManager.GetPartition()
+                //return action
+            }
+            finally 
+            {
+                _parititionLock.ReleaseWriteLock(partitionID);
+            }
+        }
 
         public bool IsParitionUpdated(int partitionID, ITransactionContext lastTransactionLog)
         {
