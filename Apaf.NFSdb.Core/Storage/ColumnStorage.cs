@@ -16,8 +16,8 @@
  */
 #endregion
 using System;
-using System.Collections.Generic;
 using System.IO;
+using System.Threading;
 using Apaf.NFSdb.Core.Column;
 using Apaf.NFSdb.Core.Configuration;
 
@@ -27,40 +27,46 @@ namespace Apaf.NFSdb.Core.Storage
     {
         private readonly JournalSettings _settings;
         private readonly ICompositeFileFactory _compositeFileFactory;
-        private Dictionary<string, IRawFile> _openedFiles = new Dictionary<string, IRawFile>();
+        private readonly IRawFile[] _openedFiles;
         private readonly string _folder;
         private readonly EFileAccess _access;
         private readonly int _partitionID;
 
         public ColumnStorage(
-            JournalSettings settings, 
-            DateTime start, 
+            IJournalMetadataCore metadata,
+            DateTime start,
             EFileAccess access,
             int partitionID,
-            ICompositeFileFactory compositeFileFactory)
+            ICompositeFileFactory compositeFileFactory) :
+                this(metadata,
+                    GetPartitionDir(metadata.Settings, start),
+                    access,
+                    partitionID,
+                    compositeFileFactory)
         {
-            _settings = settings;
-            _access = access;
-            _partitionID = partitionID;
-            _compositeFileFactory = compositeFileFactory;
-            _folder = GetPartitionDir(settings, start);
         }
 
         public ColumnStorage(
-            JournalSettings settings,
+            IJournalMetadataCore metadata,
             string folder,
             EFileAccess access,
             int partitionID,
             ICompositeFileFactory compositeFileFactory)
         {
-            _settings = settings;
+            _settings = metadata.Settings;
             _access = access;
             _partitionID = partitionID;
             _compositeFileFactory = compositeFileFactory;
             _folder = folder;
+            _openedFiles = new IRawFile[metadata.FileCount];
         }
 
-        private string GetPartitionDir(JournalSettings settings, DateTime start)
+        public int OpenFileCount
+        {
+            get { return _openedFiles.Length; }
+        }
+
+        private static string GetPartitionDir(JournalSettings settings, DateTime start)
         {
             string dirName;
             switch (settings.PartitionType)
@@ -91,30 +97,39 @@ namespace Apaf.NFSdb.Core.Storage
             return new CompositeRawFile(fullName, bitHint, _compositeFileFactory, _access, _partitionID, fileID, columnID, dataType);
         }
 
+        public void CloseFiles()
+        {
+            for (int i = 0; i < _openedFiles.Length; i++)
+            {
+                var file = _openedFiles[i];
+                _openedFiles[i] = null;
+                Thread.MemoryBarrier();
+
+                if (file != null)
+                {
+                    file.Dispose();
+                }
+            }
+        }
+
         public void Dispose()
         {
-            if (_openedFiles != null)
-            {
-                foreach (var openedFile in _openedFiles)
-                {
-                    openedFile.Value.Dispose();
-                }
-                _openedFiles = null;
-            }
+            CloseFiles();
         }
 
         public IRawFile GetFile(string fieldName, int fileID, int columnID, EDataType dataType)
         {
             var filename = fieldName + GetExtension(dataType);
 
-            IRawFile file;
-            if (!_openedFiles.TryGetValue(filename, out file))
+            Thread.MemoryBarrier();
+            IRawFile file = _openedFiles[fileID];
+            if (file == null)
             {
                 // Size of read chunks. Rounded to power of 2.
                 var bitHint = GetBitHint(fieldName, dataType);
 
                 file = Open(filename, fileID, columnID, dataType, bitHint);
-                _openedFiles[filename] = file;
+                _openedFiles[fileID] = file;
             }
             return file;
         }
@@ -178,9 +193,9 @@ namespace Apaf.NFSdb.Core.Storage
             return bitHint - 2;
         }
 
-        public IEnumerable<IRawFile> AllOpenedFiles()
+        public IRawFile GetOpenedFileByID(int fileID)
         {
-            return _openedFiles.Values;
+            return _openedFiles[fileID];
         }
 
         private static string GetExtension(EDataType dataType)

@@ -43,9 +43,26 @@ namespace Apaf.NFSdb.Core.Queries
         public int GetSymbolCount(IReadTransactionContext tx, string symbolName)
         {
             var column = _metadata.Columns.Single(c => c.PropertyName == symbolName);
+            var storage = _partitionManager.SymbolFileStorage;
 
-            var symiFile = _partitionManager.SymbolFileStorage.AllOpenedFiles()
-                .Single(f => f.ColumnID == column.FieldID && f.DataType == EDataType.Symi);
+            IRawFile symiFile = null;
+
+            for (int i = 0; i < storage.OpenFileCount; i++)
+            {
+                IRawFile file = storage.GetOpenedFileByID(i);
+                if (file != null && file.ColumnID == column.FieldID
+                    && file.DataType == EDataType.Symi)
+                {
+                    symiFile = file;
+                    break;
+                }
+            }
+
+            if (symiFile == null)
+            {
+                return 0;
+            }
+
             return (int) (
                 tx.GetPartitionTx(MetadataConstants.SYMBOL_PARTITION_ID).AppendOffset[symiFile.FileID] 
                 / MetadataConstants.STRING_INDEX_FILE_RECORD_SIZE);

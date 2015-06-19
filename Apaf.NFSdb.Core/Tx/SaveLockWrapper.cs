@@ -119,7 +119,7 @@ namespace Apaf.NFSdb.Core.Tx
                     ReleaseReadLock(partitionID);
                 }
 
-                if (!_partitionManager.AcquireReadPartitionLock(_waiter, partitionID))
+                if (!_partitionManager.AcquireWritePartitionLock(_waiter, partitionID))
                 {
                     if (!_waiter.WaitOne(_maxWait))
                     {

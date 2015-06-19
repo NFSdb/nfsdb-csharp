@@ -95,11 +95,11 @@ namespace Apaf.NFSdb.Core.Storage
             return GetPartitionByID(paritionID);
         }
 
-        public IEnumerable<IPartitionCore> GetOpenPartitions()
+        public IPartitionCore[] GetOpenPartitions()
         {
             lock (_partitions)
             {
-                return _partitions.ToArray();
+                return _partitions.Cast<IPartitionCore>().ToArray();
             }
         }
 
@@ -339,33 +339,11 @@ namespace Apaf.NFSdb.Core.Storage
                 part.CloseFiles();
             }
         }
-
-        //public void Truncate(ITransactionContext tx)
-        //{
-        //    try
-        //    {
-        //        tx.LockAllParititionsExclusive();
-        //        for (int i = 0; i < tx.PartitionIDs.Count; i++)
-        //        {
-        //            var partition = GetPartitionByID(i);
-        //            if (partition != null)
-        //            {
-        //                partition.Dispose();
-        //                Directory.Delete(partition.DirectoryPath, true);
-                        
-        //            }
-        //        }
-        //    }
-        //    finally
-        //    {
-        //        tx.ReleaseAllLocks();
-        //    }
-        //}
-
+        
         private ColumnStorage InitializeSymbolStorage()
         {
             var symbolStorage = new ColumnStorage(
-                _metadata.Settings, _metadata.Settings.DefaultPath, 
+                _metadata, _metadata.Settings.DefaultPath, 
                 Access, SYMBOL_PARTITION_ID, _fileFactory);
             _metadata.InitializeSymbols(symbolStorage);
             return symbolStorage;
@@ -527,19 +505,6 @@ namespace Apaf.NFSdb.Core.Storage
                 _symbolStorage.Dispose();
             }
         }
-//
-//        public PartitionTxData GetPartitionTx(int partitionID, TxRec txRec)
-//        {
-//            if (partitionID == 0)
-//            {
-//                return _symbolTxSupport.ReadTxLogFromPartition(txRec);
-//            }
-//
-//            lock (_partitions)
-//            {
-//                return _partitions[partitionID - 1].ReadTxLogFromPartition(txRec);
-//            }
-//        }
 
         public IPartitionReader Read(int paritionID)
         {
@@ -558,6 +523,19 @@ namespace Apaf.NFSdb.Core.Storage
             {
                 _resuableTxState.Add(state);
             }
+        }
+
+        public void DetachPartition(int partitionID)
+        {
+            _lastTransactionLog = null;
+            SetPartitionByID(partitionID, null);
+        }
+
+        public void ClearTxLog()
+        {
+            _lastTransactionLog = null;
+            _lastTxRec = null;
+            _txLog.Clean();
         }
     }
 }

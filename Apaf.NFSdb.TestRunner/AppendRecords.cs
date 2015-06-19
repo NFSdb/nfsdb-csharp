@@ -37,9 +37,10 @@ namespace Apaf.NFSdb.TestRunner
                 var sw1 = new Stopwatch();
                 const int count = 2;
                 const int startIndex = -2;
-                using (var wr = journal.OpenWriteTx())
+
+                for (int i = startIndex; i < count; i++)
                 {
-                    for (int i = startIndex; i < count; i++)
+                    using (var wr = journal.OpenWriteTx())
                     {
                         if (i == 0)
                         {
@@ -48,9 +49,10 @@ namespace Apaf.NFSdb.TestRunner
                         }
                         QuoteJournalTests.GenerateRecords(totalCount, wr, increment);
                         wr.Commit();
-                        wr.Truncate();
                     }
+                    journal.Truncate();
                 }
+
                 sw1.Stop();
                 Console.WriteLine(DateTime.Now);
                 Console.WriteLine(sw1.Elapsed);

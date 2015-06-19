@@ -16,6 +16,7 @@
  */
 #endregion
 using System;
+using System.IO;
 using System.Threading;
 using Apaf.NFSdb.Core.Storage;
 using Apaf.NFSdb.Core.Tx;
@@ -26,16 +27,18 @@ namespace Apaf.NFSdb.Core.Writes
     public class Writer<T> : IWriter<T>
     {
         private readonly IPartitionManager<T> _partitionManager;
+        private readonly IUnsafePartitionManager _unsafePartitionManager;
         private static readonly ILog LOG = LogManager.GetLogger(typeof(Writer<T>));
         private readonly WriterState<T> _writerState;
         private object _writeLock;
-        private ITransactionContext _transaction;
+        private readonly ITransactionContext _transaction;
 
-        public Writer(WriterState<T> writerState, 
-            IPartitionManager<T> partitionManager, object writeLock)
+        internal Writer(WriterState<T> writerState, 
+            IPartitionManager<T> partitionManager, IUnsafePartitionManager unsafePartitionManager, object writeLock)
         {
             _writerState = writerState;
             _partitionManager = partitionManager;
+            _unsafePartitionManager = unsafePartitionManager;
             _transaction = _partitionManager.ReadTxLog();
             _writeLock = writeLock;
         }
@@ -57,12 +60,6 @@ namespace Apaf.NFSdb.Core.Writes
         public void Commit()
         {
             _partitionManager.Commit(_transaction);
-        }
-
-        public void Truncate()
-        {
-            throw new NotImplementedException();
-            _transaction = _partitionManager.ReadTxLog();
         }
 
         protected void Dispose(bool disposed)

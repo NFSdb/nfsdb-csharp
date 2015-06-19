@@ -27,6 +27,8 @@ namespace Apaf.NFSdb.Core
         IQuery<T> OpenReadTx();
         IWriter<T> OpenWriteTx();
 
+        void Truncate();
+
         IJournalMetadata<T> Metadata { get; }
     }
 }

@@ -43,7 +43,6 @@ namespace Apaf.NFSdb.Core.Storage
         private readonly IJournalMetadata<T> _metadata;
         private bool _isStorageInitialized;
         private readonly object _syncRoot = new object();
-        private int _readRef;
 
         public Partition(IJournalMetadata<T> metadata,
             ICompositeFileFactory memeorymMappedFileFactory,
@@ -70,7 +69,16 @@ namespace Apaf.NFSdb.Core.Storage
         {
             if (_isStorageInitialized)
             {
-                return _columnStorage.AllOpenedFiles().Count(f => f.MappedSize > 0);
+                int mappedSize = 0;
+                for (int i = 0; i < _columnStorage.OpenFileCount; i++)
+                {
+                    var file = _columnStorage.GetOpenedFileByID(i);
+                    if (file != null && file.MappedSize > 0)
+                    {
+                        mappedSize++;
+                    }
+                }
+                return mappedSize;
             }
             return 0;
         }
@@ -79,9 +87,18 @@ namespace Apaf.NFSdb.Core.Storage
         {
             if (_isStorageInitialized)
             {
-                return _columnStorage.AllOpenedFiles().Sum(f => f.MappedSize);
+                long mappedSize = 0;
+                for (int i = 0; i < _columnStorage.OpenFileCount; i++)
+                {
+                    var file = _columnStorage.GetOpenedFileByID(i);
+                    if (file != null)
+                    {
+                        mappedSize += file.MappedSize;
+                    }
+                }
+                return mappedSize;
             }
-            return 0;
+            return 0L;
         }
 
         public int PartitionID { get; private set; }
@@ -106,16 +123,10 @@ namespace Apaf.NFSdb.Core.Storage
 
         public void CloseFiles()
         {
-            lock (_syncRoot)
+            if (_columnStorage != null)
             {
+                _columnStorage.CloseFiles();
                 _isStorageInitialized = false;
-                Thread.MemoryBarrier();
-
-                if (_columnStorage != null)
-                {
-                    _columnStorage.Dispose();
-                    _columnStorage = null;
-                }
             }
         }
 
@@ -144,13 +155,18 @@ namespace Apaf.NFSdb.Core.Storage
             // Some serializers can skip null fields.
             var pd = tx.GetPartitionTx(PartitionID);
             var count = pd.NextRowID;
-            foreach (var file in _columnStorage.AllOpenedFiles())
+
+            for (int i = 0; i < _columnStorage.OpenFileCount; i++)
             {
-                var column = _metadata.GetColumnById(file.ColumnID);
-                var size = StorageSizeUtils.GetRecordSize(column, file.DataType);
-                if (size > 0)
+                var file = _columnStorage.GetOpenedFileByID(i);
+                if (file != null)
                 {
-                    pd.AppendOffset[file.FileID] = count*size;
+                    var column = _metadata.GetColumnById(file.ColumnID);
+                    var size = StorageSizeUtils.GetRecordSize(column, file.DataType);
+                    if (size > 0)
+                    {
+                        pd.AppendOffset[file.FileID] = count * size;
+                    }
                 }
             }
             return _txSupport.Commit(tx);
@@ -223,8 +239,11 @@ namespace Apaf.NFSdb.Core.Storage
             {
                 if (!_isStorageInitialized)
                 {
-                    _columnStorage = new ColumnStorage(_metadata.Settings, StartDate,
-                        _access, PartitionID, _memeorymMappedFileFactory);
+                    if (_columnStorage == null)
+                    {
+                        _columnStorage = new ColumnStorage(_metadata, StartDate,
+                            _access, PartitionID, _memeorymMappedFileFactory);
+                    }
 
                     ColumnSource[] columns = _metadata.GetPartitionColums(_columnStorage).ToArray();
                     _symbols = columns

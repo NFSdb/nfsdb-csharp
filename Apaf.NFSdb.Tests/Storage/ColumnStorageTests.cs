@@ -125,13 +125,12 @@ namespace Apaf.NFSdb.Tests.Storage
 
         private ColumnStorage CreateStorage(IJournal<TestJournal> journal)
         {
-            var settings = journal.Metadata.Settings;
             _fileFactory = new Mock<ICompositeFileFactory>();
             _fileFactory.Setup(f => f.OpenFile(It.IsAny<string>(),
                 It.IsAny<int>(), It.IsAny<EFileAccess>())).Callback(
                 (string name, int bitHint, EFileAccess access) => _bitHint = bitHint);
 
-            return new ColumnStorage(settings, "temp", EFileAccess.ReadWrite, 0, _fileFactory.Object);
+            return new ColumnStorage(journal.Metadata, "temp", EFileAccess.ReadWrite, 0, _fileFactory.Object);
         }
     }
 }

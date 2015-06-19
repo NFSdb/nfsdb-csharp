@@ -17,6 +17,7 @@
 #endregion
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Threading;
 using Apaf.NFSdb.Core.Configuration;
 using Apaf.NFSdb.Core.Queries;
@@ -29,6 +30,8 @@ namespace Apaf.NFSdb.Core
     {
         private readonly IJournalMetadata<T> _metadata;
         private readonly IPartitionManager<T> _partitionManager;
+        private readonly IUnsafePartitionManager _unsafePartitionManager;
+
         private readonly object _writeLock = new object();
         private readonly WriterState<T> _writerState;
         private readonly IQueryStatistics _stats;
@@ -39,8 +42,51 @@ namespace Apaf.NFSdb.Core
             _metadata = metadata;
             _partitionManager = partitionManager;
             _writerState = new WriterState<T>(metadata);
-            _stats = new JournalStatistics<T>((IUnsafePartitionManager)_partitionManager, metadata);
-            Diagnostics = new JournalDiagnostics((IUnsafePartitionManager)_partitionManager);
+            _unsafePartitionManager = (IUnsafePartitionManager)_partitionManager;
+            _stats = new JournalStatistics<T>(_unsafePartitionManager, metadata);
+            Diagnostics = new JournalDiagnostics(_unsafePartitionManager);
+        }
+
+        public void Truncate()
+        {
+            if (_partitionManager.Access != EFileAccess.ReadWrite)
+            {
+                throw new InvalidOperationException("Journal is not writable");
+            }
+
+            lock (_writeLock)
+            {
+                var transaction = _unsafePartitionManager.ReadTxLog();
+
+                // Stop new readers.
+                _unsafePartitionManager.ClearTxLog();
+
+                // Wait existing readers.
+                for (int i = 0; i < transaction.PartitionIDs.Count; i++)
+                {
+                    var partitionID = transaction.PartitionIDs[i];
+                    transaction.RunInExclusivePartitionLock(partitionID,
+                        p =>
+                        {
+                            if (p != null)
+                            {
+                                p.Dispose();
+                                try
+                                {
+                                    Directory.Delete(p.DirectoryPath, true);
+                                    _unsafePartitionManager.DetachPartition(partitionID);
+                                }
+                                catch (IOException)
+                                {
+                                }
+                                catch (UnauthorizedAccessException)
+                                {
+                                }
+                            }
+                            return true;
+                        });
+                }
+            }
         }
 
         public IJournalMetadata<T> Metadata
@@ -51,11 +97,6 @@ namespace Apaf.NFSdb.Core
         public IJournalDiagnostics Diagnostics { get; private set; }
 
         public IQueryStatistics QueryStatistics { get { return _stats; } }
-
-        public IComparer<long> GetRecordsComparer(int[] columnIndices)
-        {
-            throw new NotImplementedException();
-        }
 
         public IQuery<T> OpenReadTx()
         {
@@ -70,7 +111,7 @@ namespace Apaf.NFSdb.Core
                 throw new InvalidOperationException("Journal is not writable");
             }
             Monitor.Enter(_writeLock);
-            return new Writer<T>(_writerState, _partitionManager, _writeLock);
+            return new Writer<T>(_writerState, _partitionManager, _unsafePartitionManager, _writeLock);
         }
 
         public void Dispose()

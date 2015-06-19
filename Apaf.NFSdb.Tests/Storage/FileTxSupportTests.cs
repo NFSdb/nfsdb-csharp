@@ -147,7 +147,8 @@ namespace Apaf.NFSdb.Tests.Storage
             jornalMeta.Setup(j => j.FileCount).Returns(files.Count);
 
             var storage = new Mock<IColumnStorage>();
-            storage.Setup(f => f.AllOpenedFiles()).Returns(files.Select(f => f.Object));
+            storage.Setup(f => f.OpenFileCount).Returns(files.Count);
+            storage.Setup(f => f.GetOpenedFileByID(It.IsAny<int>())).Returns((int id) => files[id].Object);
 
             return new FileTxSupport(partitionID, storage.Object, jornalMeta.Object, DateTime.MinValue, DateTime.MaxValue);
         }

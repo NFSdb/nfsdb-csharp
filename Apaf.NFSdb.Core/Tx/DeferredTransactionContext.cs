@@ -133,10 +133,9 @@ namespace Apaf.NFSdb.Core.Tx
         {
             try
             {
-                throw new NotImplementedException();
                 _parititionLock.AcquireWriteLock(partitionID);
-                //_paritionManager.GetPartition()
-                //return action
+                var partition = _paritionManager.GetPartition(partitionID);
+                return action.Invoke(partition);
             }
             finally 
             {

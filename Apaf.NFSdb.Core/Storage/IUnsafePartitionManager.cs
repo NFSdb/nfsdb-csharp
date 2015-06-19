@@ -1,5 +1,4 @@
-﻿using System.Collections.Generic;
-using Apaf.NFSdb.Core.Tx;
+﻿using Apaf.NFSdb.Core.Tx;
 
 namespace Apaf.NFSdb.Core.Storage
 {
@@ -7,7 +6,9 @@ namespace Apaf.NFSdb.Core.Storage
     {
         IColumnStorage SymbolFileStorage { get; }
         IPartitionCore GetPartition(int paritionID);
-        IEnumerable<IPartitionCore> GetOpenPartitions();
+        IPartitionCore[] GetOpenPartitions();
         void Recycle(TxReusableState state);
+        void DetachPartition(int partitionID);
+        void ClearTxLog();
     }
 }

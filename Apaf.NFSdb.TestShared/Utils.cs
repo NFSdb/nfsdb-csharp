@@ -110,7 +110,7 @@ namespace Apaf.NFSdb.TestShared
 
                 var metadata = new JournalMetadata<T>(jconf);
                 var startDate = new DateTime(2013, 10, 1);
-                var journalStorage = new ColumnStorage(metadata.Settings, jconf.DefaultPath,
+                var journalStorage = new ColumnStorage(metadata, jconf.DefaultPath,
                     access, 0, mmFactory);
                 metadata.InitializeSymbols(journalStorage);
 

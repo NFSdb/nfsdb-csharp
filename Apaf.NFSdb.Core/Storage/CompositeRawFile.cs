@@ -162,7 +162,7 @@ namespace Apaf.NFSdb.Core.Storage
 #if OPTIMIZE
         public unsafe AccessorBinaryReader GetFilePart(long offset)
 #else
-        public unsafe IRawFilePart GetFilePart(long offset)
+        public IRawFilePart GetFilePart(long offset)
 #endif
         {
             var bufferIndex = (int)(offset >> _bitHint);
@@ -177,6 +177,15 @@ namespace Apaf.NFSdb.Core.Storage
                 }
             }
 
+            return GetBufferCore(bufferIndex);
+        }
+
+ #if OPTIMIZE
+        public unsafe AccessorBinaryReader GetBufferCore(int bufferIndex)
+#else
+        public IRawFilePart GetBufferCore(int bufferIndex)
+#endif       
+        {
             lock (_buffSync)
             {
                 if (bufferIndex < _buffers.Length)
@@ -203,7 +212,7 @@ namespace Apaf.NFSdb.Core.Storage
 
                 // Create.
                 int bufferSize = 1 << _bitHint;
-                long bufferOffset = bufferIndex * (long) bufferSize;
+                long bufferOffset = bufferIndex*(long) bufferSize;
 
 #if OPTIMIZE
                 var view = (AccessorBinaryReader)_compositeFile.CreateViewAccessor(bufferOffset, bufferSize); 

@@ -21,6 +21,7 @@ namespace Apaf.NFSdb.Core.Tx
     {
         bool IsEmpty();
         TxRec Get();
+        void Clean();
         void Create(TxRec tx);
     }
 }

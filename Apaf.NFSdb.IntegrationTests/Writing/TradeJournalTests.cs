@@ -160,15 +160,14 @@ namespace Apaf.NFSdb.IntegrationTests.Writing
                 using (var wr = journal.OpenWriteTx())
                 {
                     wr.Append(trade);
-                    wr.Truncate();
                     wr.Commit();
                 }
-            }
 
-            using (var journal = CreateJournal())
-            {
+                journal.Truncate();
+
                 using (var wr = journal.OpenWriteTx())
                 {
+                    trade.Timestamp = DateUtils.DateTimeToUnixTimeStamp(DateTime.Now.AddDays(-1));
                     wr.Append(trade);
                     wr.Commit();
                 }

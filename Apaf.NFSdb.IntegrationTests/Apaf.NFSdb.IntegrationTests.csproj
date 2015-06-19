@@ -113,6 +113,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Columns\PocoBinaryTests.cs" />
+    <Compile Include="DDL\TruncateTests.cs" />
     <Compile Include="IntegrationTestConstants.cs" />
     <Compile Include="Columns\PocoDateTimeTests.cs" />
     <Compile Include="Partition\LargeJournalPerformance.cs" />

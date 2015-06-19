@@ -37,6 +37,10 @@ namespace Apaf.NFSdb.Core.Tx
         {
             return _data.GetAppendOffset() <= MIN_TX_ADDRESS;
         }
+        public void Clean()
+        {
+            _data.SetAppendOffset(0);
+        }
 
         public TxRec Get()
         {

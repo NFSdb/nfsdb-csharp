@@ -125,7 +125,7 @@ namespace Apaf.NFSdb.Tests.Core
                 var partMan = CreatePartitionManager<OneSym>(tempDir,
                     stubFileF.Stub.Object, EFileAccess.Read, "s");
 
-                var kData = partMan.SymbolFileStorage.AllOpenedFiles()
+                var kData = StorageUtils.AllOpenedFiles(partMan.SymbolFileStorage)
                     .First(f => f.Filename.EndsWith("s.symr.k"));
 
                 // Act.

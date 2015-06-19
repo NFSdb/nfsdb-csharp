@@ -168,6 +168,7 @@
     <Compile Include="Query\UnionPlanItemTests.cs" />
     <Compile Include="Reflection\ReflectionHelperTests.cs" />
     <Compile Include="Serializer\PocoSerializerFactoryTests.cs" />
+    <Compile Include="StorageUtils.cs" />
     <Compile Include="Storage\BufferBinaryReader.cs" />
     <Compile Include="Storage\ByteOrder.cs" />
     <Compile Include="Storage\ColumnStorageTests.cs" />

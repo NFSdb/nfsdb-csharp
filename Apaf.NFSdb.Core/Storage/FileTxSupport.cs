@@ -53,8 +53,11 @@ namespace Apaf.NFSdb.Core.Storage
             string lastRowIDFilename = null;
             var pd = new PartitionTxData(_metadata.FileCount, _partitionID, _startDate, _endTime);
 
-            foreach (IRawFile file in _storage.AllOpenedFiles())
+            for (int i = 0; i < _storage.OpenFileCount; i++)
             {
+                var file = _storage.GetOpenedFileByID(i);
+                if (file == null) continue;
+
                 ColumnMetadata column;
                 long fileAppendOffset;
                 try
@@ -125,8 +128,11 @@ namespace Apaf.NFSdb.Core.Storage
             long nextRowID = RowIDUtil.ToLocalRowID(txRec.JournalMaxRowID - 1) + 1;
             pd.NextRowID = nextRowID;
 
-            foreach (IRawFile file in _storage.AllOpenedFiles())
+            for (int i = 0; i < _storage.OpenFileCount; i++)
             {
+                var file = _storage.GetOpenedFileByID(i);
+                if (file == null) continue;
+
                 try
                 {
                     if (file.DataType == EDataType.Symrk
@@ -196,8 +202,11 @@ namespace Apaf.NFSdb.Core.Storage
         {
             var processedFileOffsets = new List<CommitData>(_metadata.FileCount);
             var actionRollaback = new CommitRollback(processedFileOffsets);
-            foreach (IRawFile file in _storage.AllOpenedFiles())
+            for (int i = 0; i < _storage.OpenFileCount; i++)
             {
+                var file = _storage.GetOpenedFileByID(i);
+                if (file == null) continue;
+
                 try
                 {
                     int partitionID = file.PartitionID;
@@ -257,9 +266,10 @@ namespace Apaf.NFSdb.Core.Storage
                 rec.JournalMaxRowID = RowIDUtil.ToRowID(_partitionID - 1, pd.NextRowID - 1) + 1;
 
                 rec.IndexPointers = new long[columCount];
-                foreach (var f in _storage.AllOpenedFiles())
+                for (int i = 0; i < _storage.OpenFileCount; i++)
                 {
-                    if (f.DataType == EDataType.Datak)
+                    var f = _storage.GetOpenedFileByID(i);
+                    if (f != null && f.DataType == EDataType.Datak)
                     {
                         rec.IndexPointers[f.ColumnID] = pd.SymbolData[f.FileID].KeyBlockOffset;
                     }
@@ -270,8 +280,11 @@ namespace Apaf.NFSdb.Core.Storage
                 var symbolTableSize = new List<int>();
                 var symbolTableIndexPointers = new List<long>();
 
-                foreach (var file in _storage.AllOpenedFiles())
+                for (int i = 0; i < _storage.OpenFileCount; i++)
                 {
+                    var file = _storage.GetOpenedFileByID(i);
+                    if (file == null) continue;
+
                     if (file.DataType == EDataType.Symi)
                     {
                         var indexSize = (int) (pd.AppendOffset[file.FileID]/8);
