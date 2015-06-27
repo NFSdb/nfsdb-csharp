@@ -16,28 +16,34 @@
  */
 #endregion
 using System;
+using System.Runtime.InteropServices;
+using System.Text;
 using System.Threading;
 using Apaf.NFSdb.Core.Column;
 using Apaf.NFSdb.Core.Exceptions;
 
 namespace Apaf.NFSdb.Core.Storage
 {
-    public class CompositeRawFile : IRawFile
+    public unsafe class CompositeRawFile : IRawFile
     {
         private readonly int _bitHint;
         private const byte TRUE = 1;
         private const byte FALSE = 0;
         public const int INITIAL_PARTS_COLLECTION_SIZE = 64;
-#if OPTIMIZE
-        private AccessorBinaryReader[] _buffers = new AccessorBinaryReader[INITIAL_PARTS_COLLECTION_SIZE];
-#else
         private IRawFilePart[] _buffers = new IRawFilePart[INITIAL_PARTS_COLLECTION_SIZE];
-#endif
+        private byte* _pointersArrayBegin;
+        private byte** _pointersArray;
+
+        private const int CACHE_LINE_HINT = 6;
+        private byte* _endsArrayBegin;
+        private long* _endsArray;
+
+        private int _pointersArrayLen;
         private const long FILE_HEADER_LENGTH = MetadataConstants.FILE_HEADER_LENGTH;
+        private const int ADDITIONAL_BUFFER_ARRAY_CAPACITY = 10;
         private ICompositeFile _compositeFile;
         private readonly object _buffSync = new object();
         private long _mappedSize;
-        private CurrentBuffer _cachedBuffer;
 
         public CompositeRawFile(string fileName,
             int bitHint,
@@ -88,6 +94,24 @@ namespace Apaf.NFSdb.Core.Storage
             ColumnID = columnID;
             DataType = dataType;
             Filename = fileName;
+            _pointersArray = (byte**)LongAllocate(INITIAL_PARTS_COLLECTION_SIZE, out _pointersArrayBegin);
+            _endsArray = (long*) LongAllocate(INITIAL_PARTS_COLLECTION_SIZE, out _endsArrayBegin);
+            _pointersArrayLen = INITIAL_PARTS_COLLECTION_SIZE;
+        }
+
+        private static byte* LongAllocate(int size, out byte* pointersArrayBegin)
+        {
+            const int cacheLineSize = (1 << CACHE_LINE_HINT);
+            pointersArrayBegin = (byte*)Marshal.AllocHGlobal(8 * size + cacheLineSize).ToPointer();
+
+            var ptr = (long*)pointersArrayBegin;
+            ptr += (new IntPtr(pointersArrayBegin).ToInt64()%cacheLineSize) / 8;
+
+            for (int i = 0; i < size; i++)
+            {
+                ptr[i] = 0L;
+            }
+            return (byte*) ptr;
         }
 
         public void Dispose()
@@ -111,6 +135,9 @@ namespace Apaf.NFSdb.Core.Storage
                 _buffers = null;
             }
 
+            Marshal.FreeHGlobal((IntPtr)_endsArrayBegin);
+            Marshal.FreeHGlobal((IntPtr)_pointersArrayBegin);
+
             _compositeFile.Dispose();
             _compositeFile = null;
             GC.SuppressFinalize(this);
@@ -125,19 +152,11 @@ namespace Apaf.NFSdb.Core.Storage
                     return;
                 }
 
-#if OPTIMIZE
-                AccessorBinaryReader[] buffCopy = _buffers;
-#else
                 IRawFilePart[] buffCopy = _buffers;
-#endif
 
                 // Block concurrent reads.
                 Thread.MemoryBarrier();
-#if OPTIMIZE
-                _buffers = new AccessorBinaryReader[0];
-#else
                 _buffers = new IRawFilePart[0];
-#endif
                 Thread.MemoryBarrier();
 
                 foreach (var rawFilePart in buffCopy)
@@ -159,76 +178,112 @@ namespace Apaf.NFSdb.Core.Storage
             if (_compositeFile != null) _compositeFile.Dispose();
         }
 
-#if OPTIMIZE
-        public unsafe AccessorBinaryReader GetFilePart(long offset)
-#else
-        public IRawFilePart GetFilePart(long offset)
-#endif
+        public byte* GetFilePart(long offset)
         {
-            var bufferIndex = (int)(offset >> _bitHint);
-
-            // Check exists.
-            if (bufferIndex < _buffers.Length)
-            {
-                var buffer = _buffers[bufferIndex];
-                if (buffer != null)
+            
+                if (offset < -FILE_HEADER_LENGTH)
                 {
-                    return buffer;
+                    throw new IndexOutOfRangeException("offset is " + offset);
                 }
-            }
 
-            return GetBufferCore(bufferIndex);
+                var bufferIndex = (int) ((offset + FILE_HEADER_LENGTH) >> _bitHint);
+
+                // Check exists.
+                if (bufferIndex < _pointersArrayLen)
+                {
+                    var ptr = _pointersArray[bufferIndex];
+                    if (ptr != null)
+                    {
+                        return ptr + offset;
+                    }
+                }
+
+                return GetBufferCore(bufferIndex, offset);
         }
 
- #if OPTIMIZE
-        public unsafe AccessorBinaryReader GetBufferCore(int bufferIndex)
-#else
-        public IRawFilePart GetBufferCore(int bufferIndex)
-#endif       
+
+        public string GetAllUnsafePointers()
+        {
+            var sb = new StringBuilder();
+            for (int i = 0; i < _pointersArrayLen; i++)
+            {
+                sb.Append(new IntPtr(_pointersArray[i]));
+                sb.Append(";");
+            }
+            return sb.ToString();
+        }
+
+
+        public string GetAllBufferPointers()
+        {
+            var sb = new StringBuilder();
+            for (int i = 0; i < _pointersArrayLen; i++)
+            {
+                sb.Append(_buffers[i] != null ? new IntPtr(_buffers[i].Pointer) : new IntPtr());
+                sb.Append(";");
+            }
+            return sb.ToString();
+        }
+
+        public long GetFilePartEnd(long offset)
+        {
+            var bufferIndex = (int)((offset + FILE_HEADER_LENGTH) >> _bitHint);
+            return _endsArray[bufferIndex];
+        }
+
+        public byte* GetBufferCore(int bufferIndex, long offset)
         {
             lock (_buffSync)
             {
-                if (bufferIndex < _buffers.Length)
+                if (bufferIndex < _pointersArrayLen)
                 {
-                    var buffer = _buffers[bufferIndex];
-                    if (buffer != null)
+                    var ptr = _pointersArray[bufferIndex];
+                    if (ptr != null)
                     {
-                        return buffer;
+                        return ptr;
                     }
                 }
                 else
                 {
                     // Add empty.
-#if OPTIMIZE
-                    var newBuffer = new AccessorBinaryReader[bufferIndex + 10];
-#else
-                    var newBuffer = new IRawFilePart[bufferIndex + 10];
-#endif
-                    Array.Copy(_buffers, 0, newBuffer, 0, _buffers.Length);
+                    int newLen = bufferIndex + ADDITIONAL_BUFFER_ARRAY_CAPACITY;
+                    var newBuffers = new IRawFilePart[newLen];
+                    Array.Copy(_buffers, 0, newBuffers, 0, _pointersArrayLen);
+
+                    var newPtrArray = (byte**)LongAllocate(newLen, out _pointersArrayBegin);
+                    var newEndsArray = (long*)LongAllocate(newLen, out _endsArrayBegin);
+
+                    AccessorHelper.Memcpy((byte*)newPtrArray, (byte*)_pointersArray, sizeof(byte*) * _pointersArrayLen);
+                    AccessorHelper.Memcpy((byte*)newEndsArray, (byte*)_endsArray, sizeof(long) * _pointersArrayLen);
+
+                    var oldPtrArray = _pointersArray;
+                    var oldEndArray = _endsArray;
+
+                    _endsArray = newEndsArray;
+                    
                     Thread.MemoryBarrier();
-                    _buffers = newBuffer;
+                    _pointersArray = (byte**)newPtrArray;
+
                     Thread.MemoryBarrier();
+                    _pointersArrayLen = newLen;
+                    _buffers = newBuffers;
+
+                    Marshal.FreeHGlobal((IntPtr)oldEndArray);
+                    Marshal.FreeHGlobal((IntPtr)oldPtrArray);
                 }
 
                 // Create.
                 int bufferSize = 1 << _bitHint;
                 long bufferOffset = bufferIndex*(long) bufferSize;
 
-#if OPTIMIZE
-                var view = (AccessorBinaryReader)_compositeFile.CreateViewAccessor(bufferOffset, bufferSize); 
-                var cachedBuffer = new CurrentBuffer();
-                cachedBuffer.Start = view.BufferOffset;
-                cachedBuffer.End = view.BufferEnd;
-                cachedBuffer.MemoryPtr = view.MemoryPtr;
-                Thread.MemoryBarrier();
-                _cachedBuffer = cachedBuffer;
-                Thread.MemoryBarrier();
-#else
-                var view = _compositeFile.CreateViewAccessor(bufferOffset, bufferSize);
-#endif
+                var view = _compositeFile.CreateViewAccessor(bufferOffset, bufferSize); 
                 _buffers[bufferIndex] = view;
+                var address = view.Pointer - view.BufferOffset + FILE_HEADER_LENGTH;
+                _pointersArray[bufferIndex] = address;
+                _endsArray[bufferIndex] = new IntPtr(view.Pointer).ToInt64() + view.BufferSize;
+
                 Interlocked.Add(ref _mappedSize, bufferSize);
-                return view;
+                return _pointersArray[bufferIndex] + offset;
             }
         }
 
@@ -242,479 +297,138 @@ namespace Apaf.NFSdb.Core.Storage
 
         public void ReadBytes(long offset, byte[] array, int arrayOffset, int sizeBytes)
         {
-            offset += FILE_HEADER_LENGTH;
-            var buff1 = GetFilePart(offset);
-
-            // Respect buff1 size.
-            var readSize1 = Math.Min((int)(buff1.BufferSize + buff1.BufferOffset - offset),
-                sizeBytes);
-            buff1.ReadBytes(offset, array, arrayOffset, readSize1);
-
-            // Split.
-            if (readSize1 < sizeBytes)
+            fixed (byte* dst = array)
             {
-                offset = buff1.BufferOffset + buff1.BufferSize - FILE_HEADER_LENGTH;
-                sizeBytes -= readSize1;
-                arrayOffset += readSize1;
-
-                // Recursivly read.
-                ReadBytes(offset, array, arrayOffset, sizeBytes);
+                ReadBytes(offset, dst + arrayOffset, sizeBytes);
             }
         }
 
-        public unsafe void ReadBytes(long offset, byte* array, int arrayOffset, int sizeBytes)
+        public void ReadBytes(long offset, byte* array,  int sizeBytes)
         {
-            offset += FILE_HEADER_LENGTH;
-            var buff1 = GetFilePart(offset);
-
-            // Respect buff1 size.
-            var readSize1 = Math.Min((int)(buff1.BufferSize + buff1.BufferOffset - offset),
-                sizeBytes);
-            buff1.ReadBytes(offset, array, arrayOffset, readSize1);
-
-            // Split.
-            if (readSize1 < sizeBytes)
+            while (sizeBytes > 0)
             {
-                offset = buff1.BufferOffset + buff1.BufferSize - FILE_HEADER_LENGTH;
-                sizeBytes -= readSize1;
-                arrayOffset += readSize1;
+                byte* ptr = GetFilePart(offset);
+                long end = GetFilePartEnd(offset);
 
-                // Recursivly read.
-                ReadBytes(offset, array, arrayOffset, sizeBytes);
+                // Respect buffer size.
+                var readSize1 = (int) Math.Min(end - (((IntPtr) ptr).ToInt64()), sizeBytes);
+                AccessorHelper.Memcpy(array, ptr, readSize1);
+             
+                offset += readSize1;
+                sizeBytes -= readSize1;
+                array += readSize1;
             }
         }
 
 
         public int ReadInt32(long offset)
         {
-            offset += FILE_HEADER_LENGTH;
-            return GetFilePart(offset).ReadInt32(offset);
+            return ((int*) GetFilePart(offset))[0];
         }
 
         public byte ReadByte(long offset)
         {
-            offset += FILE_HEADER_LENGTH;
-            return GetFilePart(offset).ReadByte(offset);
+            return *(GetFilePart(offset));
         }
 
-        public unsafe long ReadInt64(long offset)
+        public long ReadInt64(long offset)
         {
-            offset += FILE_HEADER_LENGTH;
-#if OPTIMIZE
-            var cachedBuffer = _cachedBuffer;
-            if (cachedBuffer != null && offset >= cachedBuffer.Start && offset < _cachedBuffer.End)
-            {
-
-                var writePtr = (long*) (cachedBuffer.MemoryPtr + offset - cachedBuffer.Start);
-#if BIGENDIAN
-                writePtr[0] = IPAddress.HostToNetworkOrder(value);
-#else
-                return writePtr[0];
-#endif
-            }
-            else
-#endif
-            {
-                return ReadInt64Core(offset);
-            }
-        }
-
-        private long ReadInt64Core(long offset)
-        {
-            var bufferIndex = (int) (offset >> _bitHint);
-
-#if OPTIMIZE
-            AccessorBinaryReader buffer = null;
-#else
-            IRawFilePart buffer = null;
-#endif
-            // Check exists.
-            if (bufferIndex < _buffers.Length)
-            {
-                buffer = _buffers[bufferIndex];
-            }
-
-            if (buffer == null)
-            {
-                buffer = GetFilePart(offset);
-            }
-            return buffer.ReadInt64(offset);
+            return *((long*)GetFilePart(offset));
         }
 
         public bool ReadBool(long offset)
         {
-            offset += FILE_HEADER_LENGTH;
-            return GetFilePart(offset).ReadBool(offset);
+            return *(GetFilePart(offset)) == TRUE;
         }
 
         public double ReadDouble(long offset)
         {
-            offset += FILE_HEADER_LENGTH;
-            return GetFilePart(offset).ReadDouble(offset);
+            return *((double*)GetFilePart(offset));
         }
 
         public short ReadInt16(long offset)
         {
-            offset += FILE_HEADER_LENGTH;
-            return GetFilePart(offset).ReadInt16(offset);
+            return *((short*)GetFilePart(offset));
         }
 
         public ushort ReadUInt16(long offset)
         {
-            offset += FILE_HEADER_LENGTH;
-            return GetFilePart(offset).ReadUInt16(offset);
+            return *((ushort*)GetFilePart(offset));
         }
 
         public long GetAppendOffset()
         {
-            return GetFilePart(0).ReadInt64(0);
+            return *((long*)GetFilePart(-FILE_HEADER_LENGTH));
         }
 
         public void SetAppendOffset(long value)
         {
-            GetFilePart(0).WriteInt64(0, value);
+            ((long*)GetFilePart(-FILE_HEADER_LENGTH))[0] = value;
         }
 
         public void WriteBytes(long offset, byte[] array, int arrayOffset, int sizeBytes)
         {
-            offset += FILE_HEADER_LENGTH;
-            var buff1 = GetFilePart(offset);
-
-            // Respect buff1 size.
-            var writeSize = Math.Min((int)(buff1.BufferSize + buff1.BufferOffset - offset),
-                sizeBytes);
-            buff1.WriteBytes(offset, array, arrayOffset, writeSize);
-
-            // Split.
-            if (writeSize < sizeBytes)
+            fixed (byte* src = array)
             {
-                offset = buff1.BufferOffset + buff1.BufferSize - FILE_HEADER_LENGTH;
-                sizeBytes -= writeSize;
-                arrayOffset += writeSize;
-
-                // Recursivly read.
-                WriteBytes(offset, array, arrayOffset, sizeBytes);
+                WriteBytes(offset, src + arrayOffset, sizeBytes);
             }
         }
 
-        public unsafe void WriteBytes(long offset, byte* array, int arrayOffset, int sizeBytes)
+        public void WriteBytes(long offset, byte* array, int sizeBytes)
         {
-            offset += FILE_HEADER_LENGTH;
-            var buff1 = GetFilePart(offset);
-
-            // Respect buff1 size.
-            var writeSize = Math.Min((int)(buff1.BufferSize + buff1.BufferOffset - offset),
-                sizeBytes);
-            buff1.WriteBytes(offset, array, arrayOffset, writeSize);
-
-            // Split.
-            if (writeSize < sizeBytes)
+            while (sizeBytes > 0)
             {
-                offset = buff1.BufferOffset + buff1.BufferSize - FILE_HEADER_LENGTH;
-                sizeBytes -= writeSize;
-                arrayOffset += writeSize;
+                byte* ptr = GetFilePart(offset);
+                long end = GetFilePartEnd(offset);
 
-                // Recursivly read.
-                WriteBytes(offset, array, arrayOffset, sizeBytes);
+                // Respect buffer size.
+                var readSize1 = (int)Math.Min(end - (((IntPtr)ptr).ToInt64()), sizeBytes);
+                AccessorHelper.Memcpy(ptr, array, readSize1);
+
+                offset += readSize1;
+                sizeBytes -= readSize1;
+                array += readSize1;
             }
         }
 
-        public unsafe void WriteInt64(long offset, long value)
+        public void WriteInt64(long offset, long value)
         {
-            offset += FILE_HEADER_LENGTH;
-#if OPTIMIZE
-            var cachedBuffer = _cachedBuffer;
-            if (cachedBuffer != null && offset >= cachedBuffer.Start && offset < _cachedBuffer.End)
-            {
-
-                var writePtr = (long*) (cachedBuffer.MemoryPtr + offset - cachedBuffer.Start);
-#if BIGENDIAN
-                writePtr[0] = IPAddress.HostToNetworkOrder(value);
-#else
-                writePtr[0] = value;
-#endif
-            }
-            else
-#endif
-            {
-                WriteInt64Core(offset, value);
-            }
+            ((long*)GetFilePart(offset))[0] = value;
         }
 
-        private void WriteInt64Core(long offset, long value)
+        public void WriteInt32(long offset, int value)
         {
-            var bufferIndex = (int) (offset >> _bitHint);
-#if OPTIMIZE
-            AccessorBinaryReader buffer = null;
-#else
-            IRawFilePart buffer = null;
-#endif
-            // Check exists.
-            if (bufferIndex < _buffers.Length)
-            {
-                buffer = _buffers[bufferIndex];
-            }
-
-            if (buffer == null)
-            {
-                buffer = GetFilePart(offset);
-            }
-            buffer.WriteInt64(offset, value);
+            *((int*)GetFilePart(offset)) = value;
         }
 
-        public unsafe void WriteInt32(long offset, int value)
+        public void WriteInt16(long offset, short value)
         {
-            offset = offset + FILE_HEADER_LENGTH;
-#if OPTIMIZE
-            var cachedBuffer = _cachedBuffer;
-            if (cachedBuffer != null && offset >= cachedBuffer.Start && offset < _cachedBuffer.End)
-            {
-
-                var writePtr = (int*)(cachedBuffer.MemoryPtr + offset - cachedBuffer.Start);
-#if BIGENDIAN
-                writePtr[0] = IPAddress.HostToNetworkOrder(value);
-#else
-                writePtr[0] = value;
-#endif
-            }
-            else
-#endif
-            {
-                WriteInt32Core(offset, value);
-            }
+            *((short*)GetFilePart(offset)) = value;
         }
 
-        private void WriteInt32Core(long offset, int value)
+        public void WriteByte(long offset, byte value)
         {
-            var bufferIndex = (int) (offset >> _bitHint);
-
-#if OPTIMIZE
-            AccessorBinaryReader buffer = null;
-#else
-               IRawFilePart buffer = null;
-#endif
-            // Check exists.
-            if (bufferIndex < _buffers.Length)
-            {
-                buffer = _buffers[bufferIndex];
-            }
-
-            if (buffer == null)
-            {
-                buffer = GetFilePart(offset);
-            }
-            buffer.WriteInt32(offset, value);
+            GetFilePart(offset)[0] = value;
         }
 
-        public unsafe void WriteInt16(long offset, short value)
+        public void WriteBool(long offset, bool value)
         {
-            offset = offset + FILE_HEADER_LENGTH;
-#if OPTIMIZE
-            var cachedBuffer = _cachedBuffer;
-            if (cachedBuffer != null && offset >= cachedBuffer.Start && offset < _cachedBuffer.End)
-            {
-
-                var writePtr = (short*)(cachedBuffer.MemoryPtr + offset - cachedBuffer.Start);
-#if BIGENDIAN
-                writePtr[0] = IPAddress.HostToNetworkOrder(value);
-#else
-                writePtr[0] = value;
-#endif
-            }
-            else
-#endif
-            {
-                WriteInt16Core(offset, value);
-            }
+            GetFilePart(offset)[0] = value ? TRUE : FALSE; 
         }
 
-        private void WriteInt16Core(long offset, short value)
+        public void WriteDouble(long offset, double value)
         {
-            var bufferIndex = (int) (offset >> _bitHint);
-
-#if OPTIMIZE
-            AccessorBinaryReader buffer = null;
-#else
-            IRawFilePart buffer = null;
-#endif
-            // Check exists.
-            if (bufferIndex < _buffers.Length)
-            {
-                buffer = _buffers[bufferIndex];
-            }
-
-            if (buffer == null)
-            {
-                buffer = GetFilePart(offset);
-            }
-            buffer.WriteInt16(offset, value);
+            ((double*)GetFilePart(offset))[0] = value;
         }
 
-        public unsafe void WriteByte(long offset, byte value)
+        public void WriteUInt16(long offset, ushort value)
         {
-            offset = offset + FILE_HEADER_LENGTH;
-#if OPTIMIZE
-            var cachedBuffer = _cachedBuffer;
-            if (cachedBuffer != null && offset >= cachedBuffer.Start && offset < _cachedBuffer.End)
-            {
-
-                var writePtr = cachedBuffer.MemoryPtr + offset - cachedBuffer.Start;
-#if BIGENDIAN
-                writePtr[0] = IPAddress.HostToNetworkOrder(value);
-#else
-                writePtr[0] = value;
-#endif
-            }
-            else
-#endif
-            {
-                WriteByteCore(offset, value);
-            }
-        }
-
-        private void WriteByteCore(long offset, byte value)
-        {
-            var bufferIndex = (int) (offset >> _bitHint);
-
-#if OPTIMIZE
-            AccessorBinaryReader buffer = null;
-#else
-            IRawFilePart buffer = null;
-#endif
-            // Check exists.
-            if (bufferIndex < _buffers.Length)
-            {
-                buffer = _buffers[bufferIndex];
-            }
-
-            if (buffer == null)
-            {
-                buffer = GetFilePart(offset);
-            }
-            buffer.WriteByte(offset, value);
-        }
-
-        public unsafe void WriteBool(long offset, bool value)
-        {
-            offset = offset + FILE_HEADER_LENGTH;
-#if OPTIMIZE
-            var cachedBuffer = _cachedBuffer;
-            if (cachedBuffer != null && offset >= cachedBuffer.Start && offset < _cachedBuffer.End)
-            {
-
-                var writePtr = cachedBuffer.MemoryPtr + offset - cachedBuffer.Start;
-#if BIGENDIAN
-                writePtr[0] = IPAddress.HostToNetworkOrder(value);
-#else
-                writePtr[0] = value ? TRUE : FALSE;
-#endif
-            }
-            else
-#endif
-            {
-                WriteBoolCore(offset, value);
-            }
-        }
-
-        private void WriteBoolCore(long offset, bool value)
-        {
-            var bufferIndex = (int) (offset >> _bitHint);
-
-#if OPTIMIZE
-            AccessorBinaryReader buffer = null;
-#else
-                IRawFilePart buffer = null;
-#endif
-            // Check exists.
-            if (bufferIndex < _buffers.Length)
-            {
-                buffer = _buffers[bufferIndex];
-            }
-
-            if (buffer == null)
-            {
-                buffer = GetFilePart(offset);
-            }
-            buffer.WriteBool(offset, value);
-        }
-
-        public unsafe void WriteDouble(long offset, double value)
-        {
-            offset = offset + FILE_HEADER_LENGTH;
-#if OPTIMIZE
-            var cachedBuffer = _cachedBuffer;
-            if (cachedBuffer != null && offset >= cachedBuffer.Start && offset < _cachedBuffer.End)
-            {
-
-                var writePtr = (double*)(cachedBuffer.MemoryPtr + offset - cachedBuffer.Start);
-#if BIGENDIAN
-                writePtr[0] = IPAddress.HostToNetworkOrder(value);
-#else
-                writePtr[0] = value;
-#endif
-            }
-            else
-#endif
-            {
-                WriteDoubleCore(offset, value);
-            }
-        }
-
-        private void WriteDoubleCore(long offset, double value)
-        {
-            var bufferIndex = (int) (offset >> _bitHint);
-
-#if OPTIMIZE
-            AccessorBinaryReader buffer = null;
-#else
-            IRawFilePart buffer = null;
-#endif
-            // Check exists.
-            if (bufferIndex < _buffers.Length)
-            {
-                buffer = _buffers[bufferIndex];
-            }
-
-            if (buffer == null)
-            {
-                buffer = GetFilePart(offset);
-            }
-            buffer.WriteDouble(offset, value);
-        }
-
-        public void WriteUInt16(long offset, uint value)
-        {
-            offset = offset + FILE_HEADER_LENGTH;
-            var bufferIndex = (int)(offset >> _bitHint);
-
-#if OPTIMIZE
-            AccessorBinaryReader buffer = null;
-#else
-            IRawFilePart buffer = null;
-#endif
-            // Check exists.
-            if (bufferIndex < _buffers.Length)
-            {
-                buffer = _buffers[bufferIndex];
-            }
-
-            if (buffer == null)
-            {
-                buffer = GetFilePart(offset);
-            }
-            buffer.WriteUInt16(offset, value);
+            ((ushort*)GetFilePart(offset))[0] = value;
         }
 
         public override string ToString()
         {
             return "CompositeRawFile: " + Filename;
-        }
-
-        private unsafe class CurrentBuffer
-        {
-            public long Start;
-            public long End;
-            public byte* MemoryPtr;
         }
     }
 }

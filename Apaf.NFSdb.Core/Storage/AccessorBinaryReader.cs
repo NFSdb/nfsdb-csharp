@@ -17,7 +17,6 @@
 #endregion
 using System;
 using System.IO.MemoryMappedFiles;
-using System.Runtime.InteropServices;
 using log4net;
 
 namespace Apaf.NFSdb.Core.Storage
@@ -28,11 +27,11 @@ namespace Apaf.NFSdb.Core.Storage
         private readonly long _bufferSize;
         private readonly MemoryMappedViewAccessor _view;
         private byte* _memoryPtr;
+
         private static readonly ILog LOG = LogManager.GetLogger(typeof (AccessorBinaryReader));
         private const byte TRUE = 1;
         private const byte FALSE = 0;
         private static readonly int ALLOCATION_GRANULARITY = AccessorHelper.Info.dwAllocationGranularity;
-        private GCHandle _hndl;
 
         public  AccessorBinaryReader(MemoryMappedViewAccessor view, long bufferOffset,
             long bufferSize)
@@ -51,9 +50,14 @@ namespace Apaf.NFSdb.Core.Storage
 
         private void ResolveMemoryPtr(MemoryMappedViewAccessor view)
         {
-            var num = _bufferOffset % ALLOCATION_GRANULARITY;
             view.SafeMemoryMappedViewHandle.AcquirePointer(ref _memoryPtr);
-            _memoryPtr += num;
+            //_memoryPtr += (new IntPtr(_memoryPtr).ToInt64()) % ALLOCATION_GRANULARITY;
+            _memoryPtr += _bufferOffset%ALLOCATION_GRANULARITY;
+        }
+
+        public byte* Pointer
+        {
+            get { return _memoryPtr; }
         }
 
         public long BufferSize
@@ -117,10 +121,10 @@ namespace Apaf.NFSdb.Core.Storage
             }
         }
 
-        public unsafe void ReadBytes(long offset, byte* array, int arrayOffset, int sizeBytes)
+        public unsafe void ReadBytes(long offset, byte* array,  int sizeBytes)
         {
             var readPtr = _memoryPtr + offset - _bufferOffset;
-            AccessorHelper.Memcpy(array + arrayOffset, readPtr, sizeBytes);
+            AccessorHelper.Memcpy(array, readPtr, sizeBytes);
         }
 
         public int ReadInt32(long offset)
@@ -200,10 +204,10 @@ namespace Apaf.NFSdb.Core.Storage
             }
         }
 
-        public void WriteBytes(long offset, byte* array, int arrayOffset, int sizeBytes)
+        public void WriteBytes(long offset, byte* array, int sizeBytes)
         {
             var readPtr = _memoryPtr + offset - _bufferOffset;
-            AccessorHelper.Memcpy(readPtr, array + arrayOffset, sizeBytes);
+            AccessorHelper.Memcpy(readPtr, array, sizeBytes);
         }
 
         public void WriteInt64(long offset, long value)
@@ -258,7 +262,7 @@ namespace Apaf.NFSdb.Core.Storage
 #endif
         }
 
-        public void WriteUInt16(long offset, uint value)
+        public void WriteUInt16(long offset, ushort value)
         {
             WriteInt16(offset, *(short*) &(value));
         }

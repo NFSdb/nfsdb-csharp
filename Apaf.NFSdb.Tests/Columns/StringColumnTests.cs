@@ -119,25 +119,11 @@ namespace Apaf.NFSdb.Tests.Columns
                 fixed (char* chars = value)
                 {
                     var strBytes = (byte*)&chars[0];
-                    data.WriteBytes(headLength, strBytes, 0, value.Length * 2);
+                    data.WriteBytes(headLength, strBytes, value.Length * 2);
                 }
             }
 
             return new StringColumn(data, index, maxLen, "column1");
-        }
-
-        [Test]
-        public unsafe void MutatingString()
-        {
-            var str = new string(new []{'o', 'n', 'e'});
-            fixed (char* ptr = str)
-            {
-                char t = ptr[0];
-                ptr[0] = ptr[1];
-                ptr[1] = t;
-            }
-            Console.WriteLine(str);
-            Assert.That(str, Is.EqualTo("noe"));
         }
 
         private int CreateHeader(string value, IRawFile data)

@@ -21,5 +21,6 @@ namespace Apaf.NFSdb.Core.Storage
     {
         long BufferSize { get; }
         long BufferOffset { get; }
+        unsafe byte* Pointer { get; }
     }
 }

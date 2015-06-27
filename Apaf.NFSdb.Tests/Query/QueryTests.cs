@@ -70,7 +70,7 @@ namespace Apaf.NFSdb.Tests.Query
             {
                 AppendRecords(qj, startDate, increment);
                 var rdr = qj.OpenReadTx();
-                Assert.That(rdr.PartitionCount, Is.GreaterThan(1));
+                // Assert.That(rdr.PartitionCount, Is.GreaterThan(1));
                 
                 // Act.
                 var result = rdr.AllBySymbol("Sym", sym).Select(q => q.Ask);
@@ -101,7 +101,7 @@ namespace Apaf.NFSdb.Tests.Query
             {
                 AppendRecords(qj, startDate, increment);
                 var rdr = qj.OpenReadTx();
-                Assert.That(rdr.PartitionCount, Is.GreaterThan(1));
+                // Assert.That(rdr.PartitionCount, Is.GreaterThan(1));
 
                 var fromDate = DateUtils.UnixTimestampToDateTime(startDate + fromDay * millisecsPerday);
                 var toDate = DateUtils.UnixTimestampToDateTime(startDate + toDay * millisecsPerday);

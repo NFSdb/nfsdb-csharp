@@ -198,14 +198,17 @@ namespace Apaf.NFSdb.Core.Column
             
             var currentBlockOffset = sd.KeyBlockOffset;
             CheckKeyBlockOffset(currentBlockOffset);
-         
-            var currentBlockLen = sd.KeyBlockSize;
-            var keyBlockBuff = tx.ReadCache.AllocateByteArray3(currentBlockLen);
-            _kData.ReadBytes(currentBlockOffset, keyBlockBuff, 0, keyBlockBuff.Length);
-            _kData.WriteBytes(newBlockOffset, keyBlockBuff, 0, currentBlockLen);
 
-            sd.KeyBlockOffset = newBlockOffset;
-            sd.KeyBlockCreated = true;
+            var currentBlockLen = sd.KeyBlockSize;
+            if (currentBlockLen > 0)
+            {
+                var keyBlockBuff = tx.ReadCache.AllocateByteArray3(currentBlockLen);
+                _kData.ReadBytes(currentBlockOffset, keyBlockBuff, 0, keyBlockBuff.Length);
+                _kData.WriteBytes(newBlockOffset, keyBlockBuff, 0, currentBlockLen);
+
+                sd.KeyBlockOffset = newBlockOffset;
+                sd.KeyBlockCreated = true;
+            }
         }
 
         [Conditional("DEBUG")]

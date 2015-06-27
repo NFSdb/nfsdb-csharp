@@ -181,6 +181,7 @@
     <Compile Include="Tx\TransactionContext.cs" />
     <Compile Include="Tx\TxLogTests.cs" />
     <Compile Include="Tx\TxRecExtensionsTests.cs" />
+    <Compile Include="Unsafe\UnsafeTests.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />

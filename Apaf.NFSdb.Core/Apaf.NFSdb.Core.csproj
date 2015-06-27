@@ -148,6 +148,7 @@
     <Compile Include="Queries\ResultSetFactory.cs" />
     <Compile Include="Server\IJournalServer.cs" />
     <Compile Include="Server\AsyncJournalServer.cs" />
+    <Compile Include="Storage\CompositeRawFile2.cs" />
     <Compile Include="Storage\IJournalDiagnostics.cs" />
     <Compile Include="Queries\Queryable\SingleItemExpression.cs" />
     <Compile Include="Storage\IPartitionManagerCore.cs" />

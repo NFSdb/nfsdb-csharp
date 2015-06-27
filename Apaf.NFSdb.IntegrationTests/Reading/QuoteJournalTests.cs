@@ -146,7 +146,7 @@ namespace Apaf.NFSdb.IntegrationTests.Reading
         {
             const int partitionCount = 3;
             const int totalCount = (int)(6 * GENERATE_RECORDS_COUNT);
-            GenerateRecords(totalCount, partitionCount);
+            // GenerateRecords(totalCount, partitionCount);
 
             using (var j = CreateJournal(EFileAccess.Read))
             {

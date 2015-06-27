@@ -56,9 +56,8 @@ namespace Apaf.NFSdb.Tests.Storage
             Buffer.BlockCopy(_buffer, (int) offset, array, arrayOffset, sizeBytes);
         }
 
-        public unsafe void ReadBytes(long offset, byte* array, int arrayOffset, int sizeBytes)
+        public unsafe void ReadBytes(long offset, byte* array, int sizeBytes)
         {
-            array = array + arrayOffset;
             for (int i = 0; i < sizeBytes; i++)
             {
                 array[i] = _buffer[offset + i];
@@ -151,11 +150,11 @@ namespace Apaf.NFSdb.Tests.Storage
             Buffer.BlockCopy(array, arrayOffset, _buffer, (int) offset, sizeBytes);
         }
 
-        public unsafe void WriteBytes(long offset, byte* array, int arrayOffset, int sizeBytes)
+        public unsafe void WriteBytes(long offset, byte* array, int sizeBytes)
         {
             for (int i = 0; i < sizeBytes; i++)
             {
-                _buffer[offset + i] = array[arrayOffset + i];
+                _buffer[offset + i] = array[i];
             }
         }
 
@@ -208,7 +207,7 @@ namespace Apaf.NFSdb.Tests.Storage
             _writer.Write(longVal);
         }
 
-        public unsafe void WriteUInt16(long offset, uint value)
+        public unsafe void WriteUInt16(long offset, ushort value)
         {
             var uval = *(Int16*) &value;
             _writer.Seek((int)offset, SeekOrigin.Begin);
@@ -230,6 +229,7 @@ namespace Apaf.NFSdb.Tests.Storage
 
         public long BufferSize { get; private set; }
         public long BufferOffset { get; private set; }
+        public unsafe byte* Pointer { get {throw new NotImplementedException();} }
 
         public unsafe void ReadChars(long offset, char[] address, int arrayOffset, int charlen)
         {

@@ -224,19 +224,19 @@ namespace Apaf.NFSdb.Core.Tx
 
         private unsafe void WriteUInt16(uint value, ref long offset)
         {
-            _data.WriteBytes(offset, (byte*)(&value), 0, 4);
+            _data.WriteBytes(offset, (byte*)(&value), 4);
             offset += 2;
         }
 
         private unsafe void WriteInt64(long value, ref long offset)
         {
-            _data.WriteBytes(offset, (byte*)(&value), 0, 8);
+            _data.WriteBytes(offset, (byte*)(&value), 8);
             offset += 8;
         }
 
         private unsafe void WriteInt32(int value, ref long offset)
         {
-            _data.WriteBytes(offset, (byte*)(&value), 0, 4);
+            _data.WriteBytes(offset, (byte*)(&value), 4);
             offset += 4;
         }
 
@@ -256,7 +256,7 @@ namespace Apaf.NFSdb.Core.Tx
         private unsafe long ReadInt64(ref long offset)
         {
             long value;
-            _data.ReadBytes(offset, (byte*) (&value), 0, 8);
+            _data.ReadBytes(offset, (byte*) (&value), 8);
             offset += 8;
             return value;
         }
@@ -264,7 +264,7 @@ namespace Apaf.NFSdb.Core.Tx
         private unsafe int ReadInt32(ref long offset)
         {
             int value;
-            _data.ReadBytes(offset, (byte*)(&value), 0, 4);
+            _data.ReadBytes(offset, (byte*)(&value), 4);
             offset += 4;
             return value;
         }
@@ -272,7 +272,7 @@ namespace Apaf.NFSdb.Core.Tx
         private unsafe int ReadUInt16(ref long offset)
         {
             UInt16 value;
-            _data.ReadBytes(offset, (byte*)(&value), 0, 2);
+            _data.ReadBytes(offset, (byte*)(&value), 2);
             offset += 2;
             return value;
         }

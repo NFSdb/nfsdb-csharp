@@ -16,8 +16,9 @@
  */
 #endregion
 using System;
+using System.ComponentModel;
+using System.IO;
 using System.Linq;
-using Apaf.NFSdb.Core.Column;
 using Apaf.NFSdb.Core.Storage;
 using Moq;
 using NUnit.Framework;
@@ -51,53 +52,301 @@ namespace Apaf.NFSdb.Tests.Storage
             _compositeFile.Verify(f => f.CreateViewAccessor(chunkStart, chunkSize), Times.Once);
         }
 
-#if !OPTIMIZE
-        // Reading 0 chunk
-        [TestCase(0x100, (long)1E9, 0, 0, 0x100)]
-        [TestCase(0x400 * 0x400, (long)1E9, 0, 0, 0x400 * 0x400)]
-        [TestCase(0x400 * 0x400, 0x400 * 20, 0, 0, 0x400 * 0x400)]
-        // Reading 1st chunk
-        [TestCase(0x400, 0x400 + 367, 0x400, 0x400, 0x400)]
-        // Reading 2nd chunk
-        [TestCase(0x400, (long)1E9, 0x801, 0x800, 0x400)]
-        // Reading beyond the file end
-        public void ShouldReadFromCorrectChunk(int recordsSize, long fileLength, long readOffset, long chunkStart, long chunkSize)
+
+        [TestCase(0x400, false)]
+        [TestCase(0x4000, true)]
+        [TestCase(0x10000, true)]
+        public void ShouldReadParallel(int fileChunkSize, bool reverse)
         {
-            var compFile = CreateCompositeRawFile(fileLength, recordsSize);
-            var chunk = new Mock<IRawFilePart>();
-            chunk.Setup(c => c.ReadByte(readOffset)).Returns(23);
-            _compositeFile.Setup(f => f.CreateViewAccessor(chunkStart, chunkSize)).Returns(chunk.Object);
-            compFile.ReadByte(readOffset);
-
-            chunk.Verify(f => f.ReadByte(readOffset + MetadataConstants.FILE_HEADER_LENGTH), Times.Once);
-        }
-
-        [Test]
-        public void ShouldSeamPartsOnReadingBytes()
-        {
-            const int fileLen = 0x400;
-            byte[] data = Enumerable.Range(0, fileLen).Select(i => (byte) (i%256)).ToArray();
-            SetLength(data, fileLen);
-            var compFile = CreateCompositeRawFile(data.Length, 0x200);
-
-            _compositeFile.Setup(f => f.CreateViewAccessor(It.IsAny<long>(), It.IsAny<long>())).Returns(
-                (long offset, long size) => new BufferBinaryReader(data));
-
-            var readLen = 0x200 + 50;
-            var read = new byte[readLen];
-            compFile.ReadBytes(0, read, 0, readLen);
-
-            for (int i = 0; i < readLen; i++)
+            try
             {
-                Assert.That(read[i], Is.EqualTo(data[i+MetadataConstants.FILE_HEADER_LENGTH]), "Difference at " + i);
+                ClearTempFile();
+                const long seed = 9238492384L;
+                const int itemSize = 8;
+                int itemsCount = (fileChunkSize * CompositeRawFile.INITIAL_PARTS_COLLECTION_SIZE + 1) / itemSize;
+
+                var indexes = Enumerable.Range(0, itemsCount);
+                if (reverse) indexes = indexes.Reverse();
+
+                using (var compFile = CreateRealCompositeRawFile(fileChunkSize))
+                {
+                    foreach (var i in indexes)
+                    {
+                        compFile.WriteInt64(i * itemSize, i * seed);
+                    }
+                }
+
+                using (var compFile = CreateRealCompositeRawFile(fileChunkSize))
+                {
+                    foreach (var i in indexes)
+                    {
+                        Assert.That(compFile.ReadInt64(i * itemSize), Is.EqualTo(i * seed));
+                    }
+                }
+            }
+            finally
+            {
+                ClearTempFile();
             }
         }
-#endif
 
-        private void SetLength(byte[] data, long fileLen)
+
+        [TestCase(0x400, false)]
+        [TestCase(0x4000, true)]
+        [TestCase(0x10000, true)]
+        public void ShouldReadWriteLongs(int fileChunkSize, bool reverse)
         {
-            var header = BitConverter.GetBytes(fileLen).Reverse().ToArray();
-            Array.Copy(header, 0, data, 0, header.Length);
+            try
+            {
+                const long seed = 9238492384L;
+                const int itemSize = 8;
+                int itemsCount = (fileChunkSize * CompositeRawFile.INITIAL_PARTS_COLLECTION_SIZE + 1) / itemSize;
+
+                var indexes = Enumerable.Range(0, itemsCount);
+                if (reverse) indexes = indexes.Reverse();
+
+                using (var compFile = CreateRealCompositeRawFile(fileChunkSize))
+                {
+                    foreach (var i in indexes)
+                    {
+                        compFile.WriteInt64(i * itemSize, i * seed);
+                    }
+                }
+
+                using (var compFile = CreateRealCompositeRawFile(fileChunkSize))
+                {
+                    //var partitons = Partitioner.Create(0, itemsCount);
+                    //Parallel.ForEach(partitons, p =>
+                    //{
+                    //    for (int i = p.Item1; i < p.Item2; i++)
+                    //    {
+                    //        if (compFile.ReadInt64(i*itemSize) != i*seed)
+                    //        {
+                    //            throw new IndexOutOfRangeException();
+                    //        }
+                    //    }
+                    //});
+                }
+            }
+            finally
+            {
+                ClearTempFile();
+            }
+        }
+
+        [TestCase(0x400, false)]
+        [TestCase(0x4000, true)]
+        [TestCase(0x10000, true)]
+        public void ShouldReadWriteInts(int fileChunkSize, bool reverse)
+        {
+            try
+            {
+                ClearTempFile();
+                const int seed = 923849238;
+                const int itemSize = 4;
+                int itemsCount = (fileChunkSize * CompositeRawFile.INITIAL_PARTS_COLLECTION_SIZE + 1) / itemSize;
+
+                var indexes = Enumerable.Range(0, itemsCount);
+                if (reverse) indexes = indexes.Reverse();
+
+                using (var compFile = CreateRealCompositeRawFile(fileChunkSize))
+                {
+                    foreach (var i in indexes)
+                    {
+                        compFile.WriteInt32(i * itemSize, i * seed);
+                    }
+                }
+
+                using (var compFile = CreateRealCompositeRawFile(fileChunkSize))
+                {
+                    foreach (var i in indexes)
+                    {
+                        Assert.That(compFile.ReadInt32(i * itemSize), Is.EqualTo(i * seed));
+                    }
+                }
+            }
+            finally
+            {
+                ClearTempFile();
+            }
+        }
+
+        [TestCase(0x400, false)]
+        [TestCase(0x4000, true)]
+        [TestCase(0x10000, true)]
+        public void ShouldReadWriteDouble(int fileChunkSize, bool reverse)
+        {
+            try
+            {
+                ClearTempFile();
+                const double seed = 92384.9238;
+                const int itemSize = 8;
+                int itemsCount = (fileChunkSize * CompositeRawFile.INITIAL_PARTS_COLLECTION_SIZE + 1) / itemSize;
+
+                var indexes = Enumerable.Range(0, itemsCount);
+                if (reverse) indexes = indexes.Reverse();
+
+                using (var compFile = CreateRealCompositeRawFile(fileChunkSize))
+                {
+                    foreach (var i in indexes)
+                    {
+                        compFile.WriteDouble(i * itemSize, i * seed);
+                    }
+                }
+
+                using (var compFile = CreateRealCompositeRawFile(fileChunkSize))
+                {
+                    foreach (var i in indexes)
+                    {
+                        Assert.That(compFile.ReadDouble(i * itemSize), Is.EqualTo(i * seed));
+                    }
+                }
+            }
+            finally
+            {
+                ClearTempFile();
+            }
+        }
+
+        [TestCase(0x400, false)]
+        [TestCase(0x4000, true)]
+        [TestCase(0x10000, true)]
+        public void ShouldReadWriteInt16(int fileChunkSize, bool reverse)
+        {
+            try
+            {
+                const short seed = 93;
+                const int itemSize = 2;
+                int itemsCount = (fileChunkSize * CompositeRawFile.INITIAL_PARTS_COLLECTION_SIZE + 1) / itemSize;
+
+                var indexes = Enumerable.Range(0, itemsCount);
+                if (reverse) indexes = indexes.Reverse();
+
+                using (var compFile = CreateRealCompositeRawFile(fileChunkSize))
+                {
+                    foreach (var i in indexes)
+                    {
+                        compFile.WriteInt16(i * itemSize, (short)(i * seed));
+                    }
+                }
+
+                using (var compFile = CreateRealCompositeRawFile(fileChunkSize))
+                {
+                    foreach (var i in indexes)
+                    {
+                        Assert.That(compFile.ReadInt16(i * itemSize), Is.EqualTo((short)(i * seed)));
+                    }
+                }
+            }
+            finally
+            {
+                ClearTempFile();
+            }
+        }
+
+        [TestCase(0x400, false)]
+        [TestCase(0x4000, true)]
+        [TestCase(0x10000, true)]
+        public void ShouldReadWriteUInt16(int fileChunkSize, bool reverse)
+        {
+            try
+            {
+                const short seed = 93;
+                const int itemSize = 2;
+                int itemsCount = (fileChunkSize * CompositeRawFile.INITIAL_PARTS_COLLECTION_SIZE + 1) / itemSize;
+
+                var indexes = Enumerable.Range(0, itemsCount);
+                if (reverse) indexes = indexes.Reverse();
+
+                using (var compFile = CreateRealCompositeRawFile(fileChunkSize))
+                {
+                    foreach (var i in indexes)
+                    {
+                        compFile.WriteUInt16(i * itemSize, (ushort)(i * seed));
+                    }
+                }
+
+                using (var compFile = CreateRealCompositeRawFile(fileChunkSize))
+                {
+                    foreach (var i in indexes)
+                    {
+                        Assert.That(compFile.ReadUInt16(i * itemSize), Is.EqualTo((ushort)(i * seed)));
+                    }
+                }
+            }
+            finally
+            {
+                ClearTempFile();
+            }
+        }
+
+
+        [TestCase(0x400, 11, false)]
+        [TestCase(0x800, 195, true)]
+        [TestCase(0x800, 0x801, true)]
+        public void ShouldReadWriteByteArrays(int fileChunkSize, int itemSize, bool reverse)
+        {
+            try
+            {
+                var writeArray = Enumerable.Range(0, itemSize).Select(a => (byte)a).ToArray();
+                const short seed = 93;
+                int itemsCount = (fileChunkSize * CompositeRawFile.INITIAL_PARTS_COLLECTION_SIZE + 1) / itemSize;
+
+                var indexes = Enumerable.Range(0, itemsCount);
+                if (reverse) indexes = indexes.Reverse();
+
+                using (var compFile = CreateRealCompositeRawFile(fileChunkSize))
+                {
+                    foreach (var i in indexes)
+                    {
+                        compFile.WriteBytes(i * itemSize, writeArray, 0, itemSize);
+                    }
+                }
+
+                var readInto = new byte[itemSize];
+
+                using (var compFile = CreateRealCompositeRawFile(fileChunkSize))
+                {
+                    foreach (var i in indexes)
+                    {
+                        if (i == 62)
+                        {
+                            var j = 0;
+                        }
+                        compFile.ReadBytes(i * itemSize, readInto, 0, itemSize);
+
+                        for (int j = 0; j < itemSize; j++)
+                        {
+                            Assert.That(readInto[j], Is.EqualTo(writeArray[j]));
+                        }
+                    }
+                }
+            }
+            finally
+            {
+                ClearTempFile();
+            }
+        }
+
+        private void ClearTempFile()
+        {
+            try
+            {
+                File.Delete("testfile.d");
+            }
+            catch (Win32Exception)
+            {
+                return;
+            }
+        }
+
+        private CompositeRawFile CreateRealCompositeRawFile(int fileChunkSize)
+        {
+            var bitHint = (int)Math.Ceiling(Math.Log(checked(fileChunkSize), 2));
+
+            var f = new CompositeRawFile("testfile.d", bitHint,
+               new CompositeFileFactory(), EFileAccess.ReadWrite, 0, 0, 0, EDataType.Data, 1);
+            return f;
         }
 
         private CompositeRawFile CreateCompositeRawFile(long fileLen, int fileChunkSize)

@@ -78,10 +78,17 @@ namespace Apaf.NFSdb.Core.Column
                 return null;
             }
 
-            if (_symbolCache.IsValueCached(symRowID))
+            if (symRowID < 0)
             {
-                return _symbolCache.GetCachedValue(symRowID);
+                throw new IndexOutOfRangeException(_data.Filename + "|" + PropertyName + "|" + rowID + "\n" +
+                                                   ((CompositeRawFile) _data).GetAllUnsafePointers()
+                                                   + "\n" + ((CompositeRawFile)_data).GetAllBufferPointers());
             }
+
+            //if (_symbolCache.IsValueCached(symRowID))
+            //{
+            //    return _symbolCache.GetCachedValue(symRowID);
+            //}
 
             var value = _globalSymColumn.GetString(symRowID, readContext);
             _symbolCache.AddSymbolValue(symRowID, value);

@@ -72,7 +72,7 @@ namespace Apaf.NFSdb.Core.Column
                 return 0;
             }
 
-            _data.ReadBytes(beginOffset + HEADER_SIZE, bytePtr, 0, arrayLength);
+            _data.ReadBytes(beginOffset + HEADER_SIZE, bytePtr, arrayLength);
             return arrayLength;
         }
 
@@ -104,7 +104,7 @@ namespace Apaf.NFSdb.Core.Column
                 _index.WriteInt64(offset, writeOffset);
 
                 WriteLength(writeOffset, length);
-                _data.WriteBytes(writeOffset + MetadataConstants.LARGE_VAR_COL_HEADER_LENGTH, value, 0, length);
+                _data.WriteBytes(writeOffset + MetadataConstants.LARGE_VAR_COL_HEADER_LENGTH, value, length);
                 tx.GetPartitionTx().AppendOffset[_data.FileID] = writeOffset + MetadataConstants.LARGE_VAR_COL_HEADER_LENGTH + length;
             }
             else
@@ -123,7 +123,7 @@ namespace Apaf.NFSdb.Core.Column
                 tx.AppendOffset[_index.FileID] = offset + MetadataConstants.STRING_INDEX_FILE_RECORD_SIZE;
 
                 WriteLength(writeOffset, length);
-                _data.WriteBytes(writeOffset + HEADER_SIZE, value, 0, length);
+                _data.WriteBytes(writeOffset + HEADER_SIZE, value, length);
                 tx.AppendOffset[_data.FileID] = writeOffset + HEADER_SIZE + length;
             }
             else
@@ -135,13 +135,13 @@ namespace Apaf.NFSdb.Core.Column
 
         protected virtual unsafe void WriteLength(long writeOffset, int size)
         {
-            _data.WriteBytes(writeOffset, (byte*)(&size), 0, 4);
+            _data.WriteBytes(writeOffset, (byte*)(&size), 4);
         }
 
         protected virtual unsafe int ReadLength(IRawFile headerBuff, long offset)
         {
             int isize;
-            headerBuff.ReadBytes(offset, (byte*) (&isize), 0, 2);
+            headerBuff.ReadBytes(offset, (byte*) (&isize), 2);
             return isize;
         }
 
