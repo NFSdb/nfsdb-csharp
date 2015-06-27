@@ -31,14 +31,8 @@ namespace Apaf.NFSdb.Core.Storage
         private const byte FALSE = 0;
         public const int INITIAL_PARTS_COLLECTION_SIZE = 64;
         private IRawFilePart[] _buffers = new IRawFilePart[INITIAL_PARTS_COLLECTION_SIZE];
-        private byte* _pointersArrayBegin;
         private byte** _pointersArray;
-
-        private const int CACHE_LINE_HINT = 6;
-        private byte* _endsArrayBegin;
-        private long* _endsArray;
-
-        private int _pointersArrayLen;
+        private long _pointersArrayLen;
         private const long FILE_HEADER_LENGTH = MetadataConstants.FILE_HEADER_LENGTH;
         private const int ADDITIONAL_BUFFER_ARRAY_CAPACITY = 10;
         private ICompositeFile _compositeFile;
@@ -94,24 +88,18 @@ namespace Apaf.NFSdb.Core.Storage
             ColumnID = columnID;
             DataType = dataType;
             Filename = fileName;
-            _pointersArray = (byte**)LongAllocate(INITIAL_PARTS_COLLECTION_SIZE, out _pointersArrayBegin);
-            _endsArray = (long*) LongAllocate(INITIAL_PARTS_COLLECTION_SIZE, out _endsArrayBegin);
+            _pointersArray = LongAllocate(INITIAL_PARTS_COLLECTION_SIZE);
             _pointersArrayLen = INITIAL_PARTS_COLLECTION_SIZE;
         }
 
-        private static byte* LongAllocate(int size, out byte* pointersArrayBegin)
+        private static byte** LongAllocate(int size)
         {
-            const int cacheLineSize = (1 << CACHE_LINE_HINT);
-            pointersArrayBegin = (byte*)Marshal.AllocHGlobal(8 * size + cacheLineSize).ToPointer();
-
-            var ptr = (long*)pointersArrayBegin;
-            ptr += (new IntPtr(pointersArrayBegin).ToInt64()%cacheLineSize) / 8;
-
+            var ptr = (byte**)Marshal.AllocHGlobal(sizeof(byte*) * size);
             for (int i = 0; i < size; i++)
             {
-                ptr[i] = 0L;
+                ptr[i] = null;
             }
-            return (byte*) ptr;
+            return ptr;
         }
 
         public void Dispose()
@@ -135,8 +123,7 @@ namespace Apaf.NFSdb.Core.Storage
                 _buffers = null;
             }
 
-            Marshal.FreeHGlobal((IntPtr)_endsArrayBegin);
-            Marshal.FreeHGlobal((IntPtr)_pointersArrayBegin);
+            Marshal.FreeHGlobal((IntPtr)_pointersArray);
 
             _compositeFile.Dispose();
             _compositeFile = null;
@@ -180,58 +167,28 @@ namespace Apaf.NFSdb.Core.Storage
 
         public byte* GetFilePart(long offset)
         {
-            
-                if (offset < -FILE_HEADER_LENGTH)
-                {
-                    throw new IndexOutOfRangeException("offset is " + offset);
-                }
-
-                var bufferIndex = (int) ((offset + FILE_HEADER_LENGTH) >> _bitHint);
-
-                // Check exists.
-                if (bufferIndex < _pointersArrayLen)
-                {
-                    var ptr = _pointersArray[bufferIndex];
-                    if (ptr != null)
-                    {
-                        return ptr + offset;
-                    }
-                }
-
-                return GetBufferCore(bufferIndex, offset);
-        }
-
-
-        public string GetAllUnsafePointers()
-        {
-            var sb = new StringBuilder();
-            for (int i = 0; i < _pointersArrayLen; i++)
+#if DEBUG
+            if (offset < -FILE_HEADER_LENGTH)
             {
-                sb.Append(new IntPtr(_pointersArray[i]));
-                sb.Append(";");
+                throw new IndexOutOfRangeException("offset is " + offset);
             }
-            return sb.ToString();
-        }
+#endif
+            var bufferIndex = ((offset + FILE_HEADER_LENGTH) >> _bitHint);
 
-
-        public string GetAllBufferPointers()
-        {
-            var sb = new StringBuilder();
-            for (int i = 0; i < _pointersArrayLen; i++)
+            // Check exists.
+            if (bufferIndex < _pointersArrayLen)
             {
-                sb.Append(_buffers[i] != null ? new IntPtr(_buffers[i].Pointer) : new IntPtr());
-                sb.Append(";");
+                var ptr = _pointersArray[bufferIndex];
+                if (ptr != null)
+                {
+                    return ptr + offset;
+                }
             }
-            return sb.ToString();
+
+            return GetBufferCore(bufferIndex, offset);
         }
 
-        public long GetFilePartEnd(long offset)
-        {
-            var bufferIndex = (int)((offset + FILE_HEADER_LENGTH) >> _bitHint);
-            return _endsArray[bufferIndex];
-        }
-
-        public byte* GetBufferCore(int bufferIndex, long offset)
+        public byte* GetBufferCore(long bufferIndex, long offset)
         {
             lock (_buffSync)
             {
@@ -246,29 +203,23 @@ namespace Apaf.NFSdb.Core.Storage
                 else
                 {
                     // Add empty.
-                    int newLen = bufferIndex + ADDITIONAL_BUFFER_ARRAY_CAPACITY;
+                    long newLen = bufferIndex + ADDITIONAL_BUFFER_ARRAY_CAPACITY;
                     var newBuffers = new IRawFilePart[newLen];
                     Array.Copy(_buffers, 0, newBuffers, 0, _pointersArrayLen);
 
-                    var newPtrArray = (byte**)LongAllocate(newLen, out _pointersArrayBegin);
-                    var newEndsArray = (long*)LongAllocate(newLen, out _endsArrayBegin);
+                    var newPtrArray = LongAllocate((int)newLen);
 
-                    AccessorHelper.Memcpy((byte*)newPtrArray, (byte*)_pointersArray, sizeof(byte*) * _pointersArrayLen);
-                    AccessorHelper.Memcpy((byte*)newEndsArray, (byte*)_endsArray, sizeof(long) * _pointersArrayLen);
+                    AccessorHelper.Memcpy((byte*)newPtrArray, (byte*)_pointersArray, (int)(sizeof(byte*) * _pointersArrayLen));
 
                     var oldPtrArray = _pointersArray;
-                    var oldEndArray = _endsArray;
-
-                    _endsArray = newEndsArray;
                     
                     Thread.MemoryBarrier();
-                    _pointersArray = (byte**)newPtrArray;
+                    _pointersArray = newPtrArray;
 
                     Thread.MemoryBarrier();
                     _pointersArrayLen = newLen;
                     _buffers = newBuffers;
 
-                    Marshal.FreeHGlobal((IntPtr)oldEndArray);
                     Marshal.FreeHGlobal((IntPtr)oldPtrArray);
                 }
 
@@ -280,7 +231,6 @@ namespace Apaf.NFSdb.Core.Storage
                 _buffers[bufferIndex] = view;
                 var address = view.Pointer - view.BufferOffset + FILE_HEADER_LENGTH;
                 _pointersArray[bufferIndex] = address;
-                _endsArray[bufferIndex] = new IntPtr(view.Pointer).ToInt64() + view.BufferSize;
 
                 Interlocked.Add(ref _mappedSize, bufferSize);
                 return _pointersArray[bufferIndex] + offset;
@@ -308,10 +258,11 @@ namespace Apaf.NFSdb.Core.Storage
             while (sizeBytes > 0)
             {
                 byte* ptr = GetFilePart(offset);
-                long end = GetFilePartEnd(offset);
+                //         Page size       - absolute offset % Page siez                          
+                long end = (1 << _bitHint) - ((offset + FILE_HEADER_LENGTH) & ((1 << _bitHint) - 1));
 
                 // Respect buffer size.
-                var readSize1 = (int) Math.Min(end - (((IntPtr) ptr).ToInt64()), sizeBytes);
+                var readSize1 = (int) Math.Min(end, sizeBytes);
                 AccessorHelper.Memcpy(array, ptr, readSize1);
              
                 offset += readSize1;
@@ -379,10 +330,11 @@ namespace Apaf.NFSdb.Core.Storage
             while (sizeBytes > 0)
             {
                 byte* ptr = GetFilePart(offset);
-                long end = GetFilePartEnd(offset);
+                //         Page size       - absolute offset % Page siez                          
+                long end = (1 << _bitHint) - ((offset + FILE_HEADER_LENGTH) & ((1 << _bitHint) - 1));
 
                 // Respect buffer size.
-                var readSize1 = (int)Math.Min(end - (((IntPtr)ptr).ToInt64()), sizeBytes);
+                var readSize1 = (int)Math.Min(end, sizeBytes);
                 AccessorHelper.Memcpy(ptr, array, readSize1);
 
                 offset += readSize1;
@@ -429,6 +381,28 @@ namespace Apaf.NFSdb.Core.Storage
         public override string ToString()
         {
             return "CompositeRawFile: " + Filename;
+        }
+
+        internal string GetAllUnsafePointers()
+        {
+            var sb = new StringBuilder();
+            for (int i = 0; i < _pointersArrayLen; i++)
+            {
+                sb.Append(new IntPtr(_pointersArray[i]));
+                sb.Append(";");
+            }
+            return sb.ToString();
+        }
+
+        internal string GetAllBufferPointers()
+        {
+            var sb = new StringBuilder();
+            for (int i = 0; i < _pointersArrayLen; i++)
+            {
+                sb.Append(_buffers[i] != null ? new IntPtr(_buffers[i].Pointer) : new IntPtr());
+                sb.Append(";");
+            }
+            return sb.ToString();
         }
     }
 }

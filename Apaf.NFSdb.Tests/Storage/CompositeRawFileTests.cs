@@ -19,6 +19,7 @@ using System;
 using System.ComponentModel;
 using System.IO;
 using System.Linq;
+using Apaf.NFSdb.Core.Column;
 using Apaf.NFSdb.Core.Storage;
 using Moq;
 using NUnit.Framework;
@@ -280,6 +281,12 @@ namespace Apaf.NFSdb.Tests.Storage
             }
         }
 
+        [TestCase(10, 0, Result = 1016)]
+        [TestCase(10, 1016, Result = 1024)]
+        public long ShouldCalcBufferEnd(int bitHint, long offset)
+        {
+            return (1 << bitHint) - ((offset + MetadataConstants.FILE_HEADER_LENGTH) & ((1 << bitHint) - 1));
+        }
 
         [TestCase(0x400, 11, false)]
         [TestCase(0x800, 195, true)]

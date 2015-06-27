@@ -78,7 +78,7 @@
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release64|AnyCPU'">
     <OutputPath>bin\Release64\</OutputPath>
-    <DefineConstants>TRACE;OPTIMIZE</DefineConstants>
+    <DefineConstants>TRACE;OPTIMIZE AMD64</DefineConstants>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <Optimize>true</Optimize>
     <DebugType>pdbonly</DebugType>
@@ -148,7 +148,6 @@
     <Compile Include="Queries\ResultSetFactory.cs" />
     <Compile Include="Server\IJournalServer.cs" />
     <Compile Include="Server\AsyncJournalServer.cs" />
-    <Compile Include="Storage\CompositeRawFile2.cs" />
     <Compile Include="Storage\IJournalDiagnostics.cs" />
     <Compile Include="Queries\Queryable\SingleItemExpression.cs" />
     <Compile Include="Storage\IPartitionManagerCore.cs" />
