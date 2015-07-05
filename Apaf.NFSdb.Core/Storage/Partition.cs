@@ -43,6 +43,7 @@ namespace Apaf.NFSdb.Core.Storage
         private readonly IJournalMetadata<T> _metadata;
         private bool _isStorageInitialized;
         private readonly object _syncRoot = new object();
+        private int _refCount;
 
         public Partition(IJournalMetadata<T> metadata,
             ICompositeFileFactory memeorymMappedFileFactory,
@@ -128,6 +129,16 @@ namespace Apaf.NFSdb.Core.Storage
                 _columnStorage.CloseFiles();
                 _isStorageInitialized = false;
             }
+        }
+
+        public void AddRef()
+        {
+            Interlocked.Increment(ref _refCount);
+        }
+
+        public void RemoveRef()
+        {
+            Interlocked.Decrement(ref _refCount);
         }
 
         public void Dispose()

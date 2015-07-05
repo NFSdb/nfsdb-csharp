@@ -36,7 +36,7 @@ namespace Apaf.NFSdb.Core.Queries.Queryable.PlanItem
             return Timestamps.AllIntervals.Reverse().SelectMany(
                 interval => GetIds(
                     intervalFilter.IteratePartitions(
-                        tx.PartitionIDs.Reverse(), interval, tx))
+                        tx.ReadPartitions.Reverse(), interval, tx))
             );
         }
 

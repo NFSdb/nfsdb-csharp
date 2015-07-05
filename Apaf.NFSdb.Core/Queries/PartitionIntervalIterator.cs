@@ -24,24 +24,18 @@ namespace Apaf.NFSdb.Core.Queries
 {
     public class PartitionIntervalIterator : IPartitionIntervalIterator
     {
-        public IList<PartitionRowIDRange> IteratePartitions(IEnumerable<int> partitionsIDs,
+        public IList<PartitionRowIDRange> IteratePartitions(IEnumerable<IPartitionReader> partitions,
             DateInterval interval, IReadTransactionContext tx)
         {
             var result = new List<PartitionRowIDRange>();
-            foreach (var partitionID in partitionsIDs)
+            foreach (var reader in partitions)
             {
+                if (reader == null) continue;
+
                 long low = long.MaxValue;
                 long hi = long.MinValue;
+                int partitionID = reader.PartitionID;
                 var partt = tx.GetPartitionTx(partitionID);
-
-                IPartitionReader reader = null;
-                bool inUse = partt.StartDate <= interval.Start && interval.Start < partt.EndDate
-                             || partt.StartDate <= interval.End && interval.End < partt.EndDate;
-
-                if (inUse)
-                {
-                    reader = tx.Read(partitionID);
-                }
 
                 if (interval.Start < partt.StartDate)
                 {

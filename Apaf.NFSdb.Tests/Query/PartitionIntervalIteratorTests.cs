@@ -63,7 +63,7 @@ namespace Apaf.NFSdb.Tests.Query
             }
 
             var resultIter = 
-                iter.IteratePartitions(partitions.Select(p => p.PartitionID), di, _tx);
+                iter.IteratePartitions(partitions, di, _tx);
             
             return string.Join(",",
                 resultIter.Select(p => string.Format("{0}", p.PartitionID)));
@@ -98,7 +98,7 @@ namespace Apaf.NFSdb.Tests.Query
             }
 
             var resultIter =
-                iter.IteratePartitions(partitions.Select(p => p.PartitionID), di, _tx);
+                iter.IteratePartitions(partitions, di, _tx);
 
             return string.Join(",",
                 resultIter.Select(p => string.Format("{0}-{1}", p.Low, p.High)));

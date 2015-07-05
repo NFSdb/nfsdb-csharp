@@ -21,5 +21,8 @@ namespace Apaf.NFSdb.Core.Storage
         long GetSymbolRowCount(string symbol, string value, IReadTransactionContext tx);
 
         object Read(long toLocalRowID, IReadContext readContext);
+
+        int PartitionID { get; }
+
     }
 }

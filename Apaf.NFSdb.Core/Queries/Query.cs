@@ -51,7 +51,7 @@ namespace Apaf.NFSdb.Core.Queries
             var intervalFilter = new PartitionIntervalIterator();
             var symbolFilter = new SymbolFilter(symbol, value);
             var parititionsFiltered = intervalFilter.IteratePartitions(
-                _transactionContext.PartitionIDs.Reverse(), interval, _transactionContext);
+                _transactionContext.ReverseReadPartitions, interval, _transactionContext);
             var ids = symbolFilter.Filter(parititionsFiltered, _transactionContext);
 
             return ResultSetFactory.Create<T>(ids, _transactionContext);
@@ -59,7 +59,7 @@ namespace Apaf.NFSdb.Core.Queries
 
         public int PartitionCount
         {
-            get { return _transactionContext.PartitionTxCount; }
+            get { return _transactionContext.PartitionCount; }
         }
 
         public IQueryable<T> Items
@@ -85,21 +85,21 @@ namespace Apaf.NFSdb.Core.Queries
         public ResultSet<T> All()
         {
             var paritionsAndMaxVals =
-                _transactionContext.PartitionIDs.Select(p => Tuple.Create(p, 
-                    _transactionContext.GetRowCount(p))).ToArray();
+                _transactionContext.ReadPartitions.Select(p => Tuple.Create(p, 
+                    _transactionContext.GetRowCount(p.PartitionID))).ToArray();
 
             long count = paritionsAndMaxVals.Sum(i => i.Item2);
-            var ids = paritionsAndMaxVals.SelectMany(i => CreateRange(i.Item1, i.Item2));
-            return ResultSetFactory.Create<T>(ids,_transactionContext, count);
+            var ids = paritionsAndMaxVals.SelectMany(i => CreateRange(i.Item1.PartitionID, i.Item2));
+            return ResultSetFactory.Create<T>(ids, _transactionContext, count);
         }
 
         public ResultSet<T> Enumerate()
         {
             var paritionsAndMaxVals =
-                _transactionContext.PartitionIDs.Select(p => Tuple.Create(p,
-                    _transactionContext.GetRowCount(p)));
+                _transactionContext.ReadPartitions.Select(p => Tuple.Create(p,
+                    _transactionContext.GetRowCount(p.PartitionID)));
 
-            var ids = paritionsAndMaxVals.SelectMany(i => CreateRange(i.Item1, i.Item2));
+            var ids = paritionsAndMaxVals.SelectMany(i => CreateRange(i.Item1.PartitionID, i.Item2));
             return ResultSetFactory.Create<T>(ids, _transactionContext);
         }
 

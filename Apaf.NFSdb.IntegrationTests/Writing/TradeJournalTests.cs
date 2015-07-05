@@ -140,6 +140,7 @@ namespace Apaf.NFSdb.IntegrationTests.Writing
 
 
         [Test]
+        [Ignore]
         public void ShouldWriteAfterTruncate()
         {
             Utils.ClearJournal<Trade>();

@@ -10,7 +10,5 @@ namespace Apaf.NFSdb.Core.Storage
         ITransactionContext ReadTxLog();
 
         void Commit(ITransactionContext transaction);
-
-        IFileTxSupport ReadTx(int paritionID);
     }
 }

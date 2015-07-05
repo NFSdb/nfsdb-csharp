@@ -7,7 +7,6 @@ namespace Apaf.NFSdb.Core.Tx
     {
         public PartitionTxData[] PartitionDataStorage;
         public IReadContext ReadContext;
-        public List<int> PartitionIDs;
-        public ITxPartitionLock PartitionLock;
+        public List<IPartitionCore> Partitions;
     }
 }

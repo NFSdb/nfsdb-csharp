@@ -1,8 +1,10 @@
 ﻿using System;
 using System.Diagnostics;
+using System.Runtime.InteropServices;
 using System.Threading;
 using Apaf.NFSdb.Core.Concurrency;
 using NUnit.Framework;
+using NUnit.Framework.Constraints;
 
 namespace Apaf.NFSdb.Tests.Performance
 {
@@ -122,6 +124,27 @@ namespace Apaf.NFSdb.Tests.Performance
                 {
                     rwl.ReleaseRead();
                 }
+            }
+            sw.Stop();
+            Console.Write(sw.Elapsed);
+        }
+
+        [Test]
+        [Ignore]
+        public unsafe void TestGCFixSpeed()
+        {
+            int sum = 0;
+            var sw = new Stopwatch();
+            sw.Start();
+
+            object o = new FieldAccessException();
+            TypedReference tr = __makeref(o);
+            IntPtr ptr = **(IntPtr**)(&tr);
+
+            for (int i = 0; i < 1E6; i++)
+            {
+                var pined = GCHandle.Alloc(o, GCHandleType.Pinned);
+                var ptr2 = pined.AddrOfPinnedObject().ToPointer();
             }
             sw.Stop();
             Console.Write(sw.Elapsed);

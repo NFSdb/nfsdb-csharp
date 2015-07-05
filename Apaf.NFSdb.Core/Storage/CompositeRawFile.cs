@@ -225,7 +225,7 @@ namespace Apaf.NFSdb.Core.Storage
 
                 // Create.
                 int bufferSize = 1 << _bitHint;
-                long bufferOffset = bufferIndex*(long) bufferSize;
+                long bufferOffset = bufferIndex*bufferSize;
 
                 var view = _compositeFile.CreateViewAccessor(bufferOffset, bufferSize); 
                 _buffers[bufferIndex] = view;

@@ -79,6 +79,11 @@ namespace Apaf.NFSdb.Tests.Tx
             return PartitionTx[partitionID].NextRowID;
         }
 
+        public IList<IPartitionCore> Partitions
+        {
+            get { return _partitions; }
+        }
+
         public IList<int> PartitionIDs
         {
             get { return PartitionTx.Select(p => p.PartitionID).ToArray(); }
@@ -94,13 +99,16 @@ namespace Apaf.NFSdb.Tests.Tx
             return _partitions.Single(p => p.PartitionID == partitionID);
         }
 
+        public IEnumerable<IPartitionReader> ReadPartitions { get; private set; }
+        public IEnumerable<IPartitionReader> ReverseReadPartitions { get; private set; }
+        public int PartitionCount { get; private set; }
+
         public void LockAllPartitionsShared()
         {
         }
 
         public void ReleaseAllLocks()
         {
-            throw new NotImplementedException();
         }
 
         public PartitionTxData GetPartitionTx()
@@ -145,7 +153,7 @@ namespace Apaf.NFSdb.Tests.Tx
             }
         }
 
-        public void AddPartition(int paritionID)
+        public void AddPartition(IPartitionCore parition)
         {
             throw new NotImplementedException();
         }
@@ -177,10 +185,6 @@ namespace Apaf.NFSdb.Tests.Tx
         }
 
         public DateTime LastAppendTimestamp { get; set; }
-        public T RunInExclusivePartitionLock<T>(int partitionID, Func<IPartitionCore, T> action)
-        {
-            throw new NotImplementedException();
-        }
 
         public IReadContext ReadCache
         {

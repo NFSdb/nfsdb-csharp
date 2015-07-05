@@ -29,13 +29,15 @@ namespace Apaf.NFSdb.Core.Tx
         PartitionTxData GetPartitionTx(int partitionId);
         PartitionTxData SetCurrentPartition(int partitionID);
 
-        int PartitionTxCount { get; }
         long GetRowCount(int partitionID);
-        IList<int> PartitionIDs { get; }
 
-        IPartitionReader Read(int partitionID);
         void LockAllPartitionsShared();
         
         void ReleaseAllLocks();
+
+        IPartitionReader Read(int partitionID);
+        IEnumerable<IPartitionReader> ReadPartitions { get; }
+        IEnumerable<IPartitionReader> ReverseReadPartitions { get; }
+        int PartitionCount { get; }
     }
 }

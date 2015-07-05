@@ -17,16 +17,17 @@
 #endregion
 
 using System;
+using System.Collections.Generic;
 using Apaf.NFSdb.Core.Storage;
 
 namespace Apaf.NFSdb.Core.Tx
 {
     public interface ITransactionContext : IReadTransactionContext
     {
-        void AddPartition(int paritionID);
+        void AddPartition(IPartitionCore parition);
         long PrevTxAddress { get; set; }
         bool IsParitionUpdated(int partitionID, ITransactionContext lastTransactionLog);
         DateTime LastAppendTimestamp { get; set; }
-        T RunInExclusivePartitionLock<T>(int partitionID, Func<IPartitionCore, T> action);
+        IList<IPartitionCore> Partitions { get; }
     }
 }

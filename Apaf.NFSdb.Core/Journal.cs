@@ -16,8 +16,6 @@
  */
 #endregion
 using System;
-using System.Collections.Generic;
-using System.IO;
 using System.Threading;
 using Apaf.NFSdb.Core.Configuration;
 using Apaf.NFSdb.Core.Queries;
@@ -49,44 +47,7 @@ namespace Apaf.NFSdb.Core
 
         public void Truncate()
         {
-            if (_partitionManager.Access != EFileAccess.ReadWrite)
-            {
-                throw new InvalidOperationException("Journal is not writable");
-            }
-
-            lock (_writeLock)
-            {
-                var transaction = _unsafePartitionManager.ReadTxLog();
-
-                // Stop new readers.
-                _unsafePartitionManager.ClearTxLog();
-
-                // Wait existing readers.
-                for (int i = 0; i < transaction.PartitionIDs.Count; i++)
-                {
-                    var partitionID = transaction.PartitionIDs[i];
-                    transaction.RunInExclusivePartitionLock(partitionID,
-                        p =>
-                        {
-                            if (p != null)
-                            {
-                                p.Dispose();
-                                try
-                                {
-                                    Directory.Delete(p.DirectoryPath, true);
-                                    _unsafePartitionManager.DetachPartition(partitionID);
-                                }
-                                catch (IOException)
-                                {
-                                }
-                                catch (UnauthorizedAccessException)
-                                {
-                                }
-                            }
-                            return true;
-                        });
-                }
-            }
+            throw new NotImplementedException();
         }
 
         public IJournalMetadata<T> Metadata

@@ -123,6 +123,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Collections\ExpandableList.cs" />
+    <Compile Include="Collections\ListExtensions.cs" />
     <Compile Include="Collections\Primes.cs" />
     <Compile Include="Column\BinaryColumn.cs" />
     <Compile Include="Column\BitsetColumn.cs" />
@@ -229,7 +230,6 @@
     <Compile Include="Storage\IFileTxSupport.cs" />
     <Compile Include="Storage\StorageSizeUtils.cs" />
     <Compile Include="Tx\DeferredTransactionContext.cs" />
-    <Compile Include="Tx\IPartitionAccess.cs" />
     <Compile Include="Tx\IReadTransactionContext.cs" />
     <Compile Include="Tx\ITransactionContext.cs" />
     <Compile Include="Storage\PartitionManager.cs" />

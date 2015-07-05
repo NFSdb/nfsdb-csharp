@@ -98,7 +98,7 @@ namespace Apaf.NFSdb.IntegrationTests.Reading
                 GenerateRecords(totalCount, 3);
 
                 var r2 = j.OpenReadTx();
-                Assert.That(r2.PartitionCount, Is.EqualTo(3));
+                Assert.That(r2.PartitionCount, Is.EqualTo(4));
             }
         }
 
@@ -212,6 +212,10 @@ namespace Apaf.NFSdb.IntegrationTests.Reading
             {
                 for (int i = appendCount; i < appendCount + totalCount; i++)
                 {
+                    if (i == 1005)
+                    {
+                        
+                    }
                     using (var wtx = writer.OpenWriteTx())
                     {
                         GenerateTradeValues(quote, increment, i);

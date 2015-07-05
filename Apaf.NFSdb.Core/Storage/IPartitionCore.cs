@@ -22,10 +22,12 @@ namespace Apaf.NFSdb.Core.Storage
 {
     public interface IPartitionCore : IPartitionReader, IDisposable
     {
-        int PartitionID { get; }
         string DirectoryPath { get; }
+        void CloseFiles();
+        void AddRef();
+        void RemoveRef();
+
         DateTime StartDate { get; }
         DateTime EndDate { get; }
-        void CloseFiles();
     }
 }
