@@ -155,9 +155,9 @@ namespace Apaf.NFSdb.Tests.Core
             var txLog = new Mock<ITxLog>();
             txLog.Setup(s => s.Get()).Returns(new TxRec() { JournalMaxRowID = RowIDUtil.ToRowID(1, 10)});
 
-            var part = new PartitionManager<T>(meta, access, compositeFileFactory, new AsyncJournalServer(), txLog.Object);
+            var part = new PartitionManager<T>(meta, access, compositeFileFactory, new AsyncJournalServer(TimeSpan.FromSeconds(1)), txLog.Object);
 
-            var tx = part.ReadTxLog();
+            var tx = part.ReadTxLog(1000);
             var readAllPartitions =
                 part.GetOpenPartitions().Select(p => Tuple.Create(p.PartitionID,
                     tx.GetRowCount(p.PartitionID))).ToArray();

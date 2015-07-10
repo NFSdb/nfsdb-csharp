@@ -97,7 +97,6 @@ namespace Apaf.NFSdb.IntegrationTests.Partition
                 .WithSymbolColumn("Ex", 20, 20, 20)
                 .WithSymbolColumn("Mode", 20, 20, 20)
                 .WithTimestampColumn("Timestamp")
-                .WithPartitionCloseStrategy(EPartitionCloseStrategy.FullPartitionCloseAsynchronously)
                 .WithAccess(access)
                 .ToJournal<LargeJournal>();
         }
@@ -114,7 +113,7 @@ namespace Apaf.NFSdb.IntegrationTests.Partition
             var generator = new LargeJournalGenerator();
             using (var journal = CreateJournal())
             {
-                generator.GenerateRecords(journal, totalCount, TOTAL_PARITIONS);
+                generator.GenerateRecords(journal, totalCount, TOTAL_PARITIONS, 1);
             }
         }
 

@@ -16,6 +16,7 @@
  */
 #endregion
 
+using System;
 using System.Collections.Generic;
 using Apaf.NFSdb.Core.Column;
 
@@ -31,5 +32,6 @@ namespace Apaf.NFSdb.Core.Configuration
         int GetFieldID(string filename);
         string KeySymbol { get; }
         int FileCount { get; }
+        TimeSpan PartitionTtl { get; }
     }
 }

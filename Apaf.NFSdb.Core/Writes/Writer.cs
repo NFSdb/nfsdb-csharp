@@ -16,31 +16,32 @@
  */
 #endregion
 using System;
-using System.IO;
+using System.Diagnostics;
 using System.Threading;
+using Apaf.NFSdb.Core.Column;
 using Apaf.NFSdb.Core.Storage;
 using Apaf.NFSdb.Core.Tx;
-using log4net;
 
 namespace Apaf.NFSdb.Core.Writes
 {
     public class Writer<T> : IWriter<T>
     {
         private readonly IPartitionManager<T> _partitionManager;
-        private readonly IUnsafePartitionManager _unsafePartitionManager;
-        private static readonly ILog LOG = LogManager.GetLogger(typeof(Writer<T>));
         private readonly WriterState<T> _writerState;
         private object _writeLock;
+        private readonly int _partitionTtl;
         private readonly ITransactionContext _transaction;
 
         internal Writer(WriterState<T> writerState, 
-            IPartitionManager<T> partitionManager, IUnsafePartitionManager unsafePartitionManager, object writeLock)
+            IPartitionManager<T> partitionManager, 
+            object writeLock,
+            int partitionTtl = MetadataConstants.DEFAULT_OPEN_PARTITION_TTL)
         {
             _writerState = writerState;
             _partitionManager = partitionManager;
-            _unsafePartitionManager = unsafePartitionManager;
-            _transaction = _partitionManager.ReadTxLog();
+            _transaction = _partitionManager.ReadTxLog(partitionTtl);
             _writeLock = writeLock;
+            _partitionTtl = partitionTtl;
         }
 
         public void Dispose()
@@ -59,7 +60,7 @@ namespace Apaf.NFSdb.Core.Writes
 
         public void Commit()
         {
-            _partitionManager.Commit(_transaction);
+            _partitionManager.Commit(_transaction, _partitionTtl);
         }
 
         protected void Dispose(bool disposed)
@@ -85,7 +86,7 @@ namespace Apaf.NFSdb.Core.Writes
             }
             catch (Exception ex)
             {
-                LOG.Error("Error disposing writer in Finalize.", ex);
+                Trace.WriteLine("Error disposing writer in Finalize." + ex, "WARN");
             }
         }
     }

@@ -79,6 +79,16 @@ namespace Apaf.NFSdb.Tests.Tx
             return PartitionTx[partitionID].NextRowID;
         }
 
+        public void AddRef(int partitionID)
+        {
+            throw new NotImplementedException();
+        }
+
+        public void RemoveRef(int paritiotnID)
+        {
+            throw new NotImplementedException();
+        }
+
         public IList<IPartitionCore> Partitions
         {
             get { return _partitions; }
@@ -103,11 +113,11 @@ namespace Apaf.NFSdb.Tests.Tx
         public IEnumerable<IPartitionReader> ReverseReadPartitions { get; private set; }
         public int PartitionCount { get; private set; }
 
-        public void LockAllPartitionsShared()
+        public void AddRefsAllPartitions()
         {
         }
 
-        public void ReleaseAllLocks()
+        public void RemoveRefsAllPartitions()
         {
         }
 

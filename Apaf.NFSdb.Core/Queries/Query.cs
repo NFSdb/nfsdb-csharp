@@ -41,12 +41,12 @@ namespace Apaf.NFSdb.Core.Queries
                 _queryableLatest = new JournalQueryable<T>(
                     JournalQueryProvider<T>.LatestBy(_journal.Metadata.KeySymbol, _journal, transactionContext));
             }
-            _transactionContext.LockAllPartitionsShared();
+            _transactionContext.AddRefsAllPartitions();
         }
 
         public ResultSet<T> AllBySymbolValueOverInterval(string symbol, string value, DateInterval interval)
         {
-            _transactionContext.LockAllPartitionsShared();
+            _transactionContext.AddRefsAllPartitions();
 
             var intervalFilter = new PartitionIntervalIterator();
             var symbolFilter = new SymbolFilter(symbol, value);

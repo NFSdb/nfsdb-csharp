@@ -26,6 +26,7 @@ namespace Apaf.NFSdb.Core
     {
         IQuery<T> OpenReadTx();
         IWriter<T> OpenWriteTx();
+        IWriter<T> OpenWriteTx(int partitionTtlMs);
 
         void Truncate();
 

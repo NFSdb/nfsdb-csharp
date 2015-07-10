@@ -15,23 +15,35 @@ namespace Apaf.NFSdb.Core.Tx
         private readonly TxReusableState _reusableState;
         private readonly IFileTxSupport _symbolTxSupport;
         private readonly List<IPartitionCore> _paritions;
+        private readonly List<bool> _locks;
 
         private PartitionTxData _currentParitionTx;
         private TxRec _txRec;
+        private readonly int _partitionTtlMs;
         private PartitionTxData[] _txData;
-        private int _lastPartitionID;
+        private readonly int _lastPartitionID;
 
-        internal DeferredTransactionContext(TxReusableState reusableState, IFileTxSupport symbolTxSupport, IUnsafePartitionManager paritionManager, TxRec txRec)
+        internal DeferredTransactionContext(TxReusableState reusableState, 
+            IFileTxSupport symbolTxSupport, 
+            IUnsafePartitionManager paritionManager, 
+            TxRec txRec,
+            int partitionTtlMs)
         {
             _reusableState = reusableState;
             _symbolTxSupport = symbolTxSupport;
             _paritionManager = paritionManager;
 
             _paritions = _reusableState.Partitions;
+            _locks = _reusableState.Locks;
+
+            _locks.Clear();
+            _locks.Capacity = _paritions.Count;
+
             var lastPartition = _paritions.LastNotNull();
             _lastPartitionID = lastPartition != null ? lastPartition.PartitionID : -1;
 
             _txRec = txRec;
+            _partitionTtlMs = partitionTtlMs;
             _txData = new PartitionTxData[_paritions.Count + 1 + RESERVED_PARTITION_COUNT];
             LastAppendTimestamp = txRec != null ? DateUtils.UnixTimestampToDateTime(txRec.LastPartitionTimestamp) : DateTime.MinValue;
         }
@@ -46,32 +58,50 @@ namespace Apaf.NFSdb.Core.Tx
             return GetPartitionTx(partitionID).NextRowID;
         }
 
+        public void AddRef(int partitionID)
+        {
+            if (_locks.Count <= partitionID || !_locks[partitionID])
+            {
+                var p = _paritions[partitionID];
+                if (p != null)
+                {
+                    p.AddRef();
+                    _locks.SetToIndex(partitionID, true);
+                }
+            }
+        }
+
+        public void RemoveRef(int partitionID)
+        {
+            if (_locks.Count > partitionID && _locks[partitionID])
+            {
+                var p = _paritions[partitionID];
+                if (p != null)
+                {
+                    p.RemoveRef(_partitionTtlMs);
+                    _locks.SetToIndex(partitionID, true);
+                }
+            }
+        }
+
         public IList<IPartitionCore> Partitions
         {
             get { return _paritions; }
         }
 
-        public void LockAllPartitionsShared()
+        public void AddRefsAllPartitions()
         {
             for (int i = 0; i < _paritions.Count; i++)
             {
-                var p = _paritions[i];
-                if (p != null)
-                {
-                    p.AddRef();
-                }
+                AddRef(i);
             }
         }
 
-        public void ReleaseAllLocks()
+        public void RemoveRefsAllPartitions()
         {
             for (int i = 0; i < _paritions.Count; i++)
             {
-                var p = _paritions[i];
-                if (p != null)
-                {
-                    p.RemoveRef();
-                }
+                RemoveRef(i);
             }
         }
 
@@ -155,6 +185,7 @@ namespace Apaf.NFSdb.Core.Tx
 
         public void Dispose()
         {
+            RemoveRefsAllPartitions();
             _reusableState.PartitionDataStorage = _txData;
             _paritionManager.Recycle(_reusableState);
         }

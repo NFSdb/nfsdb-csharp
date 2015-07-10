@@ -26,6 +26,7 @@ using Apaf.NFSdb.Core.Column;
 using Apaf.NFSdb.Core.Configuration;
 using Apaf.NFSdb.Core.Exceptions;
 using Apaf.NFSdb.Core.Queries;
+using Apaf.NFSdb.Core.Server;
 using Apaf.NFSdb.Core.Tx;
 using Apaf.NFSdb.Core.Writes;
 
@@ -35,6 +36,7 @@ namespace Apaf.NFSdb.Core.Storage
     {
         private readonly ICompositeFileFactory _memeorymMappedFileFactory;
         private readonly EFileAccess _access;
+        private readonly IJournalServer _journalServer;
         private IFieldSerializer _fieldSerializer;
         private ColumnStorage _columnStorage;
         private FileTxSupport _txSupport;
@@ -49,10 +51,12 @@ namespace Apaf.NFSdb.Core.Storage
             ICompositeFileFactory memeorymMappedFileFactory,
             EFileAccess access,
             DateTime startDate, int partitionID,
-            string path)
+            string path, 
+            IJournalServer journalServer)
         {
             _memeorymMappedFileFactory = memeorymMappedFileFactory;
             _access = access;
+            _journalServer = journalServer;
             _metadata = metadata;
 
             StartDate = startDate;
@@ -122,28 +126,70 @@ namespace Apaf.NFSdb.Core.Storage
             pd.IsAppended = true;
         }
 
-        public void CloseFiles()
+        public void TryCloseFiles()
         {
-            if (_columnStorage != null)
+            // Try locking.
+            var localCopy = _columnStorage;
+            if (Interlocked.CompareExchange(ref _refCount, -1, 0) == 0)
             {
-                _columnStorage.CloseFiles();
-                _isStorageInitialized = false;
+                _isStorageInitialized = true;
+
+                // Unlock.
+                _refCount = 0;
             }
+            else
+            {
+                return;
+            }
+
+            Thread.MemoryBarrier();
+            localCopy.Dispose();
         }
 
-        public void AddRef()
+        public int AddRef()
         {
-            Interlocked.Increment(ref _refCount);
+            int localRefCount;
+            do
+            {
+                localRefCount = _refCount;
+                // -1 means exclusive mode.
+                // Spin wait then.
+                if (_refCount == -1)
+                {
+                    Thread.Yield();
+                }
+            } while (localRefCount == -1 ||
+                Interlocked.CompareExchange(ref _refCount, localRefCount + 1, localRefCount) != localRefCount);
+
+            return localRefCount + 1;
         }
 
-        public void RemoveRef()
+        public int RemoveRef(int partitionOffloadMs)
         {
-            Interlocked.Decrement(ref _refCount);
+            if (PartitionID == 2)
+            {
+                
+            }
+            var count = Interlocked.Decrement(ref _refCount);
+            if (count == 0)
+            {
+                _journalServer.SignalUnusedPartition(this, partitionOffloadMs);
+            }
+            else if (count < 0)
+            {
+                throw new NFSdbInvalidStateException("Partition '{0}' ref count is negative '{1}' outside of lock.",
+                    DirectoryPath, count);
+            }
+            return count;
         }
 
         public void Dispose()
         {
-            CloseFiles();
+            var colStorage = _columnStorage;
+            if (colStorage != null)
+            {
+                colStorage.Dispose();
+            }
         }
 
         public PartitionTxData ReadTxLogFromPartition(TxRec txRec = null)
@@ -156,7 +202,7 @@ namespace Apaf.NFSdb.Core.Storage
         object IPartitionReader.Read(long toLocalRowID, IReadContext readContext)
         {
             return Read(toLocalRowID, readContext);
-        }
+        }  
 
         public IRollback Commit(ITransactionContext tx)
         {
@@ -250,11 +296,8 @@ namespace Apaf.NFSdb.Core.Storage
             {
                 if (!_isStorageInitialized)
                 {
-                    if (_columnStorage == null)
-                    {
-                        _columnStorage = new ColumnStorage(_metadata, StartDate,
-                            _access, PartitionID, _memeorymMappedFileFactory);
-                    }
+                    _columnStorage = new ColumnStorage(_metadata, StartDate,
+                        _access, PartitionID, _memeorymMappedFileFactory);
 
                     ColumnSource[] columns = _metadata.GetPartitionColums(_columnStorage).ToArray();
                     _symbols = columns

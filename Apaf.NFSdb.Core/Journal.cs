@@ -61,7 +61,7 @@ namespace Apaf.NFSdb.Core
 
         public IQuery<T> OpenReadTx()
         {
-            var txCntx = _partitionManager.ReadTxLog();
+            var txCntx = _partitionManager.ReadTxLog(Metadata.PartitionTtl.Milliseconds);
             return new Query<T>(this, txCntx);
         }
 
@@ -72,7 +72,17 @@ namespace Apaf.NFSdb.Core
                 throw new InvalidOperationException("Journal is not writable");
             }
             Monitor.Enter(_writeLock);
-            return new Writer<T>(_writerState, _partitionManager, _unsafePartitionManager, _writeLock);
+            return new Writer<T>(_writerState, _partitionManager, _writeLock);
+        }
+
+        public IWriter<T> OpenWriteTx(int partitionTtlMs)
+        {
+            if (_partitionManager.Access != EFileAccess.ReadWrite)
+            {
+                throw new InvalidOperationException("Journal is not writable");
+            }
+            Monitor.Enter(_writeLock);
+            return new Writer<T>(_writerState, _partitionManager, _writeLock, partitionTtlMs);
         }
 
         public void Dispose()

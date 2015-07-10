@@ -28,14 +28,12 @@ using Apaf.NFSdb.Core.Configuration;
 using Apaf.NFSdb.Core.Exceptions;
 using Apaf.NFSdb.Core.Server;
 using Apaf.NFSdb.Core.Tx;
-using log4net;
 
 namespace Apaf.NFSdb.Core.Storage
 {
     public class PartitionManager<T> : IPartitionManager<T>, IUnsafePartitionManager
     {
         // ReSharper disable once StaticFieldInGenericType
-        private static readonly ILog LOG = LogManager.GetLogger(typeof (PartitionManagerUtils));
         private const int SYMBOL_PARTITION_ID = MetadataConstants.SYMBOL_PARTITION_ID;
         private readonly ICompositeFileFactory _fileFactory;
         private readonly IJournalServer _server;
@@ -48,7 +46,6 @@ namespace Apaf.NFSdb.Core.Storage
         private readonly ITxLog _txLog;
         private readonly EPartitionType _partitionType;
         private ITransactionContext _lastTransactionLog;
-        private readonly bool _asyncPartitionClose;
         private readonly ConcurrentBag<TxReusableState> _resuableTxState = new ConcurrentBag<TxReusableState>();
         private const int RESERVED_PARTITION_COUNT = 10;
 
@@ -85,9 +82,9 @@ namespace Apaf.NFSdb.Core.Storage
             }
             ConfigurePartitionType();
             _partitionType = _settings.PartitionType;
-            _asyncPartitionClose = _settings.PartitionCloseStrategy.HasFlag(
-                EPartitionCloseStrategy.FullPartitionCloseAsynchronously);
         }
+
+        internal event Action OnDisposed;
 
         public EFileAccess Access { get; private set; }
 
@@ -134,6 +131,11 @@ namespace Apaf.NFSdb.Core.Storage
 
         public ITransactionContext ReadTxLog()
         {
+            return ReadTxLog(_metadata.PartitionTtl.Milliseconds);
+        }
+
+        public ITransactionContext ReadTxLog(int partitionTtlMs)
+        {
             lock (_partitions)
             {
                 // _tx file.
@@ -144,7 +146,7 @@ namespace Apaf.NFSdb.Core.Storage
 
                 var state = GetTxState();
                 ReconcilePartitionsWithTxRec(state.Partitions, _lastTxRec);
-                var tx = new DeferredTransactionContext(state, _symbolTxSupport, this, _lastTxRec);
+                var tx = new DeferredTransactionContext(state, _symbolTxSupport, this, _lastTxRec, partitionTtlMs);
 
                 if (_lastTxRec != null)
                 {
@@ -166,6 +168,7 @@ namespace Apaf.NFSdb.Core.Storage
                 state.ReadContext = new ReadContext();
                 int capacity = PartitionSize + RESERVED_PARTITION_COUNT;
                 state.Partitions = new List<IPartitionCore>(capacity);
+                state.Locks = new List<bool>();
                 state.PartitionDataStorage = new PartitionTxData[capacity];
             }
 
@@ -173,7 +176,7 @@ namespace Apaf.NFSdb.Core.Storage
         }
 
 
-        public void Commit(ITransactionContext tx)
+        public void Commit(ITransactionContext tx, int partitionTtl)
         {
             if (Access != EFileAccess.ReadWrite)
             {
@@ -182,8 +185,6 @@ namespace Apaf.NFSdb.Core.Storage
             }
 
             bool isUpdated = false;
-            bool closeOnCommit =
-                _settings.PartitionCloseStrategy.HasFlag(EPartitionCloseStrategy.CloseFullPartitionOnCommit);
             try
             {
                 PartitionTxData lastAppendPartition = tx.GetPartitionTx();
@@ -196,17 +197,10 @@ namespace Apaf.NFSdb.Core.Storage
                         var partition = tx.Partitions[i];
                         if (partition != null)
                         {
-                            int partitionID = tx.Partitions[i].PartitionID;
                             if (tx.IsParitionUpdated(partition.PartitionID, _lastTransactionLog))
                             {
                                 partition.Commit(tx);
-
-                                // If this is not the last written partition
-                                // consider to close.
-                                if (partitionID != lastPartitionID && closeOnCommit && isUpdated)
-                                {
-                                    partition.CloseFiles();
-                                }
+                                tx.RemoveRef(partitionTtl);
                                 isUpdated = true;
                             }
                         }
@@ -277,7 +271,7 @@ namespace Apaf.NFSdb.Core.Storage
             }
             else
             {
-                lastPartitionID = 1;
+                lastPartitionID = 0;
             }
 
             ClearPartitionsAfter(lastPartitionID);
@@ -292,7 +286,7 @@ namespace Apaf.NFSdb.Core.Storage
 
             // 0 reserved for symbols.
             var partition = new Partition<T>(_metadata, _fileFactory, Access, startDate,
-                lastPartitionID, paritionDir);
+                lastPartitionID, paritionDir, _server);
 
             SetPartitionByID(lastPartitionID, partition);
             _partitionsLock.SizeToPartitionID(lastPartitionID);
@@ -323,6 +317,7 @@ namespace Apaf.NFSdb.Core.Storage
         {
             var prevPartitionTx = tx.GetPartitionTx();
             tx.SetCurrentPartition(partitionID);
+            tx.Partitions[partitionID].AddRef();
 
             if (prevPartitionTx != null)
             {
@@ -330,28 +325,14 @@ namespace Apaf.NFSdb.Core.Storage
                 var pp = GetPartitionByID(prevPartitionTx.PartitionID);
                 pp.Commit(tx);
 
-                if (_asyncPartitionClose)
+                var deref = tx.Partitions[prevPartitionTx.PartitionID];
+                if (deref != null)
                 {
-                    pp.Commit(tx);
-                    _server.SchedulePartitionAppendComplete(() => ClosePartitionAsync(prevPartitionTx.PartitionID));
+                    tx.RemoveRef(prevPartitionTx.PartitionID);
                 }
             }
         }
 
-        private void ClosePartitionAsync(int partitionID)
-        {
-            IPartition<T> part = GetPartitionByID(partitionID);
-            if (part.PartitionID != partitionID)
-            {
-                part = null;
-            }
-
-            if (part != null)
-            {
-                part.CloseFiles();
-            }
-        }
-        
         private ColumnStorage InitializeSymbolStorage()
         {
             var symbolStorage = new ColumnStorage(
@@ -423,7 +404,7 @@ namespace Apaf.NFSdb.Core.Storage
                             {
                                 _partitionsLock.SizeToPartitionID(nextPartitionID);
                                 lastPartitionStart = startDate;
-                                var partition = new Partition<T>(_metadata, _fileFactory, Access, startDate, nextPartitionID, fullPath);
+                                var partition = new Partition<T>(_metadata, _fileFactory, Access, startDate, nextPartitionID, fullPath, _server);
 
                                 SetPartitionByID(nextPartitionID, partition);
                                 
@@ -432,7 +413,7 @@ namespace Apaf.NFSdb.Core.Storage
                             }
                             else
                             {
-                                LOG.InfoFormat(
+                                Trace.TraceInformation(
                                     "Ignoring directory '{0}' for partition type '{1}' as fully rolled back partition.",
                                     fullPath, _partitionType);
                                 break;
@@ -441,8 +422,8 @@ namespace Apaf.NFSdb.Core.Storage
                     }
                     else
                     {
-                        LOG.WarnFormat("Invalid directory '{0}' for partition type '{1}'. " +
-                                       "Will be ignored.", fullPath, _partitionType);
+                        Trace.TraceWarning("Invalid directory '{0}' for partition type '{1}'. " +
+                                                      "Will be ignored.", fullPath, _partitionType);
                     }
                 }
             }
@@ -519,6 +500,18 @@ namespace Apaf.NFSdb.Core.Storage
                 _partitions.Clear();
 
                 _symbolStorage.Dispose();
+
+                if (OnDisposed != null)
+                {
+                    try
+                    {
+                        OnDisposed();
+                    }
+                    catch (Exception ex)
+                    {
+                        Trace.TraceError("Error calling OnDisposed event " + ex);
+                    }
+                }
             }
         }
 

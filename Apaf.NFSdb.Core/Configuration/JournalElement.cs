@@ -44,7 +44,7 @@ namespace Apaf.NFSdb.Core.Configuration
             Binaries = new List<BinaryElement>();
             DateTimes = new List<DateTimeElement>();
             SerializerName = MetadataConstants.THRIFT_SERIALIZER_NAME;
-            PartitionCloseStrategy = MetadataConstants.DEFAULT_PARTITION_CLOSE_STRATEGY;
+            OpenPartitionTtl = MetadataConstants.DEFAULT_OPEN_PARTITION_TTL;
         }
 
         [XmlAttribute("class")]
@@ -64,9 +64,6 @@ namespace Apaf.NFSdb.Core.Configuration
 
         [XmlAttribute("openPartitionTTL")]
         public int OpenPartitionTtl { get; set; }
-
-        [XmlAttribute("partitionCloseStrategy")]
-        public EPartitionCloseStrategy PartitionCloseStrategy { get; set; }
 
         [XmlAttribute("lagHours")]
         public int LagHours { get; set; }

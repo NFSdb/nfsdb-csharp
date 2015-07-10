@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Diagnostics;
 using Apaf.NFSdb.Core;
+using Apaf.NFSdb.Core.Column;
 using Apaf.NFSdb.Core.Writes;
 
 namespace Apaf.NFSdb.IntegrationTests
@@ -8,11 +9,11 @@ namespace Apaf.NFSdb.IntegrationTests
     public abstract class RecordGenerator<T> where T :new()
     {
         public TimeSpan GenerateRecords(IJournal<T> journal,
-            int count, int partitionCount)
+            int count, int partitionCount, int paritionTtl = MetadataConstants.DEFAULT_OPEN_PARTITION_TTL)
         {
             var increment = TestUtils.GetTimestampIncrement(count, partitionCount);
             var stopwatch = new Stopwatch();
-            using (var wr = journal.OpenWriteTx())
+            using (var wr = journal.OpenWriteTx(paritionTtl))
             {
                 stopwatch.Start();
                 var itme = new T();

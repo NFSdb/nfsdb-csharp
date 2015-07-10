@@ -16,6 +16,7 @@
  */
 #endregion
 
+using System;
 using Apaf.NFSdb.Core.Column;
 using Apaf.NFSdb.Core.Exceptions;
 using Apaf.NFSdb.Core.Server;
@@ -31,6 +32,7 @@ namespace Apaf.NFSdb.Core.Configuration
         private bool _serializerInstaceSet;
         private IJournalServer _server;
         private EFileAccess _access;
+        private TimeSpan _serverTasksLatency = TimeSpan.FromMilliseconds(MetadataConstants.DEFAULT_OPEN_PARTITION_TTL);
 
         public JournalBuilder()
         {
@@ -151,15 +153,21 @@ namespace Apaf.NFSdb.Core.Configuration
             return this;
         }
 
-        public JournalBuilder WithPartitionCloseStrategy(EPartitionCloseStrategy strategy)
-        {
-            _config.PartitionCloseStrategy = strategy;
-            return this;
-        }
-
         public JournalBuilder WithAccess(EFileAccess access)
         {
             _access = access;
+            return this;
+        }
+
+        public JournalBuilder WithServerTasksLatency(TimeSpan latency)
+        {
+            _serverTasksLatency = latency;
+            return this;
+        }
+
+        public JournalBuilder WithOpenPartitionTtl(TimeSpan offloadTime)
+        {
+            _config.OpenPartitionTtl = offloadTime.Milliseconds;
             return this;
         }
 
@@ -168,9 +176,18 @@ namespace Apaf.NFSdb.Core.Configuration
             var meta = new JournalMetadata<T>(_config);
             var fileFactory = new CompositeFileFactory();
 
-            var partMan = new PartitionManager<T>(meta, _access, fileFactory,  
-                _server ?? new AsyncJournalServer());
-            return new Journal<T>(meta, partMan);
+            if (_server != null)
+            {
+                var partMan = new PartitionManager<T>(meta, _access, fileFactory, _server);
+                return new Journal<T>(meta, partMan);
+            }
+            else
+            {
+                var server = new AsyncJournalServer(_serverTasksLatency);
+                var partMan = new PartitionManager<T>(meta, _access, fileFactory, server);
+                partMan.OnDisposed += server.Dispose;
+                return new Journal<T>(meta, partMan);
+            }
         }
     }
 }

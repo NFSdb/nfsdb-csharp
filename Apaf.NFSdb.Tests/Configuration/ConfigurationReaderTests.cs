@@ -109,7 +109,7 @@ namespace Apaf.NFSdb.Tests.Configuration
         [TestCase("defaultPath", ExpectedResult = null)]
         [TestCase("partitionType", ExpectedResult = EPartitionType.Default)]
         [TestCase("recordHint", ExpectedResult = 1E6)]
-        [TestCase("openPartitionTtl", ExpectedResult = 60)]
+        [TestCase("openPartitionTtl", ExpectedResult = 1000)]
         [TestCase("lagHours", ExpectedResult = 0)]
         [TestCase("timestampColumn", ExpectedResult = null)]
         [TestCase("key", ExpectedResult = null)]

@@ -21,6 +21,7 @@ using System.Linq;
 using Apaf.NFSdb.Core;
 using Apaf.NFSdb.Core.Column;
 using Apaf.NFSdb.Core.Configuration;
+using Apaf.NFSdb.Core.Server;
 using Apaf.NFSdb.Core.Storage;
 using Apaf.NFSdb.TestModel.Model;
 
@@ -117,7 +118,7 @@ namespace Apaf.NFSdb.TestShared
                 var part = new Partition<T>(
                     metadata, new CompositeFileFactory(),
                     access, startDate, 0,
-                    Path.Combine(jconf.DefaultPath, "2013-10"));
+                    Path.Combine(jconf.DefaultPath, "2013-10"), new AsyncJournalServer(TimeSpan.FromSeconds(1)));
 
                 return new PartitionData<T>(part, metadata, journalStorage, journalPath);
             }

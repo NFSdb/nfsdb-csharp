@@ -36,7 +36,7 @@ namespace Apaf.NFSdb.Core.Column
 
         public static readonly int DEFAULT_AVG_RECORD_SIZE = 0xff;
         public static readonly int DEFAULT_DISTINCT_HINT_COUNT = 255;
-        public static readonly int DEFAULT_OPEN_PARTITION_TTL = 60;
+        public const int DEFAULT_OPEN_PARTITION_TTL = 1000;
         public static readonly int DEFAULT_RECORD_HINT = (int) 1E6;
         public static readonly int DEFAULT_SYMBOL_MAX_SIZE = 128;
         public static readonly int DEFAULT_STRING_AVG_SIZE = 12;
@@ -71,7 +71,6 @@ namespace Apaf.NFSdb.Core.Column
         public static readonly string THRIFT_SERIALIZER_NAME = "thrift";
         public static readonly string POCO_SERIALIZER_NAME = "poco";
         public static readonly string DEFAULT_SERIALIZER_NAME = "thrift";
-        public static readonly EPartitionCloseStrategy DEFAULT_PARTITION_CLOSE_STRATEGY = EPartitionCloseStrategy.CloseFullPartitionOnCommit;
 
         public const int K_FILE_KEY_BLOCK_HEADER_SIZE = 16;
         public const int K_FILE_KEY_BLOCK_OFFSET = 8;

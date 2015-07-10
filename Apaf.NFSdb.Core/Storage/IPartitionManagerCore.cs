@@ -9,6 +9,8 @@ namespace Apaf.NFSdb.Core.Storage
 
         ITransactionContext ReadTxLog();
 
-        void Commit(ITransactionContext transaction);
+        ITransactionContext ReadTxLog(int openPartitionTtlMs);
+
+        void Commit(ITransactionContext transaction, int partitionTtl);
     }
 }

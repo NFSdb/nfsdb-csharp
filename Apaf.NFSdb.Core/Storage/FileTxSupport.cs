@@ -17,6 +17,7 @@
 #endregion
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using Apaf.NFSdb.Core.Column;
 using Apaf.NFSdb.Core.Configuration;
@@ -24,13 +25,11 @@ using Apaf.NFSdb.Core.Exceptions;
 using Apaf.NFSdb.Core.Queries;
 using Apaf.NFSdb.Core.Tx;
 using Apaf.NFSdb.Core.Writes;
-using log4net;
 
 namespace Apaf.NFSdb.Core.Storage
 {
     public class FileTxSupport : IFileTxSupport
     {
-        private static readonly ILog LOG = LogManager.GetLogger(typeof(PartitionManagerUtils));
         private readonly int _partitionID;
         private readonly IColumnStorage _storage;
         private readonly IJournalMetadataCore _metadata;
@@ -324,9 +323,9 @@ namespace Apaf.NFSdb.Core.Storage
                     }
                     catch (Exception ex2)
                     {
-                        LOG.ErrorFormat("Error undoing partial commit in file {0}. " +
+                        Trace.TraceError(string.Format("Error undoing partial commit in file {0}. " +
                                         "Continued, but journal may be in the inconsistent state. {1}",
-                            rb.File.Filename, ex2);
+                            rb.File.Filename, ex2));
                     }
                 }
             }

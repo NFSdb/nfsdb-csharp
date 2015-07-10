@@ -92,6 +92,8 @@ namespace Apaf.NFSdb.Core.Configuration
 
             // Misc.
             KeySymbol = config.Key != null ? GetPropertyName(config.Key) : null;
+
+            PartitionTtl = TimeSpan.FromMilliseconds(config.OpenPartitionTtl);
         }
 
         private int CalcFilesCount(IList<ColumnMetadata> columns)
@@ -194,6 +196,7 @@ namespace Apaf.NFSdb.Core.Configuration
 
         public string KeySymbol { get; private set; }
         public int FileCount { get; private set; }
+        public TimeSpan PartitionTtl { get; private set; }
 
         private IEnumerable<ColumnSource> CreateColumnsFromColumnMetadata(IEnumerable<ColumnMetadata> columns,
             IColumnStorage columnStorage)

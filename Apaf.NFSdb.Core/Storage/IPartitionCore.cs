@@ -23,9 +23,9 @@ namespace Apaf.NFSdb.Core.Storage
     public interface IPartitionCore : IPartitionReader, IDisposable
     {
         string DirectoryPath { get; }
-        void CloseFiles();
-        void AddRef();
-        void RemoveRef();
+        void TryCloseFiles();
+        int AddRef();
+        int RemoveRef(int partitionOffloadMs);
 
         DateTime StartDate { get; }
         DateTime EndDate { get; }

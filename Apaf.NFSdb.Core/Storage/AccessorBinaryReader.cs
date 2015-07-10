@@ -16,8 +16,8 @@
  */
 #endregion
 using System;
+using System.Diagnostics;
 using System.IO.MemoryMappedFiles;
-using log4net;
 
 namespace Apaf.NFSdb.Core.Storage
 {
@@ -28,7 +28,6 @@ namespace Apaf.NFSdb.Core.Storage
         private readonly MemoryMappedViewAccessor _view;
         private byte* _memoryPtr;
 
-        private static readonly ILog LOG = LogManager.GetLogger(typeof (AccessorBinaryReader));
         private const byte TRUE = 1;
         private const byte FALSE = 0;
         private static readonly int ALLOCATION_GRANULARITY = AccessorHelper.Info.dwAllocationGranularity;
@@ -305,7 +304,7 @@ namespace Apaf.NFSdb.Core.Storage
             }
             catch (Exception ex)
             {
-                LOG.Error("Error in finilization thread.", ex);
+                Trace.TraceError("Error in finilization thread." + ex);
             }
         }
     }

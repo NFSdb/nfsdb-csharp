@@ -45,14 +45,9 @@ namespace Apaf.NFSdb.Core.Configuration
             _lagHours = jconf.LagHours;
             _columns = actualColumns.ToArray();
             Columns = _columns;
-            PartitionCloseStrategy = jconf.PartitionCloseStrategy;
-
             _recordHint = jconf.RecordHint;
             if (_recordHint <= 0) _recordHint = MetadataConstants.DEFAULT_RECORD_HINT;
-
         }
-
-        public EPartitionCloseStrategy PartitionCloseStrategy { get; private set; }
 
         public IEnumerable<ColumnMetadata> Columns { get; private set; }
 
