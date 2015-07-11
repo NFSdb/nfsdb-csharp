@@ -18,6 +18,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using Apaf.NFSdb.Core.Exceptions;
 using Apaf.NFSdb.Core.Queries.Queryable;
 using Apaf.NFSdb.Core.Tx;
 
@@ -27,20 +28,15 @@ namespace Apaf.NFSdb.Core.Queries
     {
         private IReadTransactionContext _transactionContext;
         private readonly IJournal<T> _journal;
-        private readonly JournalQueryable<T> _queryable;
-        private readonly JournalQueryable<T> _queryableLatest;
+        private readonly Lazy<JournalQueryable<T>> _queryable;
+        private readonly Dictionary<string, JournalQueryable<T>> _latestBySymbol = new Dictionary<string, JournalQueryable<T>>();
 
         public Query(IJournal<T> journal, IReadTransactionContext transactionContext)
         {
             _transactionContext = transactionContext;
             _journal = journal;
-            _queryable = new JournalQueryable<T>(new JournalQueryProvider<T>(_journal, transactionContext));
-
-            if (_journal.Metadata.KeySymbol != null)
-            {
-                _queryableLatest = new JournalQueryable<T>(
-                    JournalQueryProvider<T>.LatestBy(_journal.Metadata.KeySymbol, _journal, transactionContext));
-            }
+            _queryable = new Lazy<JournalQueryable<T>>(
+                () => new JournalQueryable<T>(new JournalQueryProvider<T>(_journal, transactionContext)));
             _transactionContext.AddRefsAllPartitions();
         }
 
@@ -64,12 +60,29 @@ namespace Apaf.NFSdb.Core.Queries
 
         public IQueryable<T> Items
         {
-            get { return _queryable; }
+            get { return _queryable.Value; }
         }
 
-        public IQueryable<T> LatestByID
+        public IQueryable<T> GetLatestItemsBy(string columnName)
         {
-            get { return _queryableLatest; }
+            var column = _journal.Metadata.Columns.FirstOrDefault(c => c.PropertyName == columnName);
+            if (column == null)
+            {
+                throw new NFSdbConfigurationException("Column {0} does not exists", columnName);
+            }
+
+            if (!column.Indexed)
+            {
+                throw new NFSdbConfigurationException("Column {0} is not indexed", columnName);
+            }
+
+            JournalQueryable<T> val;
+            if (!_latestBySymbol.TryGetValue(columnName, out val))
+            {
+                val = _latestBySymbol[columnName] = new JournalQueryable<T>(
+                    JournalQueryProvider<T>.LatestBy(columnName, _journal, _transactionContext));
+            }
+            return val;
         }
 
         public ResultSet<T> AllByKeyOverInterval(string value, DateInterval interval)

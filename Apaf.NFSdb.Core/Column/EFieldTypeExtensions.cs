@@ -54,6 +54,7 @@ namespace Apaf.NFSdb.Core.Column
                 case EFieldType.Int64:
                 case EFieldType.Int16:
                 case EFieldType.Double:
+                case EFieldType.DateTime:
                     return true;
                 default:
                     return false;

@@ -17,6 +17,7 @@
 #endregion
 using System;
 using System.Collections.Generic;
+using Apaf.NFSdb.Core.Exceptions;
 using Apaf.NFSdb.Core.Storage;
 using Apaf.NFSdb.Core.Tx;
 
@@ -159,6 +160,11 @@ namespace Apaf.NFSdb.Core.Column
 
         public IEnumerable<long> GetValues(int valueKey, IReadTransactionContext tx)
         {
+            if (_datarIndex == null)
+            {
+                throw new NFSdbConfigurationException("Index does not exists for column "
+                                                      + _globalSymColumn.PropertyName);
+            }
             if (valueKey == NOT_FOUND_VALUE)
             {
                 return EMPTY_RESULT;

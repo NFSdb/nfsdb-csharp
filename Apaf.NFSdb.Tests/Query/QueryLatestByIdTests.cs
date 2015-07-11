@@ -118,7 +118,7 @@ namespace Apaf.NFSdb.Tests.Query
                 AppendRecords(qj, 0, increment);
                 var rdr = qj.OpenReadTx();
 
-                var qts = lambda(rdr.LatestByID);
+                var qts = lambda(rdr.GetLatestItemsBy("Sym"));
 
                 // Act.
                 var result = qts.AsEnumerable().Select(q => q.Timestamp);
