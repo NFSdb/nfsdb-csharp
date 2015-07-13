@@ -40,7 +40,7 @@ namespace Apaf.NFSdb.Core.Queries.Queryable
 
         public static string GetMemberName(MemberExpression memEx, Type journalType)
         {
-            if (memEx.Member.DeclaringType != journalType)
+            if (memEx.Member.DeclaringType == null || !memEx.Member.DeclaringType.IsAssignableFrom(journalType))
             {
                 throw new NFSdbQuaryableNotSupportedException("Expressions of type \"column\" == value "
                                                                  + "where column is an NFSdb property "

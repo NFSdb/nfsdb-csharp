@@ -87,6 +87,9 @@ namespace Apaf.NFSdb.Core.Queries.Queryable
                     case "Single":
                         return BindSingle(m.Type, m.Arguments[0], GetLambda(m.Arguments[1]));
 
+                    case "Reverse":
+                        return BindReverse(m.Arguments[0]);
+
                     case "Contains":
                         if (m.Arguments.Count == 2)
                         {
@@ -101,6 +104,11 @@ namespace Apaf.NFSdb.Core.Queries.Queryable
             }
 
             return base.VisitMethodCall(m);
+        }
+
+        private Expression BindReverse(Expression expression)
+        {
+            return new OrderExpression(Visit(expression), EJournalExpressionType.Reverse);
         }
 
         private Expression BindContains(Expression source, Expression match)

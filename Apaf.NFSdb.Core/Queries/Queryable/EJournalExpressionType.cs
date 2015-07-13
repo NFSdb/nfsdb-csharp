@@ -22,6 +22,7 @@ namespace Apaf.NFSdb.Core.Queries.Queryable
         Contains = 50000,
         Single = 50001,
         First = 50002,
-        Last = 50003
+        Last = 50003,
+        Reverse = 50004
     }
 }

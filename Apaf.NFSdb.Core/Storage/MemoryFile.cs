@@ -16,6 +16,7 @@
  */
 #endregion
 using System;
+using System.ComponentModel;
 using System.IO;
 using System.IO.MemoryMappedFiles;
 using System.Runtime.InteropServices;
@@ -29,16 +30,18 @@ namespace Apaf.NFSdb.Core.Storage
     {
         private readonly int _bitHint;
         private readonly EFileAccess _access;
+        private readonly EFileFlags _fileFlags;
         private readonly string _fullName;
         private bool _fileOpened;
 
-        public MemoryFile(string fileName, int bitHint, EFileAccess access)
+        public MemoryFile(string fileName, int bitHint, EFileAccess access, EFileFlags fileFlags)
         {
             if (fileName == null) throw new ArgumentNullException("fileName");
 
             Filename = fileName;
             _bitHint = bitHint;
             _access = access;
+            _fileFlags = fileFlags;
             _fullName = Path.GetFullPath(fileName);
         }
 
@@ -58,7 +61,7 @@ namespace Apaf.NFSdb.Core.Storage
 
                     using (var newFile = File.Create(fi.FullName))
                     {
-                        MarkAsSparseFile(newFile.SafeFileHandle);
+                        ProcessFileFlags(newFile.SafeFileHandle);
                         newFile.SetLength(size);
                     }
                     Size = size;
@@ -86,24 +89,27 @@ namespace Apaf.NFSdb.Core.Storage
             [In] ref NativeOverlapped lpOverlapped
         );
 
-        public static void MarkAsSparseFile(SafeFileHandle fileHandle)
+        private void ProcessFileFlags(SafeFileHandle fileHandle)
         {
-            //int bytesReturned = 0;
-            //var lpOverlapped = new NativeOverlapped();
-            //var result =
-            //    DeviceIoControl(
-            //        fileHandle,
-            //        590020, //FSCTL_SET_SPARSE,
-            //        IntPtr.Zero,
-            //        0,
-            //        IntPtr.Zero,
-            //        0,
-            //        ref bytesReturned,
-            //        ref lpOverlapped);
-            //if (result == false)
-            //{
-            //    throw new Win32Exception();
-            //}
+            if (_fileFlags == EFileFlags.Sparse)
+            {
+                int bytesReturned = 0;
+                var lpOverlapped = new NativeOverlapped();
+                var result =
+                    DeviceIoControl(
+                        fileHandle,
+                        590020, //FSCTL_SET_SPARSE,
+                        IntPtr.Zero,
+                        0,
+                        IntPtr.Zero,
+                        0,
+                        ref bytesReturned,
+                        ref lpOverlapped);
+                if (result == false)
+                {
+                    throw new Win32Exception();
+                }
+            }
         }
 
         public long Size { get; private set; }

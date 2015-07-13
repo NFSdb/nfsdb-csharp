@@ -16,6 +16,7 @@ namespace Apaf.NFSdb.Core.Server
         public static readonly TimeSpan INFINITE_TIME_SPAN = new TimeSpan(0, 0, 0, 0, -1);
         private bool _isStopped;
         private int _tasksInQueue;
+        private bool _isDisposed;
 
         public AsyncJournalServer(TimeSpan latency)
         {
@@ -24,6 +25,7 @@ namespace Apaf.NFSdb.Core.Server
 
         private void StartJobThread()
         {
+            CheckDisposed();
             if (_timer == null)
             {
                 _timer = new Timer(DoWork, null, _latency, INFINITE_TIME_SPAN);
@@ -31,6 +33,14 @@ namespace Apaf.NFSdb.Core.Server
             else
             {
                 _timer.Change(_latency, INFINITE_TIME_SPAN);
+            }
+        }
+
+        private void CheckDisposed()
+        {
+            if (_isDisposed)
+            {
+                throw new ObjectDisposedException("AsyncJournalServer is disposed");
             }
         }
 
@@ -120,8 +130,15 @@ namespace Apaf.NFSdb.Core.Server
 
         public void Dispose()
         {
-            Trace.TraceInformation(Thread.CurrentThread.Name + " is disposed and will be stopped now.");
-            _timer.Dispose();
+            if (_tasksInQueue != 0)
+            {
+                Trace.TraceInformation(Thread.CurrentThread.Name + " is disposed and will be stopped now.");
+            }
+            if (_timer != null)
+            {
+                _timer.Dispose();
+            }
+            _isDisposed = true;
         }
 
         private class ScheduleAction : IComparable<ScheduleAction>

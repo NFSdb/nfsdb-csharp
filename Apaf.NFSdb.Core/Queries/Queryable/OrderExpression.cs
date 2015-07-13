@@ -15,20 +15,34 @@
  * limitations under the License.
  */
 #endregion
-namespace Apaf.NFSdb.Core.Storage
-{
-    public class CompositeFileFactory : ICompositeFileFactory
-    {
-        private readonly EFileFlags _fileFlags;
+using System.Linq.Expressions;
 
-        public CompositeFileFactory(EFileFlags fileFlags = EFileFlags.None)
+namespace Apaf.NFSdb.Core.Queries.Queryable
+{
+    public class OrderExpression : Expression
+    {
+        private readonly Expression _body;
+        private readonly EJournalExpressionType _operation;
+
+        public OrderExpression(Expression body, EJournalExpressionType operation)
         {
-            _fileFlags = fileFlags;
+            _body = body;
+            _operation = operation;
         }
 
-        public ICompositeFile OpenFile(string filename, int bitHint, EFileAccess access)
+        public EJournalExpressionType Operation
         {
-            return new MemoryFile(filename, bitHint, access, _fileFlags);
+            get { return _operation; }
+        }
+
+        public override ExpressionType NodeType
+        {
+            get { return (ExpressionType) _operation; }
+        }
+
+        public Expression Body
+        {
+            get { return _body; }
         }
     }
 }

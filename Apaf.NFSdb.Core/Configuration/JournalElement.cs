@@ -19,6 +19,7 @@ using System.Collections.Generic;
 using System.Runtime.Serialization;
 using System.Xml.Serialization;
 using Apaf.NFSdb.Core.Column;
+using Apaf.NFSdb.Core.Storage;
 using Apaf.NFSdb.Core.Storage.Serializer;
 
 namespace Apaf.NFSdb.Core.Configuration
@@ -91,5 +92,8 @@ namespace Apaf.NFSdb.Core.Configuration
 
         [XmlIgnore]
         public ISerializerFactory SerializerInstace { get; set; }
+
+        [XmlElement("fileFlags")]
+        public EFileFlags FileFlags { get; set; }
     }
 }

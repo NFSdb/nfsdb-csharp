@@ -171,10 +171,16 @@ namespace Apaf.NFSdb.Core.Configuration
             return this;
         }
 
+        public JournalBuilder WithFileFlags(EFileFlags fileFlags)
+        {
+            _config.FileFlags = fileFlags;
+            return this;
+        }
+
         public IJournal<T> ToJournal<T>()
         {
             var meta = new JournalMetadata<T>(_config);
-            var fileFactory = new CompositeFileFactory();
+            var fileFactory = new CompositeFileFactory(_config.FileFlags);
 
             if (_server != null)
             {

@@ -43,7 +43,7 @@ namespace Apaf.NFSdb.TestShared
                 "Apaf.NFSdb.TestModel.Resources.nfsdb.xml"))
             {
                 var dbElement = new ConfigurationReader().ReadConfiguration(dbXml);
-                var jconf = dbElement.Journals.Single(j => j.Class.Contains(typeof(T).Name));
+                var jconf = dbElement.Journals.Single(j => j.Class.EndsWith("." + typeof(T).Name));
                 jconf.DefaultPath = Path.Combine(FindJournalsPath(), jconf.DefaultPath);
                 return jconf;
             }
@@ -64,7 +64,7 @@ namespace Apaf.NFSdb.TestShared
                 if (folderPath == null)
                 {
                     var dbElement = new ConfigurationReader().ReadConfiguration(dbXml);
-                    var jconf = dbElement.Journals.Single(j => j.Class.EndsWith(typeof(T).Name));
+                    var jconf = dbElement.Journals.Single(j => j.Class.EndsWith("." + typeof(T).Name));
                     folderPath = jconf.DefaultPath;
                 }
 
@@ -94,14 +94,14 @@ namespace Apaf.NFSdb.TestShared
             return path;
         }
 
-        public static PartitionData<T> CreatePartition<T>(int? recordHint = null, EFileAccess access = EFileAccess.Read)
+        public static PartitionData<T> CreatePartition<T>(int? recordHint = null, EFileAccess access = EFileAccess.Read, EFileFlags fileFlags = EFileFlags.None)
         {
-            var mmFactory = new CompositeFileFactory();
+            var mmFactory = new CompositeFileFactory(fileFlags);
             using (var dbXml = typeof(Quote).Assembly.GetManifestResourceStream(
                 "Apaf.NFSdb.TestModel.Resources.nfsdb.xml"))
             {
                 var dbElement = new ConfigurationReader().ReadConfiguration(dbXml);
-                var jconf = dbElement.Journals.Single(j => j.Class.EndsWith(typeof(T).Name));
+                var jconf = dbElement.Journals.Single(j => j.Class.EndsWith("." + typeof(T).Name));
                 if (recordHint.HasValue)
                 {
                     jconf.RecordHint = recordHint.Value;
@@ -116,7 +116,7 @@ namespace Apaf.NFSdb.TestShared
                 metadata.InitializeSymbols(journalStorage);
 
                 var part = new Partition<T>(
-                    metadata, new CompositeFileFactory(),
+                    metadata, new CompositeFileFactory(fileFlags),
                     access, startDate, 0,
                     Path.Combine(jconf.DefaultPath, "2013-10"), new AsyncJournalServer(TimeSpan.FromSeconds(1)));
 

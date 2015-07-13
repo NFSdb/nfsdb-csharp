@@ -333,6 +333,16 @@ namespace Apaf.NFSdb.Tests.Query
                          select q);
         }
 
+        [TestCase(10L, 200L, "Symbol_0", ExpectedResult = "40,80,120,160")]
+        public string Supports_timestamp_interval_and_symbol_search_reverse(long fromInclusive, long toExclusive, string symbol)
+        {
+            return ExecuteLambda(
+                items => (from q in items
+                         where q.Timestamp >= fromInclusive && q.Timestamp < toExclusive
+                           && q.Sym == symbol
+                         select q).Reverse());
+        }
+
         [TestCase(10L, ExpectedResult = "10")]
         [TestCase(30L, ExpectedResult = "30")]
         public string Supports_single_search(long fromInclusive)

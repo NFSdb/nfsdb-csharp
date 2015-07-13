@@ -283,7 +283,7 @@ namespace Apaf.NFSdb.Core.Storage
 
         public long GetSymbolRowCount(string symbol, string value, IReadTransactionContext tx)
         {
-            if (!_isStorageInitialized) InitializeStorage();
+            if (!_isStorageInitialized) return 0;
 
             var symb = _symbols[symbol];
             var key = symb.CheckKeyQuick(value, tx);

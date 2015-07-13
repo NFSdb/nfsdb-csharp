@@ -29,6 +29,7 @@ namespace Apaf.NFSdb.Core.Queries.Queryable
         private readonly IReadTransactionContext _tx;
         private IPlanItem _planHead;
         private bool _takeSingle;
+        private bool _reverse;
 
         public ResultSetBuilder(IJournal<T> journal, IReadTransactionContext tx)
         {
@@ -50,12 +51,16 @@ namespace Apaf.NFSdb.Core.Queries.Queryable
             }
             var result = new ResultSet<T>(_planHead.Execute(_journal, _tx), _tx);
 
+            if (_reverse)
+            {
+                result = result.Reverse();
+            }
+
             // Bind call.
             if (_takeSingle)
             {
                 return result.Single();
             }
-
             return result;
         }
 
@@ -231,6 +236,12 @@ namespace Apaf.NFSdb.Core.Queries.Queryable
         {
             _takeSingle = true;
             _planHead = other._planHead;
+        }
+
+        public void Reverse(ResultSetBuilder<T> visit)
+        {
+            _reverse = true;
+            _planHead = visit._planHead;
         }
     }
 }

@@ -134,12 +134,14 @@
     <Compile Include="Columns\ExpressionTests.cs" />
     <Compile Include="Columns\FixedColumnTests.cs" />
     <Compile Include="Columns\IndexColumnTests.cs" />
+    <Compile Include="Columns\PocoModel\DateTimeQuote.cs" />
     <Compile Include="Columns\PocoModel\Quote.cs" />
     <Compile Include="Columns\PocoModel\Trade.cs" />
     <Compile Include="Common\DisposableTempDir.cs" />
     <Compile Include="Common\TestUtils.cs" />
     <Compile Include="Concurrency\SharedExclusiveLockTests.cs" />
     <Compile Include="Performance\InterlockedTests.cs" />
+    <Compile Include="Query\JournalPocoQueriableContextTests.cs" />
     <Compile Include="Serializer\ThriftObjectSerializerTests.cs" />
     <Compile Include="Columns\StringColumnTests.cs" />
     <Compile Include="Columns\SymbolMapColumnTests.cs" />

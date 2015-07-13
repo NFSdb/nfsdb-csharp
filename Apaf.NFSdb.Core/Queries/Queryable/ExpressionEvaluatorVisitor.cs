@@ -88,10 +88,30 @@ namespace Apaf.NFSdb.Core.Queries.Queryable
                     return VisitContains((SymbolContainsExpression)exp);
                 case EJournalExpressionType.Single:
                     return VisitCall((SingleItemExpression) exp);
+                case EJournalExpressionType.Reverse:
+                    return VisitCall((OrderExpression)exp);
+
                 default:
                     throw new NFSdbQuaryableNotSupportedException(
                         "Expression {0} cannot be bound to Journal operation.", exp);
             }
+        }
+
+        private ResultSetBuilder<T> VisitCall(OrderExpression m)
+        {
+            var result = new ResultSetBuilder<T>(_journal, _tx);
+            switch (m.Operation)
+            {
+                case EJournalExpressionType.Reverse:
+                    result.Reverse(Visit(m.Body));
+                    break;
+
+                default:
+                    throw new NFSdbQuaryableNotSupportedException(
+                        "Expression call {0} cannot be bound to Journal operation.", m);
+            }
+
+            return result;
         }
 
         private ResultSetBuilder<T> VisitCall(SingleItemExpression m)
@@ -170,30 +190,42 @@ namespace Apaf.NFSdb.Core.Queries.Queryable
             if (GetTimestamp(_journal.Metadata)  != null &&
                 GetTimestamp(_journal.Metadata).PropertyName == memberName)
             {
-                if (literal is long)
+                if (literal is long || literal is DateTime)
                 {
-                    var timestamp = (long) literal;
                     DateInterval filterInterval;
                     switch (expression.NodeType)
                     {
                         case ExpressionType.GreaterThan:
-                            filterInterval = DateInterval.From(DateUtils.UnixTimestampToDateTime(timestamp + 1));
+                            var timestamp = literal is long
+                                ? DateUtils.UnixTimestampToDateTime((long) literal + 1)
+                                : ((DateTime) literal).AddTicks(1);
+                            filterInterval = DateInterval.From(timestamp);
                             break;
 
                         case ExpressionType.GreaterThanOrEqual:
-                            filterInterval = DateInterval.From(DateUtils.UnixTimestampToDateTime(timestamp));
+                            timestamp = literal is long
+                                ? DateUtils.UnixTimestampToDateTime((long) literal)
+                                : (DateTime) literal;
+                            filterInterval = DateInterval.From(timestamp);
                             break;
 
                         case ExpressionType.LessThan:
-                            filterInterval = DateInterval.To(DateUtils.UnixTimestampToDateTime(timestamp));
+                            timestamp = literal is long
+                                ? DateUtils.UnixTimestampToDateTime((long) literal)
+                                : (DateTime) literal;
+                            filterInterval = DateInterval.To(timestamp);
                             break;
 
                         case ExpressionType.LessThanOrEqual:
-                            filterInterval = DateInterval.To(DateUtils.UnixTimestampToDateTime(timestamp + 1));
+                            timestamp = literal is long
+                                ? DateUtils.UnixTimestampToDateTime((long)literal + 1)
+                                : ((DateTime)literal).AddTicks(1);
+                            filterInterval = DateInterval.To(timestamp);
                             break;
                         default:
                             throw new NFSdbQuaryableNotSupportedException(
-                                "Timestamp column operation {0} is not supported. Supported operations are <, >, <=, >=", expression.NodeType);
+                                "Timestamp column operation {0} is not supported. Supported operations are <, >, <=, >=",
+                                expression.NodeType);
                     }
 
                     var result = new ResultSetBuilder<T>(_journal, _tx);
