@@ -40,12 +40,13 @@ namespace Apaf.NFSdb.Core.Queries
             _transactionContext.AddRefsAllPartitions();
         }
 
-        public ResultSet<T> AllBySymbolValueOverInterval(string symbol, string value, DateInterval interval)
+        public ResultSet<T> AllBySymbolValueOverInterval<TT>(string symbol, TT value, DateInterval interval)
         {
+            var column = _journal.Metadata.GetColumnByPropertyName(symbol);
             _transactionContext.AddRefsAllPartitions();
 
             var intervalFilter = new PartitionIntervalIterator();
-            var symbolFilter = new SymbolFilter(symbol, value);
+            var symbolFilter = new SymbolFilter<TT>(column, value);
             var parititionsFiltered = intervalFilter.IteratePartitions(
                 _transactionContext.ReverseReadPartitions, interval, _transactionContext);
             var ids = symbolFilter.Filter(parititionsFiltered, _transactionContext);
@@ -85,12 +86,12 @@ namespace Apaf.NFSdb.Core.Queries
             return val;
         }
 
-        public ResultSet<T> AllByKeyOverInterval(string value, DateInterval interval)
+        public ResultSet<T> AllByKeyOverInterval<TT>(TT value, DateInterval interval)
         {
             return AllBySymbolValueOverInterval(_journal.Metadata.KeySymbol, value, interval);
         }
 
-        public ResultSet<T> AllBySymbol(string symbol, string value)
+        public ResultSet<T> AllBySymbol<TT>(string symbol, TT value)
         {
             return AllBySymbolValueOverInterval(symbol, value, DateInterval.Any);
         }

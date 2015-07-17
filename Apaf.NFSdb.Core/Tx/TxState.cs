@@ -1,9 +1,10 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using Apaf.NFSdb.Core.Storage;
 
 namespace Apaf.NFSdb.Core.Tx
 {
-    public class TxReusableState
+    public class TxState
     {
         public PartitionTxData[] PartitionDataStorage;
         public IReadContext ReadContext;

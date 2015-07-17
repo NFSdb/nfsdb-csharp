@@ -18,25 +18,26 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using Apaf.NFSdb.Core.Column;
 using Apaf.NFSdb.Core.Tx;
 
 namespace Apaf.NFSdb.Core.Queries
 {
-    public class SymbolFilter : IPartitionFilter
+    public class SymbolFilter<T> : IPartitionFilter
     {
+        private readonly ColumnMetadata _column;
         private const int LOOP_SORT_THRESHOLD = 5;
-        private readonly string _symbol;
-        private readonly string[] _values;
+        private readonly T[] _values;
 
-        public SymbolFilter(string symbol, string value)
+        public SymbolFilter(ColumnMetadata column, T value)
         {
-            _symbol = symbol;
+            _column = column;
             _values = new [] {value};
         }
 
-        public SymbolFilter(string symbol, string[] values)
+        public SymbolFilter(ColumnMetadata column, T[] values)
         {
-            _symbol = symbol;
+            _column = column;
             _values = values;
         }
 
@@ -48,7 +49,7 @@ namespace Apaf.NFSdb.Core.Queries
                 var partition = tx.Read(part.PartitionID);
                 return MergeSorted(
                     _values
-                        .Select(symbolValue => partition.GetSymbolRows(_symbol, symbolValue, tx)
+                        .Select(symbolValue => partition.GetSymbolRows(_column.FieldID, symbolValue, tx)
                             // Sorted from high to low.
                             .TakeWhile(rowid => rowid >= part.Low)
                             .Where(rowid => rowid <= part.High)

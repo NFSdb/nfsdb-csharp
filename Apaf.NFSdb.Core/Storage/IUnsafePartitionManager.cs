@@ -7,7 +7,7 @@ namespace Apaf.NFSdb.Core.Storage
         IColumnStorage SymbolFileStorage { get; }
         IPartitionCore GetPartition(int paritionID);
         IPartitionCore[] GetOpenPartitions();
-        void Recycle(TxReusableState state);
+        void Recycle(TxState state);
         void DetachPartition(int partitionID);
         void ClearTxLog();
     }

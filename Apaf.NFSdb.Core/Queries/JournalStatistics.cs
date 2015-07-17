@@ -17,55 +17,58 @@
 #endregion
 using System.Linq;
 using Apaf.NFSdb.Core.Column;
-using Apaf.NFSdb.Core.Configuration;
 using Apaf.NFSdb.Core.Storage;
 using Apaf.NFSdb.Core.Tx;
 
 namespace Apaf.NFSdb.Core.Queries
 {
-    public class JournalStatistics<T> : IQueryStatistics
+    public class JournalStatistics : IQueryStatistics
     {
         private readonly IUnsafePartitionManager _partitionManager;
-        private readonly IJournalMetadata<T> _metadata;
 
-        internal JournalStatistics(IUnsafePartitionManager partitionManager, IJournalMetadata<T> metadata)
+        internal JournalStatistics(IUnsafePartitionManager partitionManager)
         {
             _partitionManager = partitionManager;
-            _metadata = metadata;
         }
 
-        public long RowsBySymbolValue(IReadTransactionContext tx, string symbolName, string[] values)
+        public long RowsBySymbolValue<T>(IReadTransactionContext tx, ColumnMetadata col, T[] values)
         {
-            return _partitionManager.GetOpenPartitions().Where(part => part != null).Sum(
-                part => values.Sum(value => part.GetSymbolRowCount(symbolName, value, tx)));
+            if (col.Indexed)
+            {
+                return _partitionManager.GetOpenPartitions().Where(part => part != null).Sum(
+                    part => values.Sum(value => part.GetSymbolRowCount(col.FieldID, value, tx)));
+            }
+            return long.MaxValue;
         }
 
-        public int GetSymbolCount(IReadTransactionContext tx, string symbolName)
+        public int GetSymbolCount(IReadTransactionContext tx, ColumnMetadata column)
         {
-            var column = _metadata.Columns.Single(c => c.PropertyName == symbolName);
             var storage = _partitionManager.SymbolFileStorage;
 
             IRawFile symiFile = null;
-
-            for (int i = 0; i < storage.OpenFileCount; i++)
+            if (column.Indexed)
             {
-                IRawFile file = storage.GetOpenedFileByID(i);
-                if (file != null && file.ColumnID == column.FieldID
-                    && file.DataType == EDataType.Symi)
+                for (int i = 0; i < storage.OpenFileCount; i++)
                 {
-                    symiFile = file;
-                    break;
+                    IRawFile file = storage.GetOpenedFileByID(i);
+                    if (file != null && file.ColumnID == column.FieldID
+                        && file.DataType == EDataType.Symi)
+                    {
+                        symiFile = file;
+                        break;
+                    }
                 }
-            }
 
-            if (symiFile == null)
-            {
-                return 0;
-            }
+                if (symiFile == null)
+                {
+                    return 0;
+                }
 
-            return (int) (
-                tx.GetPartitionTx(MetadataConstants.SYMBOL_PARTITION_ID).AppendOffset[symiFile.FileID] 
-                / MetadataConstants.STRING_INDEX_FILE_RECORD_SIZE);
+                return (int)(
+                    tx.GetPartitionTx(MetadataConstants.SYMBOL_PARTITION_ID).AppendOffset[symiFile.FileID]
+                    / MetadataConstants.STRING_INDEX_FILE_RECORD_SIZE);
+            }
+            return int.MaxValue;
         }
     }
 }

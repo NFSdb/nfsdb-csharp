@@ -133,6 +133,8 @@
     <Compile Include="Column\ColumnSource.cs" />
     <Compile Include="Column\IBinaryColumn.cs" />
     <Compile Include="Column\IColumnSerializerMetadata.cs" />
+    <Compile Include="Column\IIndexedColumn.cs" />
+    <Compile Include="Column\IIndexedColumnCore.cs" />
     <Compile Include="Column\IndexAddressColumn.cs" />
     <Compile Include="Column\IndexColumn.cs" />
     <Compile Include="Column\IStringColumn.cs" />
@@ -147,6 +149,7 @@
     <Compile Include="Exceptions\NFSdbLockException.cs" />
     <Compile Include="Exceptions\NFSdbLockTimeoutException.cs" />
     <Compile Include="Queries\Queryable\OrderExpression.cs" />
+    <Compile Include="Queries\Queryable\PlanItem\ColumnScanPlanItemCore.cs" />
     <Compile Include="Queries\ResultSetFactory.cs" />
     <Compile Include="Server\IJournalServer.cs" />
     <Compile Include="Server\AsyncJournalServer.cs" />
@@ -160,7 +163,6 @@
     <Compile Include="Storage\IRollback.cs" />
     <Compile Include="Storage\IUnsafePartitionManager.cs" />
     <Compile Include="Storage\JournalDiagnostics.cs" />
-    <Compile Include="Storage\PartitionRangeLock.cs" />
     <Compile Include="Storage\Serializer\FixedColumnNullableWrapper.cs" />
     <Compile Include="Storage\Serializer\ISerializerFactory.cs" />
     <Compile Include="Column\ITypeColumnParser.cs" />
@@ -288,7 +290,7 @@
     <Compile Include="Tx\TxRec.cs" />
     <Compile Include="Tx\TxLog.cs" />
     <Compile Include="Tx\TxRecExtensions.cs" />
-    <Compile Include="Tx\TxReusableState.cs" />
+    <Compile Include="Tx\TxState.cs" />
     <Compile Include="Writes\DateUtils.cs" />
     <Compile Include="Writes\IWriter.cs" />
     <Compile Include="Writes\Writer.cs" />

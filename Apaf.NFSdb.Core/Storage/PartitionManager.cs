@@ -46,10 +46,9 @@ namespace Apaf.NFSdb.Core.Storage
         private readonly ITxLog _txLog;
         private readonly EPartitionType _partitionType;
         private ITransactionContext _lastTransactionLog;
-        private readonly ConcurrentBag<TxReusableState> _resuableTxState = new ConcurrentBag<TxReusableState>();
+        private readonly ConcurrentBag<TxState> _resuableTxState = new ConcurrentBag<TxState>();
         private const int RESERVED_PARTITION_COUNT = 10;
 
-        private readonly IPartitionRangeLock _partitionsLock = new PartitionRangeLock(0);
         private TxRec _lastTxRec;
 
         public PartitionManager(IJournalMetadata<T> metadata, EFileAccess access,
@@ -136,35 +135,33 @@ namespace Apaf.NFSdb.Core.Storage
 
         public ITransactionContext ReadTxLog(int partitionTtlMs)
         {
-            lock (_partitions)
+            // _tx file.
+            if (_lastTxRec == null || Access != EFileAccess.ReadWrite)
             {
-                // _tx file.
-                if (_lastTxRec == null || Access != EFileAccess.ReadWrite)
-                {
-                    _lastTxRec = _txLog.Get();
-                }
-
-                var state = GetTxState();
-                ReconcilePartitionsWithTxRec(state.Partitions, _lastTxRec);
-                var tx = new DeferredTransactionContext(state, _symbolTxSupport, this, _lastTxRec, partitionTtlMs);
-
-                if (_lastTxRec != null)
-                {
-                    tx.PrevTxAddress = Math.Max(_lastTxRec.PrevTxAddress, TxLog.MIN_TX_ADDRESS) + _lastTxRec.Size();
-                }
-
-                // Set state to inital.
-                _lastTransactionLog = tx;
-                return tx;
+                _lastTxRec = _txLog.Get();
             }
+
+            var state = GetTxState();
+            ReconcilePartitionsWithTxRec(state.Partitions, _lastTxRec);
+            var tx = new DeferredTransactionContext(state, _symbolTxSupport, this, _lastTxRec, partitionTtlMs);
+
+            if (_lastTxRec != null)
+            {
+                tx.PrevTxAddress = Math.Max(_lastTxRec.PrevTxAddress, TxLog.MIN_TX_ADDRESS) + _lastTxRec.Size();
+            }
+
+            // Set state to inital.
+            _lastTransactionLog = tx;
+            
+            return tx;
         }
 
-        private TxReusableState GetTxState()
+        private TxState GetTxState()
         {
-            TxReusableState state;
+            TxState state;
             if (!_resuableTxState.TryTake(out state))
             {
-                state = new TxReusableState();
+                state = new TxState();
                 state.ReadContext = new ReadContext();
                 int capacity = PartitionSize + RESERVED_PARTITION_COUNT;
                 state.Partitions = new List<IPartitionCore>(capacity);
@@ -289,7 +286,6 @@ namespace Apaf.NFSdb.Core.Storage
                 lastPartitionID, paritionDir, _server);
 
             SetPartitionByID(lastPartitionID, partition);
-            _partitionsLock.SizeToPartitionID(lastPartitionID);
 
             tx.AddPartition(partition);
             SwitchWritePartitionTo(tx, lastPartitionID);
@@ -299,15 +295,18 @@ namespace Apaf.NFSdb.Core.Storage
 
         private void ClearPartitionsAfter(int lastPartitionID)
         {
-            for (int i = lastPartitionID + 1; i < _partitions.Count; i++)
+            lock (_partitions)
             {
-                var rollbackPartition = GetPartitionByID(i);
-                if (rollbackPartition != null)
+                for (int i = lastPartitionID + 1; i < _partitions.Count; i++)
                 {
-                    rollbackPartition.Dispose();
-                    if (Directory.Exists(rollbackPartition.DirectoryPath))
+                    var rollbackPartition = GetPartitionByID(i);
+                    if (rollbackPartition != null)
                     {
-                        Directory.Delete(rollbackPartition.DirectoryPath, true);
+                        rollbackPartition.Dispose();
+                        if (Directory.Exists(rollbackPartition.DirectoryPath))
+                        {
+                            Directory.Delete(rollbackPartition.DirectoryPath, true);
+                        }
                     }
                 }
             }
@@ -402,7 +401,6 @@ namespace Apaf.NFSdb.Core.Storage
                         {
                             if (txRec.IsCommited(startDate, nextPartitionID))
                             {
-                                _partitionsLock.SizeToPartitionID(nextPartitionID);
                                 lastPartitionStart = startDate;
                                 var partition = new Partition<T>(_metadata, _fileFactory, Access, startDate, nextPartitionID, fullPath, _server);
 
@@ -520,7 +518,7 @@ namespace Apaf.NFSdb.Core.Storage
             return GetPartitionByID(paritionID);
         }
 
-        public void Recycle(TxReusableState state)
+        public void Recycle(TxState state)
         {
             if (state != null)
             {

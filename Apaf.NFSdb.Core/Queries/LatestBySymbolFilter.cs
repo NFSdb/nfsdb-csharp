@@ -22,28 +22,45 @@ using Apaf.NFSdb.Core.Tx;
 
 namespace Apaf.NFSdb.Core.Queries
 {
-    public class LatestBySymbolFilter : IPartitionFilter
+    public class LatestBySymbolFilter<T> : IPartitionFilter
     {
         private readonly IJournalCore _journal;
-        private readonly string _latestBySymbol;
-        private readonly string[] _keys;
+        private readonly ColumnMetadata _column;
+        private readonly T[] _keys;
 
-        public LatestBySymbolFilter(IJournalCore journal, string latestBySymbol, string[] keys)
+        public LatestBySymbolFilter(IJournalCore journal, ColumnMetadata column, T[] keys)
         {
             _journal = journal;
-            _latestBySymbol = latestBySymbol;
+            _column = column;
             _keys = keys;
         }
 
         public IEnumerable<long> Filter(IEnumerable<PartitionRowIDRange> partitions,
             IReadTransactionContext tx)
         {
+            if (_column.Indexed)
+            {
+                return GetLatestByIndexedSymbol(partitions, tx);
+            }
+            else
+            {
+               return GetLatestByNonIndexedField(partitions, tx);
+            }
+        }
+
+        private IEnumerable<long> GetLatestByNonIndexedField(
+            IEnumerable<PartitionRowIDRange> partitions, IReadTransactionContext tx)
+        {
+            throw new NotImplementedException();
+        }
+
+        private IEnumerable<long> GetLatestByIndexedSymbol(IEnumerable<PartitionRowIDRange> partitions, IReadTransactionContext tx)
+        {
             int keysCount;
             int[] keysMap = null;
             if (_keys == null)
             {
-                keysCount = _journal.QueryStatistics
-                    .GetSymbolCount(tx, _latestBySymbol);
+                keysCount = _journal.QueryStatistics.GetSymbolCount(tx, _column);
             }
             else
             {
@@ -61,8 +78,7 @@ namespace Apaf.NFSdb.Core.Queries
                     keysMap = new int[_keys.Length];
                     for (int i = 0; i < _keys.Length; i++)
                     {
-                        keysMap[i] = partition.GetSymbolKey(
-                            _latestBySymbol, _keys[i], tx);
+                        keysMap[i] = partition.GetSymbolKey(_column.FieldID, _keys[i], tx);
                     }
                 }
 
@@ -75,8 +91,7 @@ namespace Apaf.NFSdb.Core.Queries
                         var key = keysMap == null ? i : keysMap[i];
                         if (key != MetadataConstants.SYMBOL_NOT_FOUND_VALUE)
                         {
-                            var rowIDs =
-                                partition.GetSymbolRows(_latestBySymbol, key, tx);
+                            var rowIDs = partition.GetSymbolRowsByKey(_column.FieldID, key, tx);
 
                             foreach (var rowID in rowIDs)
                             {
@@ -84,8 +99,7 @@ namespace Apaf.NFSdb.Core.Queries
                                 {
                                     // Stop search the key.
                                     foundKeys[i] = true;
-                                    latestRowIDs[i] =
-                                        RowIDUtil.ToRowID(part.PartitionID, rowID);
+                                    latestRowIDs[i] = RowIDUtil.ToRowID(part.PartitionID, rowID);
                                     break;
                                 }
                             }

@@ -41,7 +41,7 @@ namespace Apaf.NFSdb.Core
             _partitionManager = partitionManager;
             _writerState = new WriterState<T>(metadata);
             _unsafePartitionManager = (IUnsafePartitionManager)_partitionManager;
-            _stats = new JournalStatistics<T>(_unsafePartitionManager, metadata);
+            _stats = new JournalStatistics(_unsafePartitionManager);
             Diagnostics = new JournalDiagnostics(_unsafePartitionManager);
         }
 
@@ -57,6 +57,7 @@ namespace Apaf.NFSdb.Core
 
         public IJournalDiagnostics Diagnostics { get; private set; }
 
+        public IJournalMetadataCore MetadataCore { get { return _metadata; } }
         public IQueryStatistics QueryStatistics { get { return _stats; } }
 
         public IQuery<T> OpenReadTx()

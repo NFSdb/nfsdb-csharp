@@ -284,7 +284,7 @@ namespace Apaf.NFSdb.Core.Queries.Queryable
                 if (literal is string)
                 {
                     var result = new ResultSetBuilder<T>(_journal, _tx);
-                    result.IndexScan(memberName, (string) literal);
+                    result.IndexScan(memberName, literal);
                     return result;
                 }
 

@@ -41,11 +41,11 @@ namespace Apaf.NFSdb.Core.Storage
         private ColumnStorage _columnStorage;
         private FileTxSupport _txSupport;
         private IFixedWidthColumn _timestampColumn;
-        private Dictionary<string, ISymbolMapColumn> _symbols;
         private readonly IJournalMetadata<T> _metadata;
         private bool _isStorageInitialized;
         private readonly object _syncRoot = new object();
         private int _refCount;
+        private ColumnSource[] _columns;
 
         public Partition(IJournalMetadata<T> metadata,
             ICompositeFileFactory memeorymMappedFileFactory,
@@ -132,7 +132,7 @@ namespace Apaf.NFSdb.Core.Storage
             var localCopy = _columnStorage;
             if (Interlocked.CompareExchange(ref _refCount, -1, 0) == 0)
             {
-                _isStorageInitialized = true;
+                _isStorageInitialized = false;
 
                 // Unlock.
                 _refCount = 0;
@@ -166,10 +166,6 @@ namespace Apaf.NFSdb.Core.Storage
 
         public int RemoveRef(int partitionOffloadMs)
         {
-            if (PartitionID == 2)
-            {
-                
-            }
             var count = Interlocked.Decrement(ref _refCount);
             if (count == 0)
             {
@@ -254,38 +250,35 @@ namespace Apaf.NFSdb.Core.Storage
             return ColumnValueBinarySearch.LongBinarySerach(_timestampColumn, values, 0L, hi);
         }
 
-        public IEnumerable<long> GetSymbolRows(string symbol, string value, 
-            IReadTransactionContext tx)
+        public IEnumerable<long> GetSymbolRows<TT>(int fileID, TT value, IReadTransactionContext tx)
         {
             if (!_isStorageInitialized) InitializeStorage();
-
-            var symb = _symbols[symbol];
+            var symb = (IIndexedColumn<TT>)(_columns[fileID].Column);
             var key = symb.CheckKeyQuick(value, tx);
             return symb.GetValues(key, tx);
         }
 
-        public int GetSymbolKey(string symbol, string value, IReadTransactionContext tx)
+        public int GetSymbolKey<TT>(int fieldID, TT value, IReadTransactionContext tx)
         {
             if (!_isStorageInitialized) InitializeStorage();
-
-            var symb = _symbols[symbol];
+            var symb = (IIndexedColumn<TT>)(_columns[fieldID].Column);
             var key = symb.CheckKeyQuick(value, tx);
             return key;
         }
 
-        public IEnumerable<long> GetSymbolRows(string symbol, int valueKey, IReadTransactionContext tx)
+        public IEnumerable<long> GetSymbolRowsByKey(int fieldID, int valueKey, IReadTransactionContext tx)
         {
             if (!_isStorageInitialized) InitializeStorage();
 
-            var symb = _symbols[symbol];
+            var symb = (IIndexedColumnCore)(_columns[fieldID].Column);
             return symb.GetValues(valueKey, tx);
         }
 
-        public long GetSymbolRowCount(string symbol, string value, IReadTransactionContext tx)
+        public long GetSymbolRowCount<TT>(int fieldID, TT value, IReadTransactionContext tx)
         {
             if (!_isStorageInitialized) return 0;
 
-            var symb = _symbols[symbol];
+            var symb = (IIndexedColumn<TT>)(_columns[fieldID].Column);
             var key = symb.CheckKeyQuick(value, tx);
             return symb.GetCount(key, tx);
         }
@@ -299,20 +292,15 @@ namespace Apaf.NFSdb.Core.Storage
                     _columnStorage = new ColumnStorage(_metadata, StartDate,
                         _access, PartitionID, _memeorymMappedFileFactory);
 
-                    ColumnSource[] columns = _metadata.GetPartitionColums(_columnStorage).ToArray();
-                    _symbols = columns
-                        .Where(c => c.Metadata.DataType == EFieldType.Symbol)
-                        .Select(c => c.Column)
-                        .Cast<ISymbolMapColumn>()
-                        .ToDictionary(c => c.PropertyName, StringComparer.OrdinalIgnoreCase);
+                    _columns = _metadata.GetPartitionColums(_columnStorage).ToArray();
 
                     if (_metadata.TimestampFieldID.HasValue)
                     {
                         _timestampColumn =
-                            (IFixedWidthColumn) columns[_metadata.TimestampFieldID.Value].Column;
+                            (IFixedWidthColumn)_columns[_metadata.TimestampFieldID.Value].Column;
                     }
 
-                    _fieldSerializer = _metadata.GetSerializer(columns);
+                    _fieldSerializer = _metadata.GetSerializer(_columns);
                     _txSupport = new FileTxSupport(PartitionID, _columnStorage, _metadata, StartDate, EndDate);
 
                     Thread.MemoryBarrier();

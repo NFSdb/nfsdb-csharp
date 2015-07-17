@@ -10,15 +10,13 @@ namespace Apaf.NFSdb.Core.Storage
         long GetTotalMemoryMapped();
         long BinarySearchTimestamp(DateTime value, IReadTransactionContext tx);
 
-        IEnumerable<long> GetSymbolRows(string symbol, string value,
-            IReadTransactionContext tx);
+        IEnumerable<long> GetSymbolRows<T>(int fieldID, T value, IReadTransactionContext tx);
 
-        int GetSymbolKey(string symbol, string value, IReadTransactionContext tx);
+        int GetSymbolKey<T>(int fieldID, T value, IReadTransactionContext tx);
 
-        IEnumerable<long> GetSymbolRows(string symbol, int valueKey,
-            IReadTransactionContext tx);
+        IEnumerable<long> GetSymbolRowsByKey(int fieldID, int valueKey, IReadTransactionContext tx);
 
-        long GetSymbolRowCount(string symbol, string value, IReadTransactionContext tx);
+        long GetSymbolRowCount<T>(int fieldID, T value, IReadTransactionContext tx);
 
         object Read(long toLocalRowID, IReadContext readContext);
 

@@ -51,7 +51,7 @@ namespace Apaf.NFSdb.TestShared
 
         public static IJournal<T> CreateJournal<T>(JournalElement config, EFileAccess access = EFileAccess.Read)
         {
-            return new JournalBuilder(ReadConfig<T>())
+            return new JournalBuilder(config ?? ReadConfig<T>())
                     .WithSerializerFactoryName(MetadataConstants.THRIFT_SERIALIZER_NAME)
                     .ToJournal<T>();
         }

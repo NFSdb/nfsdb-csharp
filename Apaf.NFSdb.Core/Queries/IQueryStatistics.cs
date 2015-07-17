@@ -15,13 +15,15 @@
  * limitations under the License.
  */
 #endregion
+
+using Apaf.NFSdb.Core.Column;
 using Apaf.NFSdb.Core.Tx;
 
 namespace Apaf.NFSdb.Core
 {
     public interface IQueryStatistics
     {
-        long RowsBySymbolValue(IReadTransactionContext tx, string symbolName, string[] value);
-        int GetSymbolCount(IReadTransactionContext tx, string symbolName);
+        long RowsBySymbolValue<T>(IReadTransactionContext tx, ColumnMetadata column, T[] value);
+        int GetSymbolCount(IReadTransactionContext tx, ColumnMetadata column);
     }
 }

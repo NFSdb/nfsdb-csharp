@@ -12,7 +12,7 @@ namespace Apaf.NFSdb.Core.Tx
         private const int RESERVED_PARTITION_COUNT = 10;
         private readonly IReadContext _readCache = new ReadContext();
         private readonly IUnsafePartitionManager _paritionManager;
-        private readonly TxReusableState _reusableState;
+        private readonly TxState _state;
         private readonly IFileTxSupport _symbolTxSupport;
         private readonly List<IPartitionCore> _paritions;
         private readonly List<bool> _locks;
@@ -23,18 +23,18 @@ namespace Apaf.NFSdb.Core.Tx
         private PartitionTxData[] _txData;
         private readonly int _lastPartitionID;
 
-        internal DeferredTransactionContext(TxReusableState reusableState, 
+        internal DeferredTransactionContext(TxState state, 
             IFileTxSupport symbolTxSupport, 
             IUnsafePartitionManager paritionManager, 
             TxRec txRec,
             int partitionTtlMs)
         {
-            _reusableState = reusableState;
+            _state = state;
             _symbolTxSupport = symbolTxSupport;
             _paritionManager = paritionManager;
 
-            _paritions = _reusableState.Partitions;
-            _locks = _reusableState.Locks;
+            _paritions = _state.Partitions;
+            _locks = _state.Locks;
 
             _locks.Clear();
             _locks.Capacity = _paritions.Count;
@@ -186,8 +186,8 @@ namespace Apaf.NFSdb.Core.Tx
         public void Dispose()
         {
             RemoveRefsAllPartitions();
-            _reusableState.PartitionDataStorage = _txData;
-            _paritionManager.Recycle(_reusableState);
+            _state.PartitionDataStorage = _txData;
+            _paritionManager.Recycle(_state);
         }
     }
 }

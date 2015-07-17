@@ -17,6 +17,8 @@
 #endregion
 using System.Linq.Expressions;
 using Apaf.NFSdb.Core;
+using Apaf.NFSdb.Core.Column;
+using Apaf.NFSdb.Core.Configuration;
 using Apaf.NFSdb.Core.Queries.Queryable;
 using Apaf.NFSdb.Core.Queries.Queryable.PlanItem;
 using Apaf.NFSdb.Core.Tx;
@@ -36,8 +38,8 @@ namespace Apaf.NFSdb.Tests.Query
             union.TakeLatestBy("sym");
 
             var plan = (UnionPlanItem) union.PlanItem;
-            Assert.That(plan.Left, Is.AssignableFrom<LastestByIdPlanItem>());
-            Assert.That(plan.Right, Is.AssignableFrom<LastestByIdPlanItem>());
+            Assert.That(plan.Left, Is.AssignableFrom<LastestByIdPlanItem<string>>());
+            Assert.That(plan.Right, Is.AssignableFrom<LastestByIdPlanItem<string>>());
         }
 
         [Test]
@@ -47,7 +49,7 @@ namespace Apaf.NFSdb.Tests.Query
             union.TakeLatestBy("bym");
 
             var plan = (IntersectPlanItem)union.PlanItem;
-            Assert.That(plan.Left, Is.AssignableFrom<LastestByIdPlanItem>());
+            Assert.That(plan.Left, Is.AssignableFrom<LastestByIdPlanItem<string>>());
             Assert.That(plan.Right, Is.AssignableFrom<UnionPlanItem>());
         }
 
@@ -65,8 +67,8 @@ namespace Apaf.NFSdb.Tests.Query
             intersect.TakeLatestBy("sym");
 
             var plan = (IntersectPlanItem)intersect.PlanItem;
-            Assert.That(plan.Left, Is.AssignableFrom<ColumnScanPlanItem>());
-            Assert.That(plan.Right, Is.AssignableFrom<LastestByIdPlanItem>());
+            Assert.That(plan.Left, Is.AssignableFrom<ColumnScanPlanItem<string>>());
+            Assert.That(plan.Right, Is.AssignableFrom<LastestByIdPlanItem<string>>());
         }
 
         private ResultSetBuilder<Quote> CreateUnion()
@@ -83,7 +85,12 @@ namespace Apaf.NFSdb.Tests.Query
 
         private ResultSetBuilder<Quote> CreateResultSetBuilder()
         {
-            var journal = new Mock<IJournal<Quote>>(); 
+            var journal = new Mock<IJournal<Quote>>();
+            var metadata = new Mock<IJournalMetadata<Quote>>();
+            journal.Setup(j => j.Metadata).Returns(metadata.Object);
+            metadata.Setup(m => m.GetColumnByPropertyName(It.IsAny<string>())).Returns(
+                (string name) => ColumnMetadata.FromStringField(new ColumnSerializerMetadata(EFieldType.String, name, name), 10, 10, 1));
+
             return new ResultSetBuilder<Quote>(journal.Object,
                 new Mock<IReadTransactionContext>().Object);
         }

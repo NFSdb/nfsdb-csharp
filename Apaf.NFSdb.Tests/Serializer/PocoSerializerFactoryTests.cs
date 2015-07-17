@@ -206,7 +206,7 @@ namespace Apaf.NFSdb.Tests.Serializer
             };
             var bitset =
                 new ColumnSource(new ColumnSerializerMetadata(EFieldType.BitSet, MetadataConstants.NULLS_FILE_NAME, null),
-                    new QuoteBitsetColumnStub(columns.Select(c => c.Column).ToArray(), new[] {0, 2}));
+                    new QuoteBitsetColumnStub(columns.Select(c => c.Column).ToArray(), new[] {0, 2}), 9);
 
             columns = columns.Concat(new[] {bitset}).ToArray();
 
@@ -223,7 +223,7 @@ namespace Apaf.NFSdb.Tests.Serializer
         private static ColumnSource CreateSolumnSource<T>(EFieldType type, string name, T value, int order)
         {
             return new ColumnSource(new ColumnSerializerMetadata(type, name, null),
-                ColumnsStub.CreateColumn(value, type, order, name));
+                ColumnsStub.CreateColumn(value, type, order, name), order);
         }
 
         private string AnonFieldName(string timestamp)
@@ -477,7 +477,7 @@ namespace Apaf.NFSdb.Tests.Serializer
             };
             var bitset =
                 new ColumnSource(new ColumnSerializerMetadata(EFieldType.BitSet, MetadataConstants.NULLS_FILE_NAME, null),
-                    new QuoteBitsetColumnStub(columns.Select(c => c.Column).ToArray(), GetNullsColumn(t).ToArray()));
+                    new QuoteBitsetColumnStub(columns.Select(c => c.Column).ToArray(), GetNullsColumn(t).ToArray()), 9);
             return columns.Concat(new[] {bitset}).ToArray();
         }
 

@@ -17,24 +17,25 @@
 #endregion
 using System.Collections.Generic;
 using System.Linq;
+using Apaf.NFSdb.Core.Column;
 using Apaf.NFSdb.Core.Tx;
 
 namespace Apaf.NFSdb.Core.Queries.Queryable.PlanItem
 {
-    public class LastestByIdPlanItem : IPlanItem
+    public class LastestByIdPlanItem<T> : IPlanItem
     {
-        private readonly string _latestBySymbol;
+        private readonly ColumnMetadata _column;
         private long? _cardinality;
-        private string[] _keys;
+        private readonly T[] _keys;
 
-        public LastestByIdPlanItem(string latestBySymbol)
+        public LastestByIdPlanItem(ColumnMetadata column)
         {
-            _latestBySymbol = latestBySymbol;
+            _column = column;
             Timestamps = new DateRange();
         }
 
-        public LastestByIdPlanItem(string latestBySymbol, string[] literals)
-            : this(latestBySymbol)
+        public LastestByIdPlanItem(ColumnMetadata column, T[] literals)
+            : this(column)
         {
             _keys = literals;
         }
@@ -42,7 +43,7 @@ namespace Apaf.NFSdb.Core.Queries.Queryable.PlanItem
         public IEnumerable<long> Execute(IJournalCore journal, IReadTransactionContext tx)
         {
             var intervalFilter = new PartitionIntervalIterator();
-            var symbolFilter = new LatestBySymbolFilter(journal, _latestBySymbol, _keys);
+            var symbolFilter = new LatestBySymbolFilter<T>(journal, _column, _keys);
 
             return Timestamps.AllIntervals.Reverse().SelectMany(interval =>
                 symbolFilter.Filter(intervalFilter.IteratePartitions(
@@ -54,7 +55,7 @@ namespace Apaf.NFSdb.Core.Queries.Queryable.PlanItem
         {
             if (!_cardinality.HasValue)
             {
-                _cardinality = journal.QueryStatistics.GetSymbolCount(tx, _latestBySymbol);
+                _cardinality = journal.QueryStatistics.GetSymbolCount(tx, _column);
             }
             return _cardinality.Value;
         }

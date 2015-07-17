@@ -16,12 +16,9 @@
  */
 #endregion
 
-using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Linq;
 using Apaf.NFSdb.Core.Column;
-using Apaf.NFSdb.Core.Storage;
 using Apaf.NFSdb.Core.Storage.Serializer;
 using Apaf.NFSdb.Tests.Columns.ThriftModel;
 using Apaf.NFSdb.Tests.Tx;
@@ -291,7 +288,7 @@ namespace Apaf.NFSdb.Tests.Serializer
                CreateSolumnSource(EFieldType.String, "Ex", t.Ex, i++)
             };
             var bitset = new ColumnSource(new ColumnSerializerMetadata(EFieldType.BitSet, "_isset", null),
-                new QuoteBitsetColumnStub(columns.Select(c => c.Column).ToArray(), GetNullsColumn(t).ToArray()));
+                new QuoteBitsetColumnStub(columns.Select(c => c.Column).ToArray(), GetNullsColumn(t).ToArray()), i);
 
             return columns.Concat(new[] {bitset}).ToArray();
         }
@@ -299,7 +296,7 @@ namespace Apaf.NFSdb.Tests.Serializer
         private static ColumnSource CreateSolumnSource<T>(EFieldType type, string name, T value, int order)
         {
             return new ColumnSource(new ColumnSerializerMetadata(type, name, null),
-                ColumnsStub.CreateColumn(value, type, order, name));
+                ColumnsStub.CreateColumn(value, type, order, name), order);
         }
 
         private static IEnumerable<int> GetNullsColumn(Quote quote)

@@ -17,29 +17,30 @@
 #endregion
 using System.Collections.Generic;
 using System.Linq;
+using Apaf.NFSdb.Core.Column;
 using Apaf.NFSdb.Core.Tx;
 
 namespace Apaf.NFSdb.Core.Queries.Queryable.PlanItem
 {
-    public class ColumnScanPlanItem : IPlanItem
+    public class ColumnScanPlanItem<T> : IColumnScanPlanItemCore, IPlanItem
     {
-        private readonly string _memberName;
-        private readonly string[] _literal;
+        private readonly ColumnMetadata _column;
+        private readonly T[] _literals;
         private long? _cardin;
 
-        public ColumnScanPlanItem(string memberName, string[] literals)
+        public ColumnScanPlanItem(ColumnMetadata column, T[] literals)
         {
-            _memberName = memberName;
-            _literal = literals;
+            _column = column;
+            _literals = literals;
             Timestamps = new DateRange();
         }
 
-        public string SymbolName { get { return _memberName; }}
+        public string SymbolName { get { return _column.PropertyName; } }
 
         public IEnumerable<long> Execute(IJournalCore journal, IReadTransactionContext tx)
         {
             var intervalFilter = new PartitionIntervalIterator();
-            var symbolFilter = new SymbolFilter(_memberName, _literal);
+            var symbolFilter = new SymbolFilter<T>(_column, _literals);
 
             return Timestamps.AllIntervals.Reverse().SelectMany(interval =>
                 symbolFilter.Filter(intervalFilter.IteratePartitions(
@@ -47,13 +48,13 @@ namespace Apaf.NFSdb.Core.Queries.Queryable.PlanItem
                 );
         }
 
-        public string[] Literals {get { return _literal; }}
+        public T[] Literals {get { return _literals; }}
 
         public long Cardinality(IJournalCore journal, IReadTransactionContext tx)
         {
             if (!_cardin.HasValue)
             {
-                _cardin = journal.QueryStatistics.RowsBySymbolValue(tx, _memberName, _literal);
+                _cardin = journal.QueryStatistics.RowsBySymbolValue(tx, _column, _literals);
             }
             return _cardin.Value;
         }
@@ -64,5 +65,10 @@ namespace Apaf.NFSdb.Core.Queries.Queryable.PlanItem
         }
 
         public DateRange Timestamps { get; private set; }
+
+        public IPlanItem ToLastestByIdPlanItem()
+        {
+            return new LastestByIdPlanItem<T>(_column, _literals);
+        }
     }
 }

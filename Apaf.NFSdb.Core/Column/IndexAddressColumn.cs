@@ -83,16 +83,22 @@ namespace Apaf.NFSdb.Core.Column
             // Nuber of records per keyblock
             // is a half of statistically expected
             // but minimum size is 10
-            //_rowBlockLen = Math.Max(recordCountHint / keycountHint / 2, 10);
             _rowBlockLenBitHint = (int)Math.Floor(Math.Log(Math.Max(recordCountHint / keycountHint / 2, 16), 2.0)) - 1;
             _rowBlockLenBitHint = Math.Max(_rowBlockLenBitHint, 4);
             int rowBlockLen = 1 << _rowBlockLenBitHint;
             _kData = kData;
 
-
             if (kData.GetAppendOffset() > 0)
             {
                 rowBlockLen = _kData.ReadInt32(ROW_BLOK_LEN_ADDRESS_OFFSET);
+                _rowBlockLenBitHint = (int)Math.Log(rowBlockLen, 2);
+
+                if (1 << _rowBlockLenBitHint != rowBlockLen)
+                {
+                    throw new NFSdbInvalidStateException("Row block length specified in file '{0}' equals " +
+                                                         "{1}. Only power of 2 values are supported.", 
+                                                         _kData.Filename, rowBlockLen);
+                }
             }
             else if (kData.Access == EFileAccess.ReadWrite)
             {

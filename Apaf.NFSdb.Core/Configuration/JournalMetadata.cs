@@ -175,6 +175,17 @@ namespace Apaf.NFSdb.Core.Configuration
             return _columns[columndID];
         }
 
+        public ColumnMetadata GetColumnByPropertyName(string propertyName)
+        {
+            var col = _columns.FirstOrDefault(c => c.PropertyName == propertyName);
+            if (col == null)
+            {
+                throw new NFSdbConfigurationException("Property {0} does not exist in journal {1}",
+                    propertyName, _settings.DefaultPath);
+            }
+            return col;
+        }
+
         public Func<T, DateTime> GetTimestampReader()
         {
             return _timestampDelegate;
@@ -274,7 +285,7 @@ namespace Apaf.NFSdb.Core.Configuration
                     column = new FixedColumn(data, cType.FieldType, GetPropertyName(cType.FileName));
                 }
 
-                yield return new ColumnSource(cType.SerializerMetadata, column);
+                yield return new ColumnSource(cType.SerializerMetadata, column, fileID);
             }
         }
 

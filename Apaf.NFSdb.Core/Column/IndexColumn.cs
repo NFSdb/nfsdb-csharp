@@ -78,6 +78,7 @@ namespace Apaf.NFSdb.Core.Column
             }
 
             var rowBlockOffset = blockOffset;
+            var partMaxRowId = tx.GetPartitionTx(_rData.PartitionID).NextRowID;
 
             // Loop blocks.
             for (int i = rowBlockCount - 1; i >=0 ; i--)
@@ -85,7 +86,14 @@ namespace Apaf.NFSdb.Core.Column
                 // Loop cells.
                 for (int k = len - 1; k >=0; k--)
                 {
-                    yield return _rData.ReadInt64(rowBlockOffset - rowBlockSize + k * 8);
+                    var rowid =  _rData.ReadInt64(rowBlockOffset - rowBlockSize + k * 8);
+                    // yield return rowid;
+
+                    // Check data visible.
+                    if (partMaxRowId < 0 || rowid < partMaxRowId)
+                    {
+                        yield return rowid;
+                    }
                 }
 
                 // Next block.

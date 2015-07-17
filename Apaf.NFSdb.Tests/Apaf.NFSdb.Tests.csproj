@@ -181,6 +181,7 @@
     <Compile Include="Tx\PartitionTxLogTests.cs" />
     <Compile Include="Tx\TestTxLog.cs" />
     <Compile Include="Tx\TransactionContext.cs" />
+    <Compile Include="Tx\TxIsolationTests.cs" />
     <Compile Include="Tx\TxLogTests.cs" />
     <Compile Include="Tx\TxRecExtensionsTests.cs" />
     <Compile Include="Unsafe\UnsafeTests.cs" />

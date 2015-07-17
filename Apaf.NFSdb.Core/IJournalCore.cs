@@ -15,12 +15,15 @@
  * limitations under the License.
  */
 #endregion
+
+using Apaf.NFSdb.Core.Configuration;
 using Apaf.NFSdb.Core.Storage;
 
 namespace Apaf.NFSdb.Core
 {
     public interface IJournalCore
     {
+        IJournalMetadataCore MetadataCore { get; }
         IQueryStatistics QueryStatistics { get; }
         IJournalDiagnostics Diagnostics { get; }
     }

@@ -64,30 +64,29 @@ namespace Apaf.NFSdb.Tests.Columns
             var tx1 = TestTxLog.TestContext();
             var id = CreateIndex(1000 * 16, tx1);
             const int key = 71;
-            id.Add(key, 278, tx1);
-            Commit(tx1);
+            id.Add(key, 0, tx1);
+            Commit(tx1, 1);
             var result1 = string.Join("|", id.GetValues(key, tx1).OrderBy(i => i)
                 .Select(i => i.ToString(CultureInfo.InvariantCulture)));
 
-            Assert.That(result1, Is.EqualTo("278"));
+            Assert.That(result1, Is.EqualTo("0"));
 
             // Act.
             var tx = new TransactionContext(tx1);
-            var vals = Enumerable.Range(0, 10).Select(i => (long)i);
+            var vals = Enumerable.Range(1, 10).Select(i => (long)i);
             foreach (var val in vals)
             {
                 id.Add(key, val, tx);
             }
-            tx = new TransactionContext(tx1);
 
             // Verify.
             var result = string.Join("|", id.GetValues(key, tx).OrderBy(i => i)
                 .Select(i => i.ToString(CultureInfo.InvariantCulture)));
 
-            Assert.That(result, Is.EqualTo("278"));
+            Assert.That(result, Is.EqualTo("0"));
         }
 
-        private void Commit(TransactionContext tx1)
+        private void Commit(TransactionContext tx1, int rowcount)
         {
             var pd = tx1.PartitionTx[_symrk.Object.PartitionID];
             var sd = pd.SymbolData[_symrk.Object.FileID];
@@ -102,6 +101,7 @@ namespace Apaf.NFSdb.Tests.Columns
             _symrk.Object.SetAppendOffset(symrAppOff);
 
             pd.AppendOffset[_symrk.Object.FileID] = symrAppOff;
+            pd.NextRowID = rowcount;
 
             long symrAppendOffset = pd.AppendOffset[_symrr.Object.FileID];
             _symrr.Object.SetAppendOffset(symrAppendOffset);
@@ -115,6 +115,8 @@ namespace Apaf.NFSdb.Tests.Columns
             PartitionTxData pd = tx.PartitionTx[_symrk.Object.PartitionID];
             pd.AppendOffset[_symrk.Object.FileID] = 28;
             pd.SymbolData[_symrk.Object.FileID].KeyBlockOffset = 12;
+            pd.NextRowID = long.MaxValue;
+
             return new IndexColumn(_symrk.Object, _symrr.Object, 100, 1000);
         }
     }
