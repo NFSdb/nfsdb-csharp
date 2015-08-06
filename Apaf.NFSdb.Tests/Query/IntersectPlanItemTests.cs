@@ -41,7 +41,7 @@ namespace Apaf.NFSdb.Tests.Query
 
             var up = CreateIntersectPlan(l1, l2);
 
-            return string.Join(",", up.Execute(null, null));
+            return string.Join(",", up.Execute(null, null, ERowIDSortDirection.Desc));
         }
 
         private static long[] GetLongs(string first)
@@ -62,7 +62,7 @@ namespace Apaf.NFSdb.Tests.Query
         private static Mock<IPlanItem> GetPlanItem(IEnumerable<long> l2)
         {
             var p2 = new Mock<IPlanItem>();
-            p2.Setup(p => p.Execute(It.IsAny<IJournalCore>(), It.IsAny<IReadTransactionContext>()))
+            p2.Setup(p => p.Execute(It.IsAny<IJournalCore>(), It.IsAny<IReadTransactionContext>(), ERowIDSortDirection.Desc))
                 .Returns(l2);
             p2.Setup(p => p.Timestamps).Returns(new DateRange());
             return p2;

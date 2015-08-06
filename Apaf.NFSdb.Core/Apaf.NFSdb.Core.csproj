@@ -122,8 +122,11 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Collections\ArraySlice.cs" />
+    <Compile Include="Collections\DescendingLongComparer.cs" />
     <Compile Include="Collections\ExpandableList.cs" />
     <Compile Include="Collections\ListExtensions.cs" />
+    <Compile Include="Collections\PriorityQueue.cs" />
     <Compile Include="Collections\Primes.cs" />
     <Compile Include="Column\BinaryColumn.cs" />
     <Compile Include="Column\BitsetColumn.cs" />
@@ -148,6 +151,7 @@
     <Compile Include="Exceptions\NFSdbIOException.cs" />
     <Compile Include="Exceptions\NFSdbLockException.cs" />
     <Compile Include="Exceptions\NFSdbLockTimeoutException.cs" />
+    <Compile Include="Queries\Queryable\ERowIDSortDirection.cs" />
     <Compile Include="Queries\Queryable\OrderExpression.cs" />
     <Compile Include="Queries\Queryable\PlanItem\ColumnScanPlanItemCore.cs" />
     <Compile Include="Queries\ResultSetFactory.cs" />

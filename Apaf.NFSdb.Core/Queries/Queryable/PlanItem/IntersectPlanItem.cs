@@ -37,24 +37,24 @@ namespace Apaf.NFSdb.Core.Queries.Queryable.PlanItem
             right.Intersect(left);
         }
 
-        public IEnumerable<long> Execute(IJournalCore journal, IReadTransactionContext tx)
+        public IEnumerable<long> Execute(IJournalCore journal, IReadTransactionContext tx, ERowIDSortDirection sort)
         {
             // Timestamp restricted
             if (_left is TimestampRangePlanItem)
             {
-                return _right.Execute(journal, tx);
+                return _right.Execute(journal, tx, sort);
             }
             
             if (_right is TimestampRangePlanItem)
             {
-                return _left.Execute(journal, tx);
+                return _left.Execute(journal, tx, sort);
             }
 
             if (_left.Cardinality(journal, tx) < _right.Cardinality(journal, tx))
             {
-                return Intersect(_left.Execute(journal, tx), _right.Execute(journal, tx));
+                return Intersect(_left.Execute(journal, tx, sort), _right.Execute(journal, tx, sort));
             }
-            return Intersect(_right.Execute(journal, tx), _left.Execute(journal, tx));
+            return Intersect(_right.Execute(journal, tx, sort), _left.Execute(journal, tx, sort));
         }
 
         public long Cardinality(IJournalCore journal, IReadTransactionContext tx)

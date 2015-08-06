@@ -16,6 +16,7 @@
  */
 #endregion
 using System.Collections.Generic;
+using Apaf.NFSdb.Core.Queries.Queryable;
 using Apaf.NFSdb.Core.Tx;
 
 namespace Apaf.NFSdb.Core.Queries
@@ -23,6 +24,6 @@ namespace Apaf.NFSdb.Core.Queries
     public interface IPartitionFilter
     {
         IEnumerable<long> Filter(IEnumerable<PartitionRowIDRange> partitions, 
-            IReadTransactionContext transaction);
+            IReadTransactionContext transaction, ERowIDSortDirection sortDirection);
     }
 }

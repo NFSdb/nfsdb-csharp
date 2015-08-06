@@ -15,10 +15,11 @@
  * limitations under the License.
  */
 #endregion
-using System;
 using System.Collections.Generic;
 using System.Linq;
+using Apaf.NFSdb.Core.Collections;
 using Apaf.NFSdb.Core.Column;
+using Apaf.NFSdb.Core.Queries.Queryable;
 using Apaf.NFSdb.Core.Tx;
 
 namespace Apaf.NFSdb.Core.Queries
@@ -26,7 +27,6 @@ namespace Apaf.NFSdb.Core.Queries
     public class SymbolFilter<T> : IPartitionFilter
     {
         private readonly ColumnMetadata _column;
-        private const int LOOP_SORT_THRESHOLD = 5;
         private readonly T[] _values;
 
         public SymbolFilter(ColumnMetadata column, T value)
@@ -41,99 +41,102 @@ namespace Apaf.NFSdb.Core.Queries
             _values = values;
         }
 
-        public IEnumerable<long> Filter(IEnumerable<PartitionRowIDRange> partitions, 
-            IReadTransactionContext tx)
+        public IEnumerable<long> Filter(IEnumerable<PartitionRowIDRange> partitions,
+            IReadTransactionContext tx, ERowIDSortDirection sortDirection)
         {
-            var pp = partitions.SelectMany(part =>
+            var items = new IEnumerable<long>[_values.Length];
+            return partitions.SelectMany(part =>
             {
                 var partition = tx.Read(part.PartitionID);
-                return MergeSorted(
-                    _values
-                        .Select(symbolValue => partition.GetSymbolRows(_column.FieldID, symbolValue, tx)
-                            // Sorted from high to low.
-                            .TakeWhile(rowid => rowid >= part.Low)
-                            .Where(rowid => rowid <= part.High)
-                            .Select(row => RowIDUtil.ToRowID(part.PartitionID, row)))
-                        .ToArray());
+                for (int v = 0; v < _values.Length; v++)
+                {
+                    var symbolValue = _values[v];
+                    var rowIDs = TakeFromTo(part, partition.GetSymbolRows(_column.FieldID, symbolValue, tx));
+                    if (sortDirection == ERowIDSortDirection.Asc)
+                    {
+                        // Todo: use tx.ReadContext and reuse buffers.
+                        rowIDs = rowIDs.Reverse();
+                    }
+                    items[v] = rowIDs;
+                }
+
+                if (sortDirection == ERowIDSortDirection.None)
+                {
+                    return items.SelectMany(i => i);
+                }
+                return MergeSorted(items, sortDirection);
             });
-            
-            return pp;
         }
 
-        private IEnumerable<long> MergeSorted(IEnumerable<long>[] items)
+        private IEnumerable<long> TakeFromTo(PartitionRowIDRange part, IEnumerable<long> rowIds)
         {
-            if (items.Length < LOOP_SORT_THRESHOLD)
+            foreach (var rowId in rowIds)
             {
-                IEnumerable<long> result = items[0];
-                for (int i = 1; i < items.Length; i++)
-                {
-                    result = MergeDistinct(result, items[i]);
-                }
-                return result;
-            }
-            return GetMergeSorted(items);
-        }
-
-        private IEnumerable<long> GetMergeSorted(IEnumerable<long>[] items)
-        {
-            var nextVals = new long[items.Length];
-            var hasFinished = new bool[items.Length];
-            var ens = items.Select(i => i.GetEnumerator()).ToArray();
-            while (true)
-            {
-                int j = 0;
-                for (int i = 0; i < ens.Length; i++)
-                {
-                    if (!hasFinished[i] && ens[i].MoveNext())
-                    {
-                        nextVals[j++] = ens[i].Current;
-                    }
-                    else
-                    {
-                        hasFinished[i] = true;
-                    }
-                }
-                if (j == 0)
-                {
+                if (rowId < part.Low)
                     yield break;
-                }
-                if (j > 1)
-                {
-                    Array.Sort(nextVals, 0, j);
-                }
 
-                for (int i = j - 1; i >= 0; i--)
+                if (rowId <= part.High)
+                    yield return RowIDUtil.ToRowID(part.PartitionID, rowId);
+            }
+        }
+
+        private IEnumerable<long> MergeSorted(IEnumerable<long>[] items, ERowIDSortDirection sortDirection)
+        {
+            if (items.Length == 1) return items[0];
+            return GetMergeSorted(items, sortDirection);
+        }
+
+        private IEnumerable<long> GetMergeSorted(IEnumerable<IEnumerable<long>> items, ERowIDSortDirection sortDirection)
+        {
+            var ens = items.Select(i => i.GetEnumerator()).Where(e => e.MoveNext()).ToArray();
+
+            // Trivial solutions.
+            if (ens.Length == 0)
+            {
+                yield break;
+            }
+
+            if (ens.Length == 1)
+            {
+                do
                 {
-                    yield return nextVals[i];
+                    yield return ens[0].Current;
+                } while (ens[0].MoveNext());
+                yield break;
+            }
+            
+            // Priority Queue.
+            var pq = new EnumerablePriorityQueue(ens.Length, sortDirection == ERowIDSortDirection.Asc);
+            for (int i = 0; i < ens.Length; i++)
+            {
+                pq.Enqueue(ens[i]);
+            }
+
+            while (pq.Count > 0)
+            {
+                var e = pq.Dequeue();
+                yield return e.Current;
+                if (e.MoveNext())
+                {
+                    pq.Enqueue(e);
                 }
             }
         }
 
-        private IEnumerable<long> MergeDistinct(IEnumerable<long> enum1, IEnumerable<long> enum2)
+        private class EnumerablePriorityQueue : PriorityQueue<IEnumerator<long>>
         {
-            var e1 = enum1.GetEnumerator();
-            var e2 = enum2.GetEnumerator();
+            private readonly bool _asc;
 
-            var e1Next = e1.MoveNext();
-            var e2Next = e2.MoveNext();
-
-            var ei1 = e1Next ? e1.Current : long.MinValue;
-            var ei2 = e2Next ? e2.Current : long.MinValue;
-
-            while (e1Next || e2Next)
+            public EnumerablePriorityQueue(int capcity, bool asc) : base(capcity)
             {
-                if (ei1 > ei2)
-                {
-                    yield return ei1;
-                    e1Next = e1.MoveNext();
-                    ei1 = e1Next ? e1.Current : long.MinValue;
-                }
-                else
-                {
-                    yield return ei2;
-                    e2Next = e2.MoveNext();
-                    ei2 = e2Next ? e2.Current : long.MinValue;
-                }
+                _asc = asc;
+            }
+
+            protected override int Compare(IEnumerator<long> i1, IEnumerator<long> i2)
+            {
+                if (_asc && i1.Current > i2.Current && !_asc) return 1;
+                if (!_asc && i1.Current < i2.Current) return 1;
+                return -1;
             }
         }
     }

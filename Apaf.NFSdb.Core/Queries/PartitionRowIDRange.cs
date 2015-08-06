@@ -37,5 +37,10 @@ namespace Apaf.NFSdb.Core.Queries
         public int PartitionID { get; private set; }
         public long Low { get; private set; }
         public long High { get; private set; }
+
+        public override string ToString()
+        {
+            return string.Format("{0}[{1};{2}]", PartitionID, Low, High);
+        }
     }
 }

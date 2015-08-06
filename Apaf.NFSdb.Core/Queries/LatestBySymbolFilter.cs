@@ -17,7 +17,9 @@
 #endregion
 using System;
 using System.Collections.Generic;
+using Apaf.NFSdb.Core.Collections;
 using Apaf.NFSdb.Core.Column;
+using Apaf.NFSdb.Core.Queries.Queryable;
 using Apaf.NFSdb.Core.Tx;
 
 namespace Apaf.NFSdb.Core.Queries
@@ -27,6 +29,7 @@ namespace Apaf.NFSdb.Core.Queries
         private readonly IJournalCore _journal;
         private readonly ColumnMetadata _column;
         private readonly T[] _keys;
+        private static readonly IComparer<long> DescendingLongComparer = new DescendingLongComparer();
 
         public LatestBySymbolFilter(IJournalCore journal, ColumnMetadata column, T[] keys)
         {
@@ -36,25 +39,28 @@ namespace Apaf.NFSdb.Core.Queries
         }
 
         public IEnumerable<long> Filter(IEnumerable<PartitionRowIDRange> partitions,
-            IReadTransactionContext tx)
+            IReadTransactionContext tx, ERowIDSortDirection sort)
         {
             if (_column.Indexed)
             {
-                return GetLatestByIndexedSymbol(partitions, tx);
+                return GetLatestByIndexedSymbol(partitions, tx, sort);
             }
             else
             {
-               return GetLatestByNonIndexedField(partitions, tx);
+                return GetLatestByNonIndexedField(partitions, tx, sort);
             }
         }
 
-        private IEnumerable<long> GetLatestByNonIndexedField(
-            IEnumerable<PartitionRowIDRange> partitions, IReadTransactionContext tx)
+        private IEnumerable<long> GetLatestByNonIndexedField(IEnumerable<PartitionRowIDRange> partitions, IReadTransactionContext tx, ERowIDSortDirection sort)
         {
             throw new NotImplementedException();
+            foreach (var part in partitions)
+            {
+            }
         }
 
-        private IEnumerable<long> GetLatestByIndexedSymbol(IEnumerable<PartitionRowIDRange> partitions, IReadTransactionContext tx)
+        private IEnumerable<long> GetLatestByIndexedSymbol(IEnumerable<PartitionRowIDRange> partitions,
+            IReadTransactionContext tx, ERowIDSortDirection sort)
         {
             int keysCount;
             int[] keysMap = null;
@@ -67,7 +73,7 @@ namespace Apaf.NFSdb.Core.Queries
                 keysCount = _keys.Length;
             }
 
-            var foundKeys = new bool[keysCount];
+            // Todo: use tx.ReadContext
             var latestRowIDs = new long[keysCount];
             foreach (var part in partitions)
             {
@@ -85,7 +91,7 @@ namespace Apaf.NFSdb.Core.Queries
                 var allFound = true;
                 for (int i = 0; i < keysCount; i++)
                 {
-                    if (!foundKeys[i])
+                    if (latestRowIDs[i] == 0)
                     {
                         // Symbol D file key.
                         var key = keysMap == null ? i : keysMap[i];
@@ -98,7 +104,6 @@ namespace Apaf.NFSdb.Core.Queries
                                 if (rowID >= part.Low && rowID <= part.High)
                                 {
                                     // Stop search the key.
-                                    foundKeys[i] = true;
                                     latestRowIDs[i] = RowIDUtil.ToRowID(part.PartitionID, rowID);
                                     break;
                                 }
@@ -107,10 +112,10 @@ namespace Apaf.NFSdb.Core.Queries
                         else
                         {
                             // Stop search the invalid value.
-                            foundKeys[i] = true;
+                            latestRowIDs[i] = MetadataConstants.SYMBOL_NOT_FOUND_VALUE;
                         }
                     }
-                    allFound &= foundKeys[i];
+                    allFound &= latestRowIDs[i] != 0;
                 }
 
                 // Early partition scan termination.
@@ -120,17 +125,17 @@ namespace Apaf.NFSdb.Core.Queries
                 }
             }
 
-            // RowID sort desc.
+            // RowID sort asc.
             Array.Sort(latestRowIDs);
-            for (int i = foundKeys.Length - 1; i >= 0; i--)
+            int startIndex = Array.BinarySearch(latestRowIDs, 1L);
+            if (startIndex < 0)
             {
-                // Not found.
-                // Rest is greater and returned.
-                if (latestRowIDs[i] == 0) yield break;
-
-                // Found.
-                yield return latestRowIDs[i];
+                startIndex = ~startIndex;
             }
+
+            var result = new ArraySlice<long>(latestRowIDs, startIndex, latestRowIDs.Length - startIndex,
+                sort == ERowIDSortDirection.Asc);
+            return result;
         }
     }
 }

@@ -49,7 +49,7 @@ namespace Apaf.NFSdb.Core.Queries
             var symbolFilter = new SymbolFilter<TT>(column, value);
             var parititionsFiltered = intervalFilter.IteratePartitions(
                 _transactionContext.ReverseReadPartitions, interval, _transactionContext);
-            var ids = symbolFilter.Filter(parititionsFiltered, _transactionContext);
+            var ids = symbolFilter.Filter(parititionsFiltered, _transactionContext, ERowIDSortDirection.Desc);
 
             return ResultSetFactory.Create<T>(ids, _transactionContext);
         }
@@ -71,12 +71,7 @@ namespace Apaf.NFSdb.Core.Queries
             {
                 throw new NFSdbConfigurationException("Column {0} does not exists", columnName);
             }
-
-            if (!column.Indexed)
-            {
-                throw new NFSdbConfigurationException("Column {0} is not indexed", columnName);
-            }
-
+            
             JournalQueryable<T> val;
             if (!_latestBySymbol.TryGetValue(columnName, out val))
             {

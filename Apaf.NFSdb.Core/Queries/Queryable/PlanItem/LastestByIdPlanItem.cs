@@ -40,14 +40,14 @@ namespace Apaf.NFSdb.Core.Queries.Queryable.PlanItem
             _keys = literals;
         }
 
-        public IEnumerable<long> Execute(IJournalCore journal, IReadTransactionContext tx)
+        public IEnumerable<long> Execute(IJournalCore journal, IReadTransactionContext tx, ERowIDSortDirection sortDirection)
         {
             var intervalFilter = new PartitionIntervalIterator();
             var symbolFilter = new LatestBySymbolFilter<T>(journal, _column, _keys);
 
             return Timestamps.AllIntervals.Reverse().SelectMany(interval =>
                 symbolFilter.Filter(intervalFilter.IteratePartitions(
-                    tx.ReverseReadPartitions, interval, tx), tx)
+                    tx.ReverseReadPartitions, interval, tx), tx, sortDirection)
                 );
         }
 

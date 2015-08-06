@@ -37,15 +37,18 @@ namespace Apaf.NFSdb.Core.Queries.Queryable.PlanItem
 
         public string SymbolName { get { return _column.PropertyName; } }
 
-        public IEnumerable<long> Execute(IJournalCore journal, IReadTransactionContext tx)
+        public IEnumerable<long> Execute(IJournalCore journal, IReadTransactionContext tx, 
+            ERowIDSortDirection sort)
         {
             var intervalFilter = new PartitionIntervalIterator();
             var symbolFilter = new SymbolFilter<T>(_column, _literals);
+            var intervals = Timestamps.AllIntervals.SelectMany(
+                i => intervalFilter.IteratePartitions(tx.ReadPartitions, i, tx)).ToList();
 
-            return Timestamps.AllIntervals.Reverse().SelectMany(interval =>
-                symbolFilter.Filter(intervalFilter.IteratePartitions(
-                    tx.ReadPartitions.Reverse(), interval, tx), tx)
-                );
+            if (sort == ERowIDSortDirection.Desc)
+                intervals.Reverse();
+
+            return symbolFilter.Filter(intervals, tx, sort);
         }
 
         public T[] Literals {get { return _literals; }}

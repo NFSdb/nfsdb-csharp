@@ -127,8 +127,10 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Collections\ArraySliceTests.cs" />
     <Compile Include="Collections\ExpandableListTests.cs" />
     <Compile Include="Collections\ObjHashMapTests.cs" />
+    <Compile Include="Collections\PriorityQueueTests.cs" />
     <Compile Include="Columns\ByteArrayTests.cs" />
     <Compile Include="Columns\DateTimeTests.cs" />
     <Compile Include="Columns\ExpressionTests.cs" />
@@ -142,6 +144,7 @@
     <Compile Include="Concurrency\SharedExclusiveLockTests.cs" />
     <Compile Include="Performance\InterlockedTests.cs" />
     <Compile Include="Query\JournalPocoQueriableContextTests.cs" />
+    <Compile Include="Query\QueryLatestByColumnTests.cs" />
     <Compile Include="Serializer\ThriftObjectSerializerTests.cs" />
     <Compile Include="Columns\StringColumnTests.cs" />
     <Compile Include="Columns\SymbolMapColumnTests.cs" />
@@ -190,20 +193,20 @@
     <None Include="packages.config" />
   </ItemGroup>
   <ItemGroup>
+    <Service Include="{82A7F48D-3B50-4B1E-B82E-3ADA8210C358}" />
+  </ItemGroup>
+  <ItemGroup>
+    <Folder Include="BinaryCompatibility\" />
+  </ItemGroup>
+  <ItemGroup>
     <ProjectReference Include="..\Apaf.NFSdb.Core\Apaf.NFSdb.Core.csproj">
-      <Project>{94AA4DE7-BC16-46F4-B956-D732D6D265B4}</Project>
+      <Project>{94aa4de7-bc16-46f4-b956-d732d6d265b4}</Project>
       <Name>Apaf.NFSdb.Core</Name>
     </ProjectReference>
     <ProjectReference Include="..\Apaf.NFSdb.TestShared\Apaf.NFSdb.TestShared.csproj">
       <Project>{91b718cd-06c1-4863-a251-18f5e4d3fa49}</Project>
       <Name>Apaf.NFSdb.TestShared</Name>
     </ProjectReference>
-  </ItemGroup>
-  <ItemGroup>
-    <Service Include="{82A7F48D-3B50-4B1E-B82E-3ADA8210C358}" />
-  </ItemGroup>
-  <ItemGroup>
-    <Folder Include="BinaryCompatibility\" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <Import Project="$(SolutionDir)\.nuget\nuget.targets" />

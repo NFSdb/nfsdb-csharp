@@ -15,11 +15,12 @@
  * limitations under the License.
  */
 #endregion
+
+using System.IO;
 using System.Linq;
 using Apaf.NFSdb.Core.Column;
 using Apaf.NFSdb.Core.Storage;
 using Apaf.NFSdb.Core.Tx;
-using Apaf.NFSdb.Tests.Core;
 using NUnit.Framework;
 
 namespace Apaf.NFSdb.Tests.Tx
@@ -29,6 +30,18 @@ namespace Apaf.NFSdb.Tests.Tx
     [TestFixture]
     public class TxLogTests
     {
+        private static CompositeRawFile _logfile;
+
+        [TearDown]
+        public void TearDown()
+        {
+            if (_logfile != null)
+            {
+                _logfile.Dispose();
+                File.Delete(_logfile.Filename);
+            }
+        }
+
         [TestCase(3L)]
         [TestCase(0L)]
         [TestCase(long.MaxValue)]
@@ -186,13 +199,13 @@ namespace Apaf.NFSdb.Tests.Tx
 
         private static TxLog CreateTxLog()
         {
-            var stubFileF = new CompositeFileFactoryStub("_tx-0").Stub;
-            var logfile = new CompositeRawFile("\\_tx",
-                MetadataConstants.PIPE_BIT_HINT, stubFileF.Object,
+            var stubFileF = new CompositeFileFactory();
+            _logfile = new CompositeRawFile(".\\_tx",
+                MetadataConstants.PIPE_BIT_HINT, stubFileF,
                 EFileAccess.ReadWrite, MetadataConstants.SYMBOL_PARTITION_ID,
                 MetadataConstants.TX_LOG_FILE_ID, MetadataConstants.TX_LOG_FILE_ID, EDataType.Data);
 
-            return new TxLog(logfile);
+            return new TxLog(_logfile);
         }
     }
 #endif

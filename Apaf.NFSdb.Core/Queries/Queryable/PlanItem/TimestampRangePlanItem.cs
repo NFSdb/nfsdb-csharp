@@ -30,7 +30,7 @@ namespace Apaf.NFSdb.Core.Queries.Queryable.PlanItem
             Timestamps = DateRange.FromInterval(filterInterval);
         }
 
-        public IEnumerable<long> Execute(IJournalCore journal, IReadTransactionContext tx)
+        public IEnumerable<long> Execute(IJournalCore journal, IReadTransactionContext tx, ERowIDSortDirection sort)
         {
             var intervalFilter = new PartitionIntervalIterator();
             return Timestamps.AllIntervals.Reverse().SelectMany(
@@ -55,7 +55,11 @@ namespace Apaf.NFSdb.Core.Queries.Queryable.PlanItem
         {
             if (!_caridnality.HasValue)
             {
-                _caridnality = Execute(journal, tx).Count();
+                var intervalFilter = new PartitionIntervalIterator();
+                _caridnality =
+                    Timestamps
+                    .AllIntervals
+                    .Sum(p => intervalFilter.IteratePartitions(tx.ReadPartitions, p, tx).Sum(p2 => p2.High - p2.Low));
             }
             return _caridnality.Value;
         }

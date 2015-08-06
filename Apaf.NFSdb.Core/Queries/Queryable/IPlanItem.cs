@@ -22,7 +22,7 @@ namespace Apaf.NFSdb.Core.Queries.Queryable
 {
     public interface IPlanItem
     {
-        IEnumerable<long> Execute(IJournalCore journal, IReadTransactionContext tx);
+        IEnumerable<long> Execute(IJournalCore journal, IReadTransactionContext tx, ERowIDSortDirection sort);
         long Cardinality(IJournalCore journal, IReadTransactionContext tx);
         void Intersect(IPlanItem restriction);
 

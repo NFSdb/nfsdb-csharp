@@ -33,9 +33,9 @@ namespace Apaf.NFSdb.Core.Queries.Queryable.PlanItem
             Timestamps.Union(_right.Timestamps);
         }
 
-        public IEnumerable<long> Execute(IJournalCore journal, IReadTransactionContext tx)
+        public IEnumerable<long> Execute(IJournalCore journal, IReadTransactionContext tx, ERowIDSortDirection sort)
         {
-            return MergeDistinct(_left.Execute(journal, tx), _right.Execute(journal, tx));
+            return MergeDistinct(_left.Execute(journal, tx, sort), _right.Execute(journal, tx, sort));
         }
 
         public IPlanItem Left { get { return _left; } }

@@ -50,7 +50,7 @@ namespace Apaf.NFSdb.Core.Queries.Queryable
             {
                 _planHead = new TimestampRangePlanItem(DateInterval.Any);
             }
-            var result = new ResultSet<T>(_planHead.Execute(_journal, _tx), _tx);
+            var result = new ResultSet<T>(_planHead.Execute(_journal, _tx, ERowIDSortDirection.Desc), _tx);
 
             if (_reverse)
             {
