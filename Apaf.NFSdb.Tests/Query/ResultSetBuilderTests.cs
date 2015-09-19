@@ -67,7 +67,7 @@ namespace Apaf.NFSdb.Tests.Query
             intersect.TakeLatestBy("sym");
 
             var plan = (IntersectPlanItem)intersect.PlanItem;
-            Assert.That(plan.Left, Is.AssignableFrom<ColumnScanPlanItem<string>>());
+            Assert.That(plan.Left, Is.AssignableFrom<RowScanPlanItem>());
             Assert.That(plan.Right, Is.AssignableFrom<LastestByIdPlanItem<string>>());
         }
 

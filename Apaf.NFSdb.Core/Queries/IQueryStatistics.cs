@@ -23,7 +23,8 @@ namespace Apaf.NFSdb.Core
 {
     public interface IQueryStatistics
     {
-        long RowsBySymbolValue<T>(IReadTransactionContext tx, ColumnMetadata column, T[] value);
+        long GetCardinalityByColumnValue<T>(IReadTransactionContext tx, ColumnMetadata column, T[] value);
+        int GetColumnDistinctCardinality(IReadTransactionContext tx, ColumnMetadata column);
         int GetSymbolCount(IReadTransactionContext tx, ColumnMetadata column);
     }
 }

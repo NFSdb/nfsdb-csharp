@@ -17,6 +17,8 @@
 #endregion
 using System.Linq;
 using Apaf.NFSdb.Core.Column;
+using Apaf.NFSdb.Core.Configuration;
+using Apaf.NFSdb.Core.Queries.Queryable;
 using Apaf.NFSdb.Core.Storage;
 using Apaf.NFSdb.Core.Tx;
 
@@ -24,21 +26,35 @@ namespace Apaf.NFSdb.Core.Queries
 {
     public class JournalStatistics : IQueryStatistics
     {
+        private readonly IJournalMetadataCore _metadata;
         private readonly IUnsafePartitionManager _partitionManager;
 
-        internal JournalStatistics(IUnsafePartitionManager partitionManager)
+        internal JournalStatistics(IJournalMetadataCore metadata, IUnsafePartitionManager partitionManager)
         {
+            _metadata = metadata;
             _partitionManager = partitionManager;
         }
 
-        public long RowsBySymbolValue<T>(IReadTransactionContext tx, ColumnMetadata col, T[] values)
+        public long GetCardinalityByColumnValue<T>(IReadTransactionContext tx, ColumnMetadata col, T[] values)
         {
             if (col.Indexed)
             {
-                return _partitionManager.GetOpenPartitions().Where(part => part != null).Sum(
-                    part => values.Sum(value => part.GetSymbolRowCount(col.FieldID, value, tx)));
+                var part = _partitionManager.GetOpenPartitions().FirstOrDefault(p => p != null);
+                if (part != null)
+                {
+                    return values.Sum(value => part.GetSymbolRowCount(col.FieldID, value, tx));
+                }
             }
-            return long.MaxValue;
+            return _metadata.Settings.RecordHint / col.HintDistinctCount * values.Length;
+        }
+
+        public int GetColumnDistinctCardinality(IReadTransactionContext tx, ColumnMetadata column)
+        {
+            if (column.Indexed)
+            {
+                return GetSymbolCount(tx, column);
+            }
+            return column.HintDistinctCount;
         }
 
         public int GetSymbolCount(IReadTransactionContext tx, ColumnMetadata column)
@@ -68,7 +84,8 @@ namespace Apaf.NFSdb.Core.Queries
                     tx.GetPartitionTx(MetadataConstants.SYMBOL_PARTITION_ID).AppendOffset[symiFile.FileID]
                     / MetadataConstants.STRING_INDEX_FILE_RECORD_SIZE);
             }
-            return int.MaxValue;
+            throw new NFSdbQuaryableNotSupportedException("Column {0} is not indexed and presice distinct count is not available",
+                column.PropertyName);
         }
     }
 }

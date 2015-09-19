@@ -159,7 +159,7 @@ namespace Apaf.NFSdb.Tests.Core
 
             var tx = part.ReadTxLog(1000);
             var readAllPartitions =
-                part.GetOpenPartitions().Select(p => Tuple.Create(p.PartitionID,
+                part.GetOpenPartitions().Where(p => p != null).Select(p => Tuple.Create(p.PartitionID,
                     tx.GetRowCount(p.PartitionID))).ToArray();
 
             return part;

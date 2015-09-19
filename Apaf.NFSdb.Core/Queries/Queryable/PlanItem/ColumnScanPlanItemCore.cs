@@ -1,8 +1,10 @@
-﻿namespace Apaf.NFSdb.Core.Queries.Queryable.PlanItem
+﻿using Apaf.NFSdb.Core.Column;
+
+namespace Apaf.NFSdb.Core.Queries.Queryable.PlanItem
 {
     public interface IColumnScanPlanItemCore
     {
-        IPlanItem ToLastestByIdPlanItem();
-        string SymbolName { get; }
+        bool CanTranformLastestByIdPlanItem(ColumnMetadata column);
+        void TranformLastestByIdPlanItem(ColumnMetadata column);
     }
 }

@@ -55,7 +55,7 @@ namespace Apaf.NFSdb.Core.Queries.Queryable.PlanItem
         {
             if (!_cardinality.HasValue)
             {
-                _cardinality = journal.QueryStatistics.GetSymbolCount(tx, _column);
+                _cardinality = journal.QueryStatistics.GetColumnDistinctCardinality(tx, _column);
             }
             return _cardinality.Value;
         }

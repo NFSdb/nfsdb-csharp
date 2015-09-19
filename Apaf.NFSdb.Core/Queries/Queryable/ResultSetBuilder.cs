@@ -73,41 +73,38 @@ namespace Apaf.NFSdb.Core.Queries.Queryable
         public void IndexScan(string memberName, object literal)
         {
             var column = _journal.Metadata.GetColumnByPropertyName(memberName);
+            var planItem = new RowScanPlanItem(_journal, _tx);
+            _planHead = planItem;
             switch (column.FieldType)
             {
                 case EFieldType.Byte:
-                    _planHead = new ColumnScanPlanItem<byte>(column, new[] { (byte)literal });
+                    planItem.AddContainsScan(column, (byte)literal);
                     break;
                 case EFieldType.Bool:
-                    _planHead = new ColumnScanPlanItem<bool>(column, new[] { (bool)literal });
+                    planItem.AddContainsScan(column, (bool)literal);
                     break;
                 case EFieldType.Int16:
-                    _planHead = new ColumnScanPlanItem<Int16>(column, new[] { (Int16)literal });
+                    planItem.AddContainsScan(column, (Int16)literal);
                     break;
                 case EFieldType.Int32:
-                    _planHead = new ColumnScanPlanItem<int>(column, new[] { (int)literal });
+                    planItem.AddContainsScan(column, (int)literal);
                     break;
                 case EFieldType.Int64:
-                    _planHead = new ColumnScanPlanItem<long>(column, new[] { (long)literal });
+                    planItem.AddContainsScan(column, (long)literal);
                     break;
                 case EFieldType.Double:
-                    _planHead = new ColumnScanPlanItem<double>(column, new[] { (double)literal });
-                    break;
-                case EFieldType.String:
-                    _planHead = new ColumnScanPlanItem<string>(column, new[] { (string)literal });
+                    planItem.AddContainsScan(column, (double)literal);
                     break;
                 case EFieldType.Symbol:
-                    _planHead = new ColumnScanPlanItem<string>(column, new[] { (string)literal });
-                    break;
-                case EFieldType.Binary:
-                    _planHead = new ColumnScanPlanItem<byte[]>(column, new[] { (byte[])literal });
+                case EFieldType.String:
+                    planItem.AddContainsScan(column, (string)literal);
                     break;
                 case EFieldType.DateTime:
                 case EFieldType.DateTimeEpochMilliseconds:
-                    _planHead = new ColumnScanPlanItem<DateTime>(column, new[] { (DateTime)literal });
+                    planItem.AddContainsScan(column, (DateTime)literal);
                     break;
                 default:
-                    throw new ArgumentOutOfRangeException();
+                    throw new NFSdbQuaryableNotSupportedException();
             }
         }
 
@@ -130,6 +127,15 @@ namespace Apaf.NFSdb.Core.Queries.Queryable
                 {
                     _planHead = right._planHead;
                     _planHead.Intersect(left._planHead);
+                }
+                else if (left._planHead is RowScanPlanItem && right._planHead is RowScanPlanItem)
+                {
+                    var rowScan1 = (RowScanPlanItem) left._planHead;
+                    var rowScan2 = (RowScanPlanItem)left._planHead;
+                    if (rowScan1.TryIntersect(rowScan2))
+                    {
+                        _planHead = left.PlanItem;
+                    }
                 }
                 else
                 {
@@ -157,7 +163,9 @@ namespace Apaf.NFSdb.Core.Queries.Queryable
 
         public void IndexCollectionScan<TT>(string memberName, TT[] values)
         {
-            _planHead = new ColumnScanPlanItem<TT>(_journal.Metadata.GetColumnByPropertyName(memberName), values);
+            var p = new RowScanPlanItem(_journal, _tx);
+            p.AddContainsScan(_journal.Metadata.GetColumnByPropertyName(memberName), values);
+            _planHead = p;
         }
 
         public void TimestampInterval(DateInterval filterInterval)
@@ -188,7 +196,7 @@ namespace Apaf.NFSdb.Core.Queries.Queryable
                 }
                 else
                 {
-                    _planHead = RebuildWithLatest(_planHead, latestBySymbol);
+                    _planHead = RebuildWithLatest(_planHead, column);
                 }
             }
         }
@@ -222,23 +230,23 @@ namespace Apaf.NFSdb.Core.Queries.Queryable
             }
         }
 
-        private IPlanItem RebuildWithLatest(IPlanItem planHead, string latestBySymbolName)
+        private IPlanItem RebuildWithLatest(IPlanItem planHead, ColumnMetadata latestByColumn)
         {
-            var column = _journal.Metadata.GetColumnByPropertyName(latestBySymbolName);
+            var column = _journal.Metadata.GetColumnByPropertyName(latestByColumn.PropertyName);
             var intersc = planHead as IntersectPlanItem;
             if (intersc != null)
             {
-                if (AddLatestToColumnScan(intersc.Left, latestBySymbolName))
+                if (AddLatestToColumnScan(intersc.Left, latestByColumn.PropertyName))
                 {
                     return 
                         new IntersectPlanItem(
-                            RebuildWithLatest(intersc.Left, latestBySymbolName), 
+                            RebuildWithLatest(intersc.Left, latestByColumn), 
                             intersc.Right);
                 }
-                if (AddLatestToColumnScan(intersc.Right, latestBySymbolName))
+                if (AddLatestToColumnScan(intersc.Right, latestByColumn.PropertyName))
                 {
                     return new IntersectPlanItem(intersc.Left,
-                        RebuildWithLatest(intersc.Right, latestBySymbolName));
+                        RebuildWithLatest(intersc.Right, latestByColumn));
                 }
                 throw new InvalidOperationException("One of the Intersect path " +
                                                     "supposed to be reduced with" +
@@ -249,16 +257,17 @@ namespace Apaf.NFSdb.Core.Queries.Queryable
             if (union != null)
             {
                 return new UnionPlanItem(
-                    RebuildWithLatest(union.Left, latestBySymbolName),
-                    RebuildWithLatest(union.Right, latestBySymbolName)); 
+                    RebuildWithLatest(union.Left, latestByColumn),
+                    RebuildWithLatest(union.Right, latestByColumn)); 
             }
 
             var scan = planHead as IColumnScanPlanItemCore;
             if (scan != null)
             {
-                if (scan.SymbolName == latestBySymbolName)
+                if (scan.CanTranformLastestByIdPlanItem(latestByColumn))
                 {
-                    return scan.ToLastestByIdPlanItem();
+                    scan.TranformLastestByIdPlanItem(latestByColumn);
+                    return planHead;
                 }
             }
             var timestmp = planHead as TimestampRangePlanItem;
@@ -290,8 +299,15 @@ namespace Apaf.NFSdb.Core.Queries.Queryable
             var scan = planHead as IColumnScanPlanItemCore;
             if (scan != null)
             {
-                return scan.SymbolName == latestBySymbol;
+                var col = _journal.Metadata.GetColumnByPropertyName(latestBySymbol);
+                if (scan.CanTranformLastestByIdPlanItem(col))
+                {
+                    scan.TranformLastestByIdPlanItem(col);
+                    return true;
+                }
+                return false;
             }
+
             var timestmp = planHead as TimestampRangePlanItem;
             if (timestmp != null)
             {

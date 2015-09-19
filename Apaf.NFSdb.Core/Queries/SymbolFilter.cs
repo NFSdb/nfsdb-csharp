@@ -15,57 +15,137 @@
  * limitations under the License.
  */
 #endregion
+
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using Apaf.NFSdb.Core.Collections;
 using Apaf.NFSdb.Core.Column;
 using Apaf.NFSdb.Core.Queries.Queryable;
+using Apaf.NFSdb.Core.Storage;
 using Apaf.NFSdb.Core.Tx;
 
 namespace Apaf.NFSdb.Core.Queries
 {
-    public class SymbolFilter<T> : IPartitionFilter
+    public class SymbolFilter<T> : IPartitionFilter, IColumnFilter
     {
         private readonly ColumnMetadata _column;
+        private readonly T _value;
         private readonly T[] _values;
+        private ITypedColumn<T> _columnReader;
+        private int _columnPartition = int.MinValue;
+        private HashSet<T> _valuesHash;
 
         public SymbolFilter(ColumnMetadata column, T value)
         {
             _column = column;
-            _values = new [] {value};
+            _value = value;
         }
 
         public SymbolFilter(ColumnMetadata column, T[] values)
         {
+            if (values == null) throw new ArgumentNullException("values");
+
             _column = column;
-            _values = values;
+            if (values.Length == 1)
+            {
+                _value = _values[0];
+            }
+            else
+            {
+                _values = values;
+            }
+        }
+
+        public string Column
+        {
+            get { return _column.PropertyName; }
+        }
+
+        public T[] FilterValues
+        {
+            get
+            {
+                if (_values != null)
+                {
+                    return _values;
+                }
+                return new[] {_value};
+            }
+        }
+
+        private bool IsMatch(T value)
+        {
+            if (_values == null)
+            {
+                return Equals(value, _value);
+            }
+
+            if (_valuesHash == null)
+            {
+                _valuesHash = new HashSet<T>(_values);
+            }
+            return _valuesHash.Contains(value);
+        }
+
+        public bool IsMatch(IPartitionReader partition, IReadContext readCache, long localRowID)
+        {
+            if (_columnPartition != partition.PartitionID)
+            {
+                _columnPartition = partition.PartitionID;
+                _columnReader = (ITypedColumn<T>)partition.ReadColumn(_column.FieldID);
+            }
+
+            var value = _columnReader.Get(localRowID, readCache);
+            return IsMatch(value);
+        }
+
+        public long GetCardinality(IJournalCore journal, IReadTransactionContext tx)
+        {
+            return journal.QueryStatistics.GetCardinalityByColumnValue(tx, _column, _values ?? new[] {_value});
         }
 
         public IEnumerable<long> Filter(IEnumerable<PartitionRowIDRange> partitions,
             IReadTransactionContext tx, ERowIDSortDirection sortDirection)
         {
-            var items = new IEnumerable<long>[_values.Length];
-            return partitions.SelectMany(part =>
+            if (_values != null)
             {
-                var partition = tx.Read(part.PartitionID);
-                for (int v = 0; v < _values.Length; v++)
+                var items = new IEnumerable<long>[_values.Length];
+                return partitions.SelectMany(part =>
                 {
-                    var symbolValue = _values[v];
-                    var rowIDs = TakeFromTo(part, partition.GetSymbolRows(_column.FieldID, symbolValue, tx));
+                    var partition = tx.Read(part.PartitionID);
+                    for (int v = 0; v < _values.Length; v++)
+                    {
+                        var symbolValue = _values[v];
+                        var rowIDs = TakeFromTo(part, partition.GetSymbolRows(_column.FieldID, symbolValue, tx));
+                        if (sortDirection == ERowIDSortDirection.Asc)
+                        {
+                            // Todo: use tx.ReadContext and reuse buffers.
+                            rowIDs = rowIDs.Reverse();
+                        }
+                        items[v] = rowIDs;
+                    }
+
+                    if (sortDirection == ERowIDSortDirection.None)
+                    {
+                        return items.SelectMany(i => i);
+                    }
+                    return MergeSorted(items, sortDirection);
+                });
+            }
+            else
+            {
+                return partitions.SelectMany(part =>
+                {
+                    var partition = tx.Read(part.PartitionID);
+                    var rowIDs = TakeFromTo(part, partition.GetSymbolRows(_column.FieldID, _value, tx));
                     if (sortDirection == ERowIDSortDirection.Asc)
                     {
-                        // Todo: use tx.ReadContext and reuse buffers.
                         rowIDs = rowIDs.Reverse();
                     }
-                    items[v] = rowIDs;
-                }
-
-                if (sortDirection == ERowIDSortDirection.None)
-                {
-                    return items.SelectMany(i => i);
-                }
-                return MergeSorted(items, sortDirection);
-            });
+                    return rowIDs;
+                });
+            }
         }
 
         private IEnumerable<long> TakeFromTo(PartitionRowIDRange part, IEnumerable<long> rowIds)

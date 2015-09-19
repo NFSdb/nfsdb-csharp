@@ -17,6 +17,7 @@
 #endregion
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using Apaf.NFSdb.Core.Collections;
 using Apaf.NFSdb.Core.Column;
 using Apaf.NFSdb.Core.Queries.Queryable;
@@ -29,7 +30,6 @@ namespace Apaf.NFSdb.Core.Queries
         private readonly IJournalCore _journal;
         private readonly ColumnMetadata _column;
         private readonly T[] _keys;
-        private static readonly IComparer<long> DescendingLongComparer = new DescendingLongComparer();
 
         public LatestBySymbolFilter(IJournalCore journal, ColumnMetadata column, T[] keys)
         {
@@ -45,17 +45,50 @@ namespace Apaf.NFSdb.Core.Queries
             {
                 return GetLatestByIndexedSymbol(partitions, tx, sort);
             }
-            else
-            {
-                return GetLatestByNonIndexedField(partitions, tx, sort);
-            }
+            return GetLatestByNonIndexedField(partitions, tx, sort);
         }
 
-        private IEnumerable<long> GetLatestByNonIndexedField(IEnumerable<PartitionRowIDRange> partitions, IReadTransactionContext tx, ERowIDSortDirection sort)
+        public string Column
         {
-            throw new NotImplementedException();
-            foreach (var part in partitions)
+            get { return _column.PropertyName; }
+        }
+
+        public long GetCardinality(IJournalCore journal, IReadTransactionContext tx)
+        {
+            if (_keys == null)
             {
+                return _journal.QueryStatistics.GetColumnDistinctCardinality(tx, _column);
+            }
+            return _keys.Length;
+        }
+
+        private IEnumerable<long> GetLatestByNonIndexedField(IEnumerable<PartitionRowIDRange> partitions,
+            IReadTransactionContext tx, ERowIDSortDirection sort)
+        {
+            if (sort == ERowIDSortDirection.Desc)
+            {
+                return GetLatestFromDescending(partitions, tx);
+            }
+            return GetLatestFromDescending(partitions.Reverse(), tx).Reverse();
+        }
+
+        private IEnumerable<long> GetLatestFromDescending(IEnumerable<PartitionRowIDRange> partitions, IReadTransactionContext tx)
+        {
+            var latest = new HashSet<T>();
+            HashSet<T> contains = _keys != null ? new HashSet<T>(_keys) : null;
+            foreach (var partition in partitions)
+            {
+                var readPartition = tx.Read(partition.PartitionID);
+                var col = (ITypedColumn<T>) readPartition.ReadColumn(_column.FieldID);
+                for (long r = partition.High; r >= partition.Low; r++)
+                {
+                    var val = col.Get(r, tx.ReadCache);
+                    if ((contains == null || contains.Contains(val)) && !latest.Contains(val))
+                    {
+                        latest.Add(val);
+                        yield return RowIDUtil.ToRowID(partition.PartitionID, r);
+                    }
+                }
             }
         }
 

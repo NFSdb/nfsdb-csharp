@@ -21,7 +21,14 @@ using Apaf.NFSdb.Core.Tx;
 
 namespace Apaf.NFSdb.Core.Column
 {
-    public interface IFixedWidthColumn : IColumn
+    public interface IFixedWidthColumn : IColumn,
+        ITypedColumn<int>, 
+        ITypedColumn<long>,
+        ITypedColumn<short>,
+        ITypedColumn<byte>, 
+        ITypedColumn<bool>,
+        ITypedColumn<double>,
+        ITypedColumn<DateTime>
     {
         int GetInt32(long rowID);
         long GetInt64(long rowID);

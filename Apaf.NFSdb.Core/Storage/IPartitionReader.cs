@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using Apaf.NFSdb.Core.Column;
 using Apaf.NFSdb.Core.Tx;
 
 namespace Apaf.NFSdb.Core.Storage
@@ -20,7 +21,8 @@ namespace Apaf.NFSdb.Core.Storage
 
         object Read(long toLocalRowID, IReadContext readContext);
 
-        int PartitionID { get; }
+        IColumn ReadColumn(int fieldID);
 
+        int PartitionID { get; }
     }
 }

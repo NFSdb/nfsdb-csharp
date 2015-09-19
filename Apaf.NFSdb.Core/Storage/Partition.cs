@@ -274,6 +274,12 @@ namespace Apaf.NFSdb.Core.Storage
             return symb.GetValues(valueKey, tx);
         }
 
+        public IColumn ReadColumn(int fieldID)
+        {
+            if (!_isStorageInitialized) InitializeStorage();
+            return _columns[fieldID].Column;
+        }
+
         public long GetSymbolRowCount<TT>(int fieldID, TT value, IReadTransactionContext tx)
         {
             if (!_isStorageInitialized) return 0;

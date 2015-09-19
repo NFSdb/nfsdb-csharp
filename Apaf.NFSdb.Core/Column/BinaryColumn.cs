@@ -159,5 +159,10 @@ namespace Apaf.NFSdb.Core.Column
         {
             SetBytes(rowID, (byte[])value, readContext);
         }
+
+        public byte[] Get(long rowID, IReadContext readContext)
+        {
+            return GetBytes(rowID, readContext);
+        }
     }
 }

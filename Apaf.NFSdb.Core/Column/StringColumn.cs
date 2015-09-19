@@ -170,5 +170,10 @@ namespace Apaf.NFSdb.Core.Column
         {
             get { return EFieldType.String; }
         }
+
+        public string Get(long rowID, IReadContext readContext)
+        {
+            return GetString(rowID, readContext);
+        }
     }
 }

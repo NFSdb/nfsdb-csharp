@@ -41,7 +41,7 @@ namespace Apaf.NFSdb.Core
             _partitionManager = partitionManager;
             _writerState = new WriterState<T>(metadata);
             _unsafePartitionManager = (IUnsafePartitionManager)_partitionManager;
-            _stats = new JournalStatistics(_unsafePartitionManager);
+            _stats = new JournalStatistics(_metadata, _unsafePartitionManager);
             Diagnostics = new JournalDiagnostics(_unsafePartitionManager);
         }
 

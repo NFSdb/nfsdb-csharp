@@ -20,7 +20,7 @@ using Apaf.NFSdb.Core.Tx;
 
 namespace Apaf.NFSdb.Core.Queries.Queryable
 {
-    public interface IPlanItem
+    public interface IPlanItem 
     {
         IEnumerable<long> Execute(IJournalCore journal, IReadTransactionContext tx, ERowIDSortDirection sort);
         long Cardinality(IJournalCore journal, IReadTransactionContext tx);

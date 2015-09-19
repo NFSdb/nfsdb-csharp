@@ -86,6 +86,17 @@ namespace Apaf.NFSdb.Tests.Query
                          select q, 1);
         }
 
+        [TestCase("Symbol_3,Symbol_12", "Ex_3,Ex_2", ExpectedResult = "283,263,243,223,203,183,163,143,123,103,83,63,43,23,3")]
+        public string Multiple_symbol_list_contains(string symValues, string exValues)
+        {
+            var symbols = symValues.Split(',');
+            var exs = exValues.Split(',');
+            return ExecuteLambda(
+                items => from q in items
+                         where symbols.Contains(q.Sym) && exs.Contains(q.Ex)
+                         select q, 1);
+        }
+
         [TestCase("Symbol_3,Symbol_12", "Ex_3", "", ExpectedResult = "283,263,243,223,203,183,163,143,123,103,83,63,43,23,3")]
         [TestCase("Symbol_3,Symbol_12", "Ex_12", "Ex_3", ExpectedResult = "292,283,272,263,252,243,232,223,212,203,192,183,172,163,152,143,132,123,112,103,92,83,72,63,52,43,32,23,12,3")]
         [TestCase("Symbol_3,Symbol_12", "Ex_12", "", ExpectedResult = "292,272,252,232,212,192,172,152,132,112,92,72,52,32,12")]

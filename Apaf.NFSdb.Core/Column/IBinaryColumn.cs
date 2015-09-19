@@ -20,7 +20,7 @@ using Apaf.NFSdb.Core.Tx;
 
 namespace Apaf.NFSdb.Core.Column
 {
-    public interface IBinaryColumn : IRefTypeColumn
+    public interface IBinaryColumn : IRefTypeColumn, ITypedColumn<byte[]>
     {
         byte[] GetBytes(long rowID, IReadContext readContext);
         unsafe int GetBytes(long rowID, byte* value, int startIndex, IReadContext readContext);

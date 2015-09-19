@@ -129,5 +129,40 @@ namespace Apaf.NFSdb.Core.Column
         }
 
         public string PropertyName { get; private set; }
+
+        int ITypedColumn<int>.Get(long rowID, IReadContext readContext)
+        {
+            return GetInt32(rowID);
+        }
+
+        long ITypedColumn<long>.Get(long rowID, IReadContext readContext)
+        {
+            return GetInt64(rowID);
+        }
+
+        short ITypedColumn<short>.Get(long rowID, IReadContext readContext)
+        {
+            return GetInt16(rowID);
+        }
+
+        byte ITypedColumn<byte>.Get(long rowID, IReadContext readContext)
+        {
+            return GetByte(rowID);
+        }
+
+        bool ITypedColumn<bool>.Get(long rowID, IReadContext readContext)
+        {
+            return GetBool(rowID);
+        }
+
+        double ITypedColumn<double>.Get(long rowID, IReadContext readContext)
+        {
+            return GetDouble(rowID);
+        }
+
+        DateTime ITypedColumn<DateTime>.Get(long rowID, IReadContext readContext)
+        {
+            return GetDateTime(rowID);
+        }
     }
 }
