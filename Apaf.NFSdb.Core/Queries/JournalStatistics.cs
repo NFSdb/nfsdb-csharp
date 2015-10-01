@@ -84,7 +84,7 @@ namespace Apaf.NFSdb.Core.Queries
                     tx.GetPartitionTx(MetadataConstants.SYMBOL_PARTITION_ID).AppendOffset[symiFile.FileID]
                     / MetadataConstants.STRING_INDEX_FILE_RECORD_SIZE);
             }
-            throw new NFSdbQuaryableNotSupportedException("Column {0} is not indexed and presice distinct count is not available",
+            throw new NFSdbQueryableNotSupportedException("Column {0} is not indexed and presice distinct count is not available",
                 column.PropertyName);
         }
     }

@@ -25,7 +25,8 @@ using Apaf.NFSdb.Core.Tx;
 
 namespace Apaf.NFSdb.Core.Queries
 {
-    public class LatestBySymbolFilter<T> : IPartitionFilter
+
+    public class LatestBySymbolFilter<T> : IPartitionFilter, ILatestBySymbolFilter
     {
         private readonly IJournalCore _journal;
         private readonly ColumnMetadata _column;
@@ -48,9 +49,9 @@ namespace Apaf.NFSdb.Core.Queries
             return GetLatestByNonIndexedField(partitions, tx, sort);
         }
 
-        public string Column
+        public ColumnMetadata Column
         {
-            get { return _column.PropertyName; }
+            get { return _column; }
         }
 
         public long GetCardinality(IJournalCore journal, IReadTransactionContext tx)
@@ -80,7 +81,7 @@ namespace Apaf.NFSdb.Core.Queries
             {
                 var readPartition = tx.Read(partition.PartitionID);
                 var col = (ITypedColumn<T>) readPartition.ReadColumn(_column.FieldID);
-                for (long r = partition.High; r >= partition.Low; r++)
+                for (long r = partition.High; r >= partition.Low; r--)
                 {
                     var val = col.Get(r, tx.ReadCache);
                     if ((contains == null || contains.Contains(val)) && !latest.Contains(val))
@@ -169,6 +170,19 @@ namespace Apaf.NFSdb.Core.Queries
             var result = new ArraySlice<long>(latestRowIDs, startIndex, latestRowIDs.Length - startIndex,
                 sort == ERowIDSortDirection.Asc);
             return result;
+        }
+
+        public override string ToString()
+        {
+            if (_keys == null)
+            {
+                return string.Format("Latest_By({0})", _column.PropertyName);
+            }
+            else
+            {
+                return string.Format("Latest_By({0} in ({1}))", _column.PropertyName,
+                    string.Join(",", _keys));
+            }
         }
     }
 }

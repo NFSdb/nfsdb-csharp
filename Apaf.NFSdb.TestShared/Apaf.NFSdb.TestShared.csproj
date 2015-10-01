@@ -1,5 +1,5 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
-<Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+<Project ToolsVersion="4.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
   <PropertyGroup>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
@@ -14,6 +14,7 @@
     <SolutionDir Condition="$(SolutionDir) == '' Or $(SolutionDir) == '*Undefined*'">..\</SolutionDir>
     <RestorePackages>true</RestorePackages>
     <TargetFrameworkProfile />
+    <UseMSBuildEngine>False</UseMSBuildEngine>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
     <DebugSymbols>true</DebugSymbols>
@@ -40,6 +41,7 @@
     <PlatformTarget>AnyCPU</PlatformTarget>
     <ErrorReport>prompt</ErrorReport>
     <CodeAnalysisRuleSet>MinimumRecommendedRules.ruleset</CodeAnalysisRuleSet>
+    <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="System" />
@@ -60,11 +62,11 @@
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\Apaf.NFSdb.Core\Apaf.NFSdb.Core.csproj">
-      <Project>{94aa4de7-bc16-46f4-b956-d732d6d265b4}</Project>
+      <Project>{94AA4DE7-BC16-46F4-B956-D732D6D265B4}</Project>
       <Name>Apaf.NFSdb.Core</Name>
     </ProjectReference>
     <ProjectReference Include="..\Apaf.NFSdb.TestModel\Apaf.NFSdb.TestModel.csproj">
-      <Project>{111644ba-19f7-48fc-bd9e-b94a7686d178}</Project>
+      <Project>{111644BA-19F7-48FC-BD9E-B94A7686D178}</Project>
       <Name>Apaf.NFSdb.TestModel</Name>
     </ProjectReference>
   </ItemGroup>

@@ -185,10 +185,10 @@ namespace Apaf.NFSdb.Core.Storage
                 }
             }
 
-            return GetBufferCore(bufferIndex, offset);
+            return GetBufferCore(bufferIndex) + offset;
         }
 
-        public byte* GetBufferCore(long bufferIndex, long offset)
+        public byte* GetBufferCore(long bufferIndex)
         {
             lock (_buffSync)
             {
@@ -230,10 +230,12 @@ namespace Apaf.NFSdb.Core.Storage
                 var view = _compositeFile.CreateViewAccessor(bufferOffset, bufferSize); 
                 _buffers[bufferIndex] = view;
                 var address = view.Pointer - view.BufferOffset + FILE_HEADER_LENGTH;
+
+                Thread.MemoryBarrier();
                 _pointersArray[bufferIndex] = address;
 
                 Interlocked.Add(ref _mappedSize, bufferSize);
-                return _pointersArray[bufferIndex] + offset;
+                return _pointersArray[bufferIndex];
             }
         }
 

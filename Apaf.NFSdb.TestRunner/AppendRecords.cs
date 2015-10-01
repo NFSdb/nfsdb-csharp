@@ -31,14 +31,15 @@ namespace Apaf.NFSdb.TestRunner
             Utils.ClearJournal<Quote>();
             const int totalCount = (int) 20e6;
             Utils.ClearJournal<Quote>();
-            int increment = 1000;
-            using (var journal = Utils.CreateJournal<Quote>(EFileAccess.ReadWrite))
-            {
-                var sw1 = new Stopwatch();
-                const int count = 2;
-                const int startIndex = -2;
+            const int increment = 1000;
+            var sw1 = new Stopwatch();
+            const int count = 2;
+            const int startIndex = -2;
 
-                for (int i = startIndex; i < count; i++)
+            for (int i = startIndex; i < count; i++)
+            {
+                Utils.ClearJournal<Quote>();
+                using (var journal = Utils.CreateJournal<Quote>(EFileAccess.ReadWrite))
                 {
                     using (var wr = journal.OpenWriteTx())
                     {
@@ -50,14 +51,13 @@ namespace Apaf.NFSdb.TestRunner
                         QuoteJournalTests.GenerateRecords(totalCount, wr, increment);
                         wr.Commit();
                     }
-                    journal.Truncate();
                 }
 
-                sw1.Stop();
-                Console.WriteLine(DateTime.Now);
-                Console.WriteLine(sw1.Elapsed);
-                Console.WriteLine(sw1.Elapsed.TotalMilliseconds / count);
             }
+            sw1.Stop();
+            Console.WriteLine(DateTime.Now);
+            Console.WriteLine(sw1.Elapsed);
+            Console.WriteLine(sw1.Elapsed.TotalMilliseconds/count);
         }
 
         public string Name

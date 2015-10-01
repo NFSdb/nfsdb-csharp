@@ -49,7 +49,7 @@ namespace Apaf.NFSdb.Core.Queries
             _column = column;
             if (values.Length == 1)
             {
-                _value = _values[0];
+                _value = values[0];
             }
             else
             {
@@ -57,9 +57,9 @@ namespace Apaf.NFSdb.Core.Queries
             }
         }
 
-        public string Column
+        public ColumnMetadata Column
         {
-            get { return _column.PropertyName; }
+            get { return _column; }
         }
 
         public T[] FilterValues
@@ -218,6 +218,15 @@ namespace Apaf.NFSdb.Core.Queries
                 if (!_asc && i1.Current < i2.Current) return 1;
                 return -1;
             }
+        }
+
+        public override string ToString()
+        {
+            if (_values != null)
+            {
+                return string.Format("{0} in ({1})", _column.PropertyName, string.Join(",", _values));
+            }
+            return string.Format("{0} = {1}", _column.PropertyName, _value);
         }
     }
 }

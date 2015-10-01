@@ -29,7 +29,7 @@ namespace Apaf.NFSdb.Core.Queries.Queryable.PlanItem
     {
         private readonly IJournalCore _journal;
         private readonly IReadTransactionContext _tx;
-        private List<IColumnFilter> _filters;
+        private List<IColumnFilter> _andFilters;
         private IPartitionFilter _partitionFilter;
         private long? _cardin;
 
@@ -43,54 +43,52 @@ namespace Apaf.NFSdb.Core.Queries.Queryable.PlanItem
         public void AddContainsScan<T>(ColumnMetadata column, T[] literals)
         {
             var newFilter = new SymbolFilter<T>(column, literals);
-            AddFilter(column, newFilter);
+            AddFilter(newFilter);
         }
 
         public void AddContainsScan<T>(ColumnMetadata column, T literal)
         {
             var newFilter = new SymbolFilter<T>(column, literal);
-            AddFilter(column, newFilter);
+            AddFilter(newFilter);
         }
 
-        private void AddFilter<T>(ColumnMetadata column, SymbolFilter<T> newFilter)
+        private void AddFilter<T>(SymbolFilter<T> newFilter)
         {
-            if (column.Indexed)
+            var partitionAsColumn = _partitionFilter as IColumnFilter;
+            if (_partitionFilter == null ||
+                (partitionAsColumn != null
+                 && partitionAsColumn.GetCardinality(_journal, _tx) > newFilter.GetCardinality(_journal, _tx)))
             {
-                var partitionAsColumn = _partitionFilter as IColumnFilter;
-                if (_partitionFilter == null ||
-                    (partitionAsColumn != null
-                     && partitionAsColumn.GetCardinality(_journal, _tx) > newFilter.GetCardinality(_journal, _tx)))
+                if (partitionAsColumn != null)
                 {
-                    if (partitionAsColumn != null)
-                    {
-                        _filters.Add(partitionAsColumn);
-                    }
-                    _partitionFilter = newFilter;
+                    _andFilters.Add(partitionAsColumn);
                 }
-            }
-            else
-            {
-                if (_filters == null) _filters = new List<IColumnFilter>();
-                _filters.Add(newFilter);
+                _partitionFilter = newFilter;
             }
         }
 
         public void AddFilter(IColumnFilter filter)
         {
-            if (_filters == null) _filters = new List<IColumnFilter>();
-            _filters.Add(filter);
+            if (_andFilters == null) _andFilters = new List<IColumnFilter>();
+            _andFilters.Add(filter);
         }
 
-        public string SymbolName
+        public string LatestSymbolName
         {
             get
             {
-                if (_filters != null && _filters.Count == 1)
+                var filter = _partitionFilter as ILatestBySymbolFilter;
+                if (filter != null)
                 {
-                    return _filters[0].Column;
+                    return filter.Column.PropertyName;
                 }
                 return null;
             }
+        }
+
+        internal IEnumerable<IColumnFilter> ColumnFilters
+        {
+            get { return _andFilters; }
         }
 
         public IEnumerable<long> Execute(IJournalCore journal, IReadTransactionContext tx, 
@@ -107,7 +105,7 @@ namespace Apaf.NFSdb.Core.Queries.Queryable.PlanItem
 
             if (_partitionFilter != null)
             {
-                if (_filters == null)
+                if (_andFilters == null)
                 {
                     return _partitionFilter.Filter(intervals, tx, sort);
                 }
@@ -120,9 +118,9 @@ namespace Apaf.NFSdb.Core.Queries.Queryable.PlanItem
 
         private void OptimizeFilters(IJournalCore journal, IReadTransactionContext tx)
         {
-            if (_filters != null)
+            if (_andFilters != null)
             {
-                _filters.Sort(new DescendingCardinalityComparer(journal, tx));
+                _andFilters.Sort(new DescendingCardinalityComparer(journal, tx));
             }
         }
 
@@ -155,7 +153,7 @@ namespace Apaf.NFSdb.Core.Queries.Queryable.PlanItem
                 var rowPartitionIndex = RowIDUtil.ToPartitionIndex(globalRowID);
                 if (rowPartitionIndex != partitionIndex)
                 {
-                    partition = tx.Read(partitionIndex);
+                    partition = tx.Read(rowPartitionIndex);
                     partitionIndex = rowPartitionIndex;
                 }
 
@@ -168,10 +166,10 @@ namespace Apaf.NFSdb.Core.Queries.Queryable.PlanItem
 
         private bool MatchFilters(IPartitionReader partition, IReadContext readContext, long localRowID)
         {
-            if (_filters == null) return true;
-            for (int i = 0; i < _filters.Count; i++)
+            if (_andFilters == null) return true;
+            for (int i = 0; i < _andFilters.Count; i++)
             {
-                if (!_filters[i].IsMatch(partition, readContext,localRowID))
+                if (!_andFilters[i].IsMatch(partition, readContext,localRowID))
                 {
                     return false;
                 }
@@ -183,9 +181,9 @@ namespace Apaf.NFSdb.Core.Queries.Queryable.PlanItem
         {
             if (!_cardin.HasValue)
             {
-                if (_filters != null)
+                if (_andFilters != null)
                 {
-                    _cardin = _filters.Min(f => f.GetCardinality(journal, tx));
+                    _cardin = _andFilters.Min(f => f.GetCardinality(journal, tx));
                 }
                 else
                 {
@@ -205,25 +203,34 @@ namespace Apaf.NFSdb.Core.Queries.Queryable.PlanItem
         public bool CanTranformLastestByIdPlanItem(ColumnMetadata column)
         {
             var partitionAsColumn = _partitionFilter as IColumnFilter;
-            if (_partitionFilter != null && partitionAsColumn != null)
+            if (_partitionFilter != null && partitionAsColumn == null)
             {
-                return false;
+                var existingLatestFileter = _partitionFilter as ILatestBySymbolFilter;
+                return existingLatestFileter != null && existingLatestFileter.Column.FieldID == column.FieldID;
             }
 
             return true;
         }
 
-        public void TranformLastestByIdPlanItem(ColumnMetadata column)
+        public void ApplyLastestByIdPlanItem(ColumnMetadata column)
         {
             if (!CanTranformLastestByIdPlanItem(column))
             {
                 throw new InvalidOperationException("Please check CanTranformLastestByIdPlanItem first.");
             }
 
+            var existingLatestFileter = _partitionFilter as ILatestBySymbolFilter;
+            if (existingLatestFileter != null && existingLatestFileter.Column.FieldID == column.FieldID)
+            {
+                return;
+            }
+
             var partitionAsColumn = _partitionFilter as IColumnFilter;
             if (partitionAsColumn != null)
             {
-                _filters.Add(partitionAsColumn);
+                if (_andFilters == null) _andFilters = new List<IColumnFilter>();
+                _andFilters.Add(partitionAsColumn);
+                _partitionFilter = null;
             }
 
             switch (column.FieldType)
@@ -255,33 +262,169 @@ namespace Apaf.NFSdb.Core.Queries.Queryable.PlanItem
                     _partitionFilter = new LatestBySymbolFilter<DateTime>(_journal, column, ExtractColumnContains<DateTime>(column));
                     break;
                 default:
-                    throw new NFSdbQuaryableNotSupportedException("Latest by bit set column is not supported.");
+                    throw new NFSdbQueryableNotSupportedException("Latest by {0} column is not supported.", column.FieldType);
             }
         }
 
         private T[] ExtractColumnContains<T>(ColumnMetadata column)
         {
-            SymbolFilter<T> found = _filters
-                .OfType<SymbolFilter<T>>()
-                .FirstOrDefault(c => c.Column == column.PropertyName);
-
-            if (found != null)
+            var mainF = _partitionFilter as SymbolFilter<T>;
+            if (mainF != null && mainF.Column.FieldID == column.FieldID)
             {
-                _filters.Remove(found);
-                return found.FilterValues;
+                return mainF.FilterValues;
+            }
+
+            if (_andFilters != null)
+            {
+                SymbolFilter<T> found = _andFilters
+                    .OfType<SymbolFilter<T>>()
+                    .FirstOrDefault(c => c.Column.FieldID == column.FieldID);
+
+                if (found != null)
+                {
+                    _andFilters.Remove(found);
+                    return found.FilterValues;
+                }
             }
             return null;
         }
 
         public bool TryIntersect(RowScanPlanItem rowScan2)
         {
-            if (_partitionFilter == null || rowScan2._partitionFilter == null)
+            if (_partitionFilter is IColumnFilter && rowScan2._partitionFilter is IColumnFilter)
             {
-                _partitionFilter = _partitionFilter ?? rowScan2._partitionFilter;
-                _filters.AddRange(rowScan2._filters);
+                if (_andFilters == null) _andFilters = new List<IColumnFilter>();
+                var thisMain = (IColumnFilter)_partitionFilter;
+                var thatMain = (IColumnFilter)rowScan2._partitionFilter;
+
+                if (thisMain.GetCardinality(_journal, _tx) > thatMain.GetCardinality(_journal, _tx))
+                {
+                    _andFilters.Add(thisMain);
+                    _partitionFilter = rowScan2._partitionFilter;
+                    if (rowScan2._andFilters != null)
+                    {
+                        _andFilters.AddRange(rowScan2._andFilters);
+                    }
+                }
+                else
+                {
+                    _andFilters.Add(thatMain);
+                    if (rowScan2._andFilters != null)
+                    {
+                        _andFilters.AddRange(rowScan2._andFilters);
+                    }
+                }
+                return true;
+            }
+            else if (_partitionFilter is IColumnFilter)
+            {
+                if (_andFilters == null) _andFilters = new List<IColumnFilter>();
+                var thisMain = (IColumnFilter)_partitionFilter;
+                _andFilters.Add(thisMain);
+                _partitionFilter = rowScan2._partitionFilter;
+                if (rowScan2._andFilters != null)
+                {
+                    _andFilters.AddRange(rowScan2._andFilters);
+                }
+                return true;
+            }
+            else if (rowScan2._partitionFilter is IColumnFilter)
+            {
+                if (_andFilters == null) _andFilters = new List<IColumnFilter>();
+                var thatMain = (IColumnFilter)rowScan2._partitionFilter;
+                _andFilters.Add(thatMain);
+                if (rowScan2._andFilters != null)
+                {
+                    _andFilters.AddRange(rowScan2._andFilters);
+                }
                 return true;
             }
             return false;
+        }
+
+        public override string ToString()
+        {
+            string andFiltersString = null;
+            if (_andFilters != null)
+            {
+                andFiltersString = string.Join(" and ", _andFilters.Select(f => f.ToString()));
+            }
+
+            if (_partitionFilter != null)
+            {
+                if (_andFilters != null && _andFilters.Count > 0)
+                {
+                    return string.Join(" and ", _partitionFilter, andFiltersString);
+                }
+                return _partitionFilter.ToString();
+            }
+            return andFiltersString ?? string.Empty;
+        }
+
+        public bool TryUnion(RowScanPlanItem rowScan2)
+        {
+            var c1 = GetOnlySymbolScan();
+            var c2 = rowScan2.GetOnlySymbolScan();
+            if (c1 != null && c1.FieldID == c2.FieldID)
+            {
+                switch (c1.FieldType)
+                {
+                    case EFieldType.Byte:
+                        _partitionFilter = new SymbolFilter<byte>(c1,
+                            ExtractColumnContains<byte>(c1).Concat(rowScan2.ExtractColumnContains<byte>(c2)).ToArray());
+                        break;
+                    case EFieldType.Bool:
+                        _partitionFilter = new SymbolFilter<bool>(c1,
+                            ExtractColumnContains<bool>(c1).Concat(rowScan2.ExtractColumnContains<bool>(c2)).ToArray());
+                        break;
+                    case EFieldType.Int16:
+                        _partitionFilter = new SymbolFilter<Int16>(c1,
+                            ExtractColumnContains<Int16>(c1).Concat(rowScan2.ExtractColumnContains<Int16>(c2)).ToArray());
+                        break;
+                    case EFieldType.Int32:
+                        _partitionFilter = new SymbolFilter<int>(c1,
+                            ExtractColumnContains<int>(c1).Concat(rowScan2.ExtractColumnContains<int>(c2)).ToArray());
+                        break;
+                    case EFieldType.Int64:
+                        _partitionFilter = new SymbolFilter<long>(c1,
+                            ExtractColumnContains<long>(c1).Concat(rowScan2.ExtractColumnContains<long>(c2)).ToArray());
+                        break;
+                    case EFieldType.Double:
+                        _partitionFilter = new SymbolFilter<double>(c1,
+                            ExtractColumnContains<double>(c1)
+                                .Concat(rowScan2.ExtractColumnContains<double>(c2))
+                                .ToArray());
+                        break;
+                    case EFieldType.Symbol:
+                    case EFieldType.String:
+                        _partitionFilter = new SymbolFilter<string>(c1,
+                            ExtractColumnContains<string>(c1)
+                                .Concat(rowScan2.ExtractColumnContains<string>(c2))
+                                .ToArray());
+                        break;
+                    case EFieldType.DateTime:
+                    case EFieldType.DateTimeEpochMilliseconds:
+                        _partitionFilter = new SymbolFilter<DateTime>(c1,
+                            ExtractColumnContains<DateTime>(c1)
+                                .Concat(rowScan2.ExtractColumnContains<DateTime>(c2))
+                                .ToArray());
+                        break;
+                    default:
+                        return false;
+                }
+                return true;
+            }
+
+            return false;
+        }
+
+        private ColumnMetadata GetOnlySymbolScan()
+        {
+            if (_partitionFilter is IColumnFilter && (_andFilters == null || _andFilters.Count == 0))
+            {
+                return ((IColumnFilter) _partitionFilter).Column;
+            }
+            return null;
         }
     }
 

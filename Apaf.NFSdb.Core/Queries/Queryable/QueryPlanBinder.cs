@@ -129,7 +129,7 @@ namespace Apaf.NFSdb.Core.Queries.Queryable
                         var str = value as string;
                         if (str == null)
                         {
-                            throw new NFSdbQuaryableNotSupportedException(
+                            throw new NFSdbQueryableNotSupportedException(
                                 "List<string>.Contains, string[].Contains allowed only. Unable to execute" +
                                 " Contains on source of type {0}", value);
                         }
@@ -141,7 +141,7 @@ namespace Apaf.NFSdb.Core.Queries.Queryable
             }
             else
             {
-                throw new NFSdbQuaryableNotSupportedException(
+                throw new NFSdbQueryableNotSupportedException(
                            "List.Contains, Array.Contains allowed only. Unable to execute Contains on {0}.",
                            constSource);
             }
@@ -158,7 +158,7 @@ namespace Apaf.NFSdb.Core.Queries.Queryable
         {
             if (resultType != typeof (IQueryable<T>))
             {
-                throw new NFSdbQuaryableNotSupportedException(
+                throw new NFSdbQueryableNotSupportedException(
                     "Usage of expressions in select statment is not allowed."
                     + " Please convert to IEnumerable and perform select statement.");
             }
@@ -169,7 +169,7 @@ namespace Apaf.NFSdb.Core.Queries.Queryable
         {
             if (resultType != typeof(T))
             {
-                throw new NFSdbQuaryableNotSupportedException("Use Single to select item of Journal type");
+                throw new NFSdbQueryableNotSupportedException("Use Single to select item of Journal type");
             }
             return new SingleItemExpression(Visit(predicate.Body), EJournalExpressionType.Single);
         }

@@ -92,7 +92,7 @@ namespace Apaf.NFSdb.Core.Queries.Queryable
                     return VisitCall((OrderExpression)exp);
 
                 default:
-                    throw new NFSdbQuaryableNotSupportedException(
+                    throw new NFSdbQueryableNotSupportedException(
                         "Expression {0} cannot be bound to Journal operation.", exp);
             }
         }
@@ -107,7 +107,7 @@ namespace Apaf.NFSdb.Core.Queries.Queryable
                     break;
 
                 default:
-                    throw new NFSdbQuaryableNotSupportedException(
+                    throw new NFSdbQueryableNotSupportedException(
                         "Expression call {0} cannot be bound to Journal operation.", m);
             }
 
@@ -124,7 +124,7 @@ namespace Apaf.NFSdb.Core.Queries.Queryable
                     break;
 
                 default:
-                    throw new NFSdbQuaryableNotSupportedException(
+                    throw new NFSdbQueryableNotSupportedException(
                         "Expression call {0} cannot be bound to Journal operation.", m);
             }
 
@@ -137,7 +137,7 @@ namespace Apaf.NFSdb.Core.Queries.Queryable
             {
                 return new ResultSetBuilder<T>(_journal, _tx);
             }
-            throw new NFSdbQuaryableNotSupportedException(
+            throw new NFSdbQueryableNotSupportedException(
                 "Expression {0} cannot be bound to Journal operation.", exp);
         }
 
@@ -151,7 +151,7 @@ namespace Apaf.NFSdb.Core.Queries.Queryable
 
                 return result;
             }
-            throw new NFSdbQuaryableNotSupportedException(
+            throw new NFSdbQueryableNotSupportedException(
                 "Contains can only be bound for expression like List<string>.Contains(symbol_column))." +
                 " Unable to bind {0}",
                 exp);
@@ -177,7 +177,7 @@ namespace Apaf.NFSdb.Core.Queries.Queryable
                     return EvaluateCompare(expression);
 
                 default:
-                    throw new NFSdbQuaryableNotSupportedException(
+                    throw new NFSdbQueryableNotSupportedException(
                         "Binary operation {0} cannot be bound to Journal operation", 
                         expression.NodeType);
             }
@@ -223,7 +223,7 @@ namespace Apaf.NFSdb.Core.Queries.Queryable
                             filterInterval = DateInterval.To(timestamp);
                             break;
                         default:
-                            throw new NFSdbQuaryableNotSupportedException(
+                            throw new NFSdbQueryableNotSupportedException(
                                 "Timestamp column operation {0} is not supported. Supported operations are <, >, <=, >=",
                                 expression.NodeType);
                     }
@@ -233,7 +233,7 @@ namespace Apaf.NFSdb.Core.Queries.Queryable
                     return result;
                 }
             }
-            throw new NFSdbQuaryableNotSupportedException(
+            throw new NFSdbQueryableNotSupportedException(
                       "Comparison is supported for timestamp column only. Unable to bind {0} to journal query operation", expression);
         }
 
@@ -281,13 +281,6 @@ namespace Apaf.NFSdb.Core.Queries.Queryable
             {
                 var memberName = ExHelper.GetMemberName(expression, typeof (T));
                 var literal = ExHelper.LiteralName(expression, typeof (T));
-                if (literal is string)
-                {
-                    var result = new ResultSetBuilder<T>(_journal, _tx);
-                    result.IndexScan(memberName, literal);
-                    return result;
-                }
-
 
                 if (literal is long || literal is DateTime)
                 {
@@ -313,6 +306,12 @@ namespace Apaf.NFSdb.Core.Queries.Queryable
                         result.TimestampInterval(filterInterval);
                         return result;
                     }
+                }
+                else
+                {
+                    var result = new ResultSetBuilder<T>(_journal, _tx);
+                    result.ColumnScan(memberName, literal);
+                    return result;
                 }
             }
             throw new NotSupportedException(

@@ -1,9 +1,5 @@
 ﻿using System;
 using System.Linq;
-using Apaf.NFSdb.Core;
-using Apaf.NFSdb.Core.Storage;
-using Apaf.NFSdb.Tests.Columns.ThriftModel;
-using Apaf.NFSdb.TestShared;
 using NUnit.Framework;
 
 namespace Apaf.NFSdb.Tests.Query
@@ -15,14 +11,14 @@ namespace Apaf.NFSdb.Tests.Query
         [Test]
         public void Should_return_correct_latest()
         {
-            var latestIds = ExecuteLambda(items => items, 1);
+            var latestIds = ExecuteLatestBySymUtil.ExecuteLambda(items => items, 1);
             Assert.That(latestIds, Is.EqualTo("299,298,297,296,295,294,293,292,291,290,289,288,287,286,285,284,283,282,281,280"));
         }
 
         [Test]
         public void Should_return_correct_latest_limted_timestamps()
         {
-            var latestIds = ExecuteLambda(items =>
+            var latestIds = ExecuteLatestBySymUtil.ExecuteLambda(items =>
                 from q in items
                 where q.Timestamp < 100
                 select q, 1);
@@ -33,7 +29,7 @@ namespace Apaf.NFSdb.Tests.Query
         [Test]
         public void Should_return_correct_latest_limted_timestamps2()
         {
-            var latestIds = ExecuteLambda(items =>
+            var latestIds = ExecuteLatestBySymUtil.ExecuteLambda(items =>
                 from q in items
                 where q.Timestamp >= 290
                 select q, 1);
@@ -44,7 +40,7 @@ namespace Apaf.NFSdb.Tests.Query
         [Test]
         public void Should_return_correct_latest_limted_timestamps3()
         {
-            var latestIds = ExecuteLambda(items =>
+            var latestIds = ExecuteLatestBySymUtil.ExecuteLambda(items =>
                 from q in items
                 where q.Timestamp >= 90 && q.Timestamp < 100
                 select q, 1);
@@ -58,7 +54,7 @@ namespace Apaf.NFSdb.Tests.Query
         [TestCase("Symbol_20", ExpectedResult = "")]
         public string Should_return_correct_latest_by_single_key(string sym)
         {
-            var latestIds = ExecuteLambda(items =>
+            var latestIds = ExecuteLatestBySymUtil.ExecuteLambda(items =>
                 from q in items
                 where q.Sym == sym
                 select q, 1);
@@ -73,7 +69,7 @@ namespace Apaf.NFSdb.Tests.Query
         public string Should_return_correct_latest_by_list_of_keys(string sym)
         {
             var symbols = sym.Split(',');
-            var latestIds = ExecuteLambda(items =>
+            var latestIds = ExecuteLatestBySymUtil.ExecuteLambda(items =>
                 from q in items
                 where symbols.Contains(q.Sym)
                 select q, 1);
@@ -85,51 +81,40 @@ namespace Apaf.NFSdb.Tests.Query
         [TestCase("Ex_111", ExpectedResult = "")]
         public string Should_return_correct_latest_filtered_by_another_symbol(string ex)
         {
-            var latestIds = ExecuteLambda(items =>
+            var latestIds = ExecuteLatestBySymUtil.ExecuteLambda(items =>
                 from q in items
                 where q.Ex == ex
                 select q, 1);
             return latestIds;
         }
 
-        private string ExecuteLambda(Func<IQueryable<Quote>, IQueryable<Quote>> lambda, int increment = 2)
+        [TestCase(299.0, ExpectedResult = "299")]
+        [TestCase(298.0, ExpectedResult = "298")]
+        [TestCase(1, ExpectedResult = "")]
+        public string Should_return_correct_latest_filtered_by_another_column(double size)
         {
-            Utils.ClearJournal<Quote>();
-            var config = Utils.ReadConfig<Quote>();
-            config.Symbols = config.Symbols.Where(s => 
-                !string.Equals("Sym", s.Name, StringComparison.OrdinalIgnoreCase)).ToList();
-
-            using (var qj = Utils.CreateJournal<Quote>(config, EFileAccess.ReadWrite))
-            {
-                AppendRecords(qj, 0, increment);
-                var rdr = qj.OpenReadTx();
-
-                var qts = lambda(rdr.GetLatestItemsBy("Sym"));
-
-                // Act.
-                var result = qts.AsEnumerable().Select(q => q.Timestamp);
-
-                // Verify.
-                return string.Join(",", result);
-            }
+            var latestIds = ExecuteLatestBySymUtil.ExecuteLambda(items =>
+                from q in items
+                where q.Ask == size
+                select q, 1);
+            return latestIds;
         }
 
-        private static void AppendRecords(IJournal<Quote> qj, long startDate, long increment)
+
+        public static TestCaseData[] Should_return_correct_latest_filtered_by_another_symbol_source = new[]
         {
-            using (var wr = qj.OpenWriteTx())
-            {
-                for (int i = 0; i < 300; i++)
-                {
-                    wr.Append(new Quote
-                    {
-                        Ask = i,
-                        Ex = "Ex_" + i % 20,
-                        Sym = "Symbol_" + i % 20,
-                        Timestamp = startDate + i * increment
-                    });
-                }
-                wr.Commit();
-            }
+            (new TestCaseData(new Double[] {299.0, 298.0}).Returns("299,298"))
+        };
+
+        [Ignore("WIP")]
+        [TestCaseSource("Should_return_correct_latest_filtered_by_another_symbol_source")]
+        public string Should_return_correct_latest_filtered_by_another_column_contains(double[] sizes)
+        {
+            var latestIds = ExecuteLatestBySymUtil.ExecuteLambda(items =>
+                from q in items
+                where sizes.Contains(q.Ask)
+                select q, 1);
+            return latestIds;
         }
     }
 }

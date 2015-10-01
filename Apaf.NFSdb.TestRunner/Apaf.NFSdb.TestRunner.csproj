@@ -14,9 +14,9 @@
     <SolutionDir Condition="$(SolutionDir) == '' Or $(SolutionDir) == '*Undefined*'">..\</SolutionDir>
     <RestorePackages>true</RestorePackages>
     <TargetFrameworkProfile />
+    <UseMSBuildEngine>False</UseMSBuildEngine>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
-    <PlatformTarget>AnyCPU</PlatformTarget>
     <DebugSymbols>true</DebugSymbols>
     <DebugType>full</DebugType>
     <Optimize>false</Optimize>
@@ -25,6 +25,7 @@
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
     <Prefer32Bit>false</Prefer32Bit>
+    <Commandlineparameters>append-records</Commandlineparameters>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
     <PlatformTarget>AnyCPU</PlatformTarget>
@@ -45,6 +46,8 @@
     <ErrorReport>prompt</ErrorReport>
     <CodeAnalysisRuleSet>MinimumRecommendedRules.ruleset</CodeAnalysisRuleSet>
     <Prefer32Bit>true</Prefer32Bit>
+    <WarningLevel>4</WarningLevel>
+    <Optimize>false</Optimize>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|x64'">
     <OutputPath>bin\x64\Release\</OutputPath>
@@ -55,6 +58,7 @@
     <ErrorReport>prompt</ErrorReport>
     <CodeAnalysisRuleSet>MinimumRecommendedRules.ruleset</CodeAnalysisRuleSet>
     <Prefer32Bit>true</Prefer32Bit>
+    <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release64|AnyCPU'">
     <OutputPath>bin\Release64\</OutputPath>
@@ -64,6 +68,7 @@
     <PlatformTarget>AnyCPU</PlatformTarget>
     <ErrorReport>prompt</ErrorReport>
     <CodeAnalysisRuleSet>MinimumRecommendedRules.ruleset</CodeAnalysisRuleSet>
+    <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release64|x64'">
     <OutputPath>bin\x64\Release64\</OutputPath>
@@ -74,12 +79,9 @@
     <ErrorReport>prompt</ErrorReport>
     <CodeAnalysisRuleSet>MinimumRecommendedRules.ruleset</CodeAnalysisRuleSet>
     <Prefer32Bit>true</Prefer32Bit>
+    <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <ItemGroup>
-    <Reference Include="nunit.framework, Version=2.6.3.13283, Culture=neutral, PublicKeyToken=96d09a1eb7f44a77, processorArchitecture=MSIL">
-      <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\packages\NUnit.2.6.3\lib\nunit.framework.dll</HintPath>
-    </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core" />
     <Reference Include="System.Data.DataSetExtensions" />
@@ -87,6 +89,9 @@
     <Reference Include="System.Data" />
     <Reference Include="Thrift">
       <HintPath>..\packages\Thrift.0.9.0.0\lib\net35\Thrift.dll</HintPath>
+    </Reference>
+    <Reference Include="nunit.framework">
+      <HintPath>..\packages\NUnit.2.6.3\lib\nunit.framework.dll</HintPath>
     </Reference>
   </ItemGroup>
   <ItemGroup>
@@ -106,15 +111,15 @@
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\Apaf.NFSdb.Core\Apaf.NFSdb.Core.csproj">
-      <Project>{94aa4de7-bc16-46f4-b956-d732d6d265b4}</Project>
+      <Project>{94AA4DE7-BC16-46F4-B956-D732D6D265B4}</Project>
       <Name>Apaf.NFSdb.Core</Name>
     </ProjectReference>
     <ProjectReference Include="..\Apaf.NFSdb.IntegrationTests\Apaf.NFSdb.IntegrationTests.csproj">
-      <Project>{dfef46e9-19e8-4a16-b129-28c422c844e8}</Project>
+      <Project>{DFEF46E9-19E8-4A16-B129-28C422C844E8}</Project>
       <Name>Apaf.NFSdb.IntegrationTests</Name>
     </ProjectReference>
     <ProjectReference Include="..\Apaf.NFSdb.TestModel\Apaf.NFSdb.TestModel.csproj">
-      <Project>{111644ba-19f7-48fc-bd9e-b94a7686d178}</Project>
+      <Project>{111644BA-19F7-48FC-BD9E-B94A7686D178}</Project>
       <Name>Apaf.NFSdb.TestModel</Name>
     </ProjectReference>
     <ProjectReference Include="..\Apaf.NFSdb.TestShared\Apaf.NFSdb.TestShared.csproj">

@@ -30,7 +30,7 @@ namespace Apaf.NFSdb.Core.Queries.Queryable
 
             if (!(member is MemberExpression))
             {
-                throw new NFSdbQuaryableNotSupportedException("Expressions of type \"column\" == " +
+                throw new NFSdbQueryableNotSupportedException("Expressions of type \"column\" == " +
                                                                  "value are supported only");
             }
 
@@ -42,7 +42,7 @@ namespace Apaf.NFSdb.Core.Queries.Queryable
         {
             if (memEx.Member.DeclaringType == null || !memEx.Member.DeclaringType.IsAssignableFrom(journalType))
             {
-                throw new NFSdbQuaryableNotSupportedException("Expressions of type \"column\" == value "
+                throw new NFSdbQueryableNotSupportedException("Expressions of type \"column\" == value "
                                                                  + "where column is an NFSdb property "
                                                                  + "name are supported only");
             }
@@ -58,7 +58,7 @@ namespace Apaf.NFSdb.Core.Queries.Queryable
 
             if (!(member is ConstantExpression))
             {
-                throw new NFSdbQuaryableNotSupportedException("Expressions of type \"column\" == " +
+                throw new NFSdbQueryableNotSupportedException("Expressions of type \"column\" == " +
                                                                  "value are supported only");
             }
 

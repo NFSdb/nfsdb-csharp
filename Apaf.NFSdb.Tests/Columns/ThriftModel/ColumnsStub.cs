@@ -165,6 +165,42 @@ namespace Apaf.NFSdb.Tests.Columns.ThriftModel
             {
                 get { return _value; }
             }
+
+            int ITypedColumn<int>.Get(long rowID, IReadContext readContext)
+            {
+                return GetValue<int>(rowID);
+            }
+
+            long ITypedColumn<long>.Get(long rowID, IReadContext readContext)
+            {
+                return GetValue<long>(rowID);
+            }
+
+            short ITypedColumn<short>.Get(long rowID, IReadContext readContext)
+            {
+                return GetValue<short>(rowID);
+            }
+
+            byte ITypedColumn<byte>.Get(long rowID, IReadContext readContext)
+            {
+                return GetValue<byte>(rowID);
+                throw new NotImplementedException();
+            }
+
+            bool ITypedColumn<bool>.Get(long rowID, IReadContext readContext)
+            {
+                return GetValue<bool>(rowID);
+            }
+
+            double ITypedColumn<double>.Get(long rowID, IReadContext readContext)
+            {
+                return GetValue<double>(rowID);
+            }
+
+            DateTime ITypedColumn<DateTime>.Get(long rowID, IReadContext readContext)
+            {
+                return GetValue<DateTime>(rowID);
+            }
         }
     }
 }

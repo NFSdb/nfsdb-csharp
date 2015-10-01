@@ -70,7 +70,7 @@ namespace Apaf.NFSdb.Core.Queries.Queryable
             return planHead;
         }
 
-        public void IndexScan(string memberName, object literal)
+        public void ColumnScan(string memberName, object literal)
         {
             var column = _journal.Metadata.GetColumnByPropertyName(memberName);
             var planItem = new RowScanPlanItem(_journal, _tx);
@@ -104,7 +104,7 @@ namespace Apaf.NFSdb.Core.Queries.Queryable
                     planItem.AddContainsScan(column, (DateTime)literal);
                     break;
                 default:
-                    throw new NFSdbQuaryableNotSupportedException();
+                    throw new NFSdbQueryableNotSupportedException();
             }
         }
 
@@ -131,7 +131,7 @@ namespace Apaf.NFSdb.Core.Queries.Queryable
                 else if (left._planHead is RowScanPlanItem && right._planHead is RowScanPlanItem)
                 {
                     var rowScan1 = (RowScanPlanItem) left._planHead;
-                    var rowScan2 = (RowScanPlanItem)left._planHead;
+                    var rowScan2 = (RowScanPlanItem)right._planHead;
                     if (rowScan1.TryIntersect(rowScan2))
                     {
                         _planHead = left.PlanItem;
@@ -149,11 +149,19 @@ namespace Apaf.NFSdb.Core.Queries.Queryable
                 {
                     _planHead = left._planHead;
                     _planHead.Timestamps.Union(right._planHead.Timestamps);
+                    return;
                 }
-                else
+                if (left._planHead is RowScanPlanItem && right._planHead is RowScanPlanItem)
                 {
-                    _planHead = new UnionPlanItem(left._planHead, right._planHead);
+                    var rowScan1 = (RowScanPlanItem)left._planHead;
+                    var rowScan2 = (RowScanPlanItem)right._planHead;
+                    if (rowScan1.TryUnion(rowScan2))
+                    {
+                        _planHead = left.PlanItem;
+                        return;
+                    }
                 }
+                _planHead = new UnionPlanItem(left._planHead, right._planHead);
             }
             else
             {
@@ -203,31 +211,9 @@ namespace Apaf.NFSdb.Core.Queries.Queryable
 
         private IPlanItem CreateLastestByIdPlanItem(ColumnMetadata column)
         {
-            switch (column.FieldType)
-            {
-                case EFieldType.Byte:
-                    return new LastestByIdPlanItem<byte>(column);
-                case EFieldType.Bool:
-                    return new LastestByIdPlanItem<bool>(column);
-                case EFieldType.Int16:
-                    return new LastestByIdPlanItem<Int16>(column);
-                case EFieldType.Int32:
-                    return new LastestByIdPlanItem<int>(column);
-                case EFieldType.Int64:
-                    return new LastestByIdPlanItem<long>(column);
-                case EFieldType.Double:
-                    return new LastestByIdPlanItem<double>(column);
-                case EFieldType.String:
-                case EFieldType.Symbol:
-                    return new LastestByIdPlanItem<string>(column);
-                case EFieldType.Binary:
-                    return new LastestByIdPlanItem<byte[]>(column);
-                case EFieldType.DateTime:
-                case EFieldType.DateTimeEpochMilliseconds:
-                    return new LastestByIdPlanItem<DateTime>(column);
-                default:
-                    throw new ArgumentOutOfRangeException();
-            }
+            var rowScan = new RowScanPlanItem(_journal, _tx);
+            rowScan.ApplyLastestByIdPlanItem(column);
+            return rowScan;
         }
 
         private IPlanItem RebuildWithLatest(IPlanItem planHead, ColumnMetadata latestByColumn)
@@ -266,7 +252,7 @@ namespace Apaf.NFSdb.Core.Queries.Queryable
             {
                 if (scan.CanTranformLastestByIdPlanItem(latestByColumn))
                 {
-                    scan.TranformLastestByIdPlanItem(latestByColumn);
+                    scan.ApplyLastestByIdPlanItem(latestByColumn);
                     return planHead;
                 }
             }
@@ -302,7 +288,6 @@ namespace Apaf.NFSdb.Core.Queries.Queryable
                 var col = _journal.Metadata.GetColumnByPropertyName(latestBySymbol);
                 if (scan.CanTranformLastestByIdPlanItem(col))
                 {
-                    scan.TranformLastestByIdPlanItem(col);
                     return true;
                 }
                 return false;
