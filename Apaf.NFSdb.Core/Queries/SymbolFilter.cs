@@ -27,11 +27,11 @@ using Apaf.NFSdb.Core.Tx;
 
 namespace Apaf.NFSdb.Core.Queries
 {
-    public class SymbolFilter<T> : IPartitionFilter, IColumnFilter
+    public class SymbolFilter<T> : IColumnFilter
     {
         private readonly ColumnMetadata _column;
         private readonly T _value;
-        private readonly T[] _values;
+        private readonly IList<T> _values;
         private ITypedColumn<T> _columnReader;
         private int _columnPartition = int.MinValue;
         private HashSet<T> _valuesHash;
@@ -42,12 +42,12 @@ namespace Apaf.NFSdb.Core.Queries
             _value = value;
         }
 
-        public SymbolFilter(ColumnMetadata column, T[] values)
+        public SymbolFilter(ColumnMetadata column, IList<T> values)
         {
             if (values == null) throw new ArgumentNullException("values");
 
             _column = column;
-            if (values.Length == 1)
+            if (values.Count == 1)
             {
                 _value = values[0];
             }
@@ -62,7 +62,7 @@ namespace Apaf.NFSdb.Core.Queries
             get { return _column; }
         }
 
-        public T[] FilterValues
+        public IList<T> FilterValues
         {
             get
             {
@@ -110,11 +110,11 @@ namespace Apaf.NFSdb.Core.Queries
         {
             if (_values != null)
             {
-                var items = new IEnumerable<long>[_values.Length];
+                var items = new IEnumerable<long>[_values.Count];
                 return partitions.SelectMany(part =>
                 {
                     var partition = tx.Read(part.PartitionID);
-                    for (int v = 0; v < _values.Length; v++)
+                    for (int v = 0; v < _values.Count; v++)
                     {
                         var symbolValue = _values[v];
                         var rowIDs = TakeFromTo(part, partition.GetSymbolRows(_column.FieldID, symbolValue, tx));

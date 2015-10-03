@@ -30,9 +30,9 @@ namespace Apaf.NFSdb.Core.Queries
     {
         private readonly IJournalCore _journal;
         private readonly ColumnMetadata _column;
-        private readonly T[] _keys;
+        private readonly IList<T> _keys;
 
-        public LatestBySymbolFilter(IJournalCore journal, ColumnMetadata column, T[] keys)
+        public LatestBySymbolFilter(IJournalCore journal, ColumnMetadata column, IList<T> keys)
         {
             _journal = journal;
             _column = column;
@@ -60,7 +60,7 @@ namespace Apaf.NFSdb.Core.Queries
             {
                 return _journal.QueryStatistics.GetColumnDistinctCardinality(tx, _column);
             }
-            return _keys.Length;
+            return _keys.Count;
         }
 
         private IEnumerable<long> GetLatestByNonIndexedField(IEnumerable<PartitionRowIDRange> partitions,
@@ -104,7 +104,7 @@ namespace Apaf.NFSdb.Core.Queries
             }
             else
             {
-                keysCount = _keys.Length;
+                keysCount = _keys.Count;
             }
 
             // Todo: use tx.ReadContext
@@ -115,8 +115,8 @@ namespace Apaf.NFSdb.Core.Queries
                 // Key mapping.
                 if (_keys != null && keysMap == null)
                 {
-                    keysMap = new int[_keys.Length];
-                    for (int i = 0; i < _keys.Length; i++)
+                    keysMap = new int[_keys.Count];
+                    for (int i = 0; i < _keys.Count; i++)
                     {
                         keysMap[i] = partition.GetSymbolKey(_column.FieldID, _keys[i], tx);
                     }
@@ -178,11 +178,8 @@ namespace Apaf.NFSdb.Core.Queries
             {
                 return string.Format("Latest_By({0})", _column.PropertyName);
             }
-            else
-            {
-                return string.Format("Latest_By({0} in ({1}))", _column.PropertyName,
-                    string.Join(",", _keys));
-            }
+            return string.Format("Latest_By({0} in ({1}))", _column.PropertyName,
+                string.Join(",", _keys));
         }
     }
 }

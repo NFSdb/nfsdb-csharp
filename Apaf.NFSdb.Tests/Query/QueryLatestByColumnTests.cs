@@ -1,5 +1,4 @@
-﻿using System;
-using System.Linq;
+﻿using System.Linq;
 using NUnit.Framework;
 
 namespace Apaf.NFSdb.Tests.Query
@@ -101,19 +100,58 @@ namespace Apaf.NFSdb.Tests.Query
         }
 
 
-        public static TestCaseData[] Should_return_correct_latest_filtered_by_another_symbol_source = new[]
+        public static TestCaseData[] Should_return_correct_latest_filtered_by_double_symbol_source_double =
         {
-            (new TestCaseData(new Double[] {299.0, 298.0}).Returns("299,298"))
+            (new TestCaseData(new[] {299.0, 298.0}).Returns("299,298")),
+            (new TestCaseData(new[] {299.0, 299.0}).Returns("299"))
         };
 
-        [Ignore("WIP")]
-        [TestCaseSource("Should_return_correct_latest_filtered_by_another_symbol_source")]
-        public string Should_return_correct_latest_filtered_by_another_column_contains(double[] sizes)
+        [TestCaseSource("Should_return_correct_latest_filtered_by_double_symbol_source_double")]
+        public string Should_return_correct_latest_filtered_by_double_column_contains(double[] sizes)
         {
             var latestIds = ExecuteLatestBySymUtil.ExecuteLambda(items =>
                 from q in items
                 where sizes.Contains(q.Ask)
                 select q, 1);
+            return latestIds;
+        }
+
+        public static TestCaseData[] Should_return_correct_latest_filtered_by_int_symbol_source =
+        {
+            (new TestCaseData(new[] {19, 18}).Returns("299,298")),
+            (new TestCaseData(new[] {19, 19}).Returns("299"))
+        };
+
+        [TestCaseSource("Should_return_correct_latest_filtered_by_int_symbol_source")]
+        public string Should_return_correct_latest_filtered_by_int_column_contains(int[] sizes)
+        {
+            var latestIds = ExecuteLatestBySymUtil.ExecuteLambda(items =>
+                from q in items
+                where sizes.Contains(q.AskSize)
+                select q, 1);
+            return latestIds;
+        }
+
+        [TestCaseSource("Should_return_correct_latest_filtered_by_int_symbol_source")]
+        public string Should_return_correct_latest_filtered_by_list_int_column_contains(int[] sizes)
+        {
+            var list = sizes.ToList();
+            var latestIds = ExecuteLatestBySymUtil.ExecuteLambda(items =>
+                from q in items
+                where list.Contains(q.AskSize)
+                select q, 1);
+            return latestIds;
+        }
+
+
+        [TestCase("19,10", ExpectedResult = "299,290")]
+        public string Should_return_latest_by_int(string askSizes)
+        {
+            var sizes = askSizes.Split(',').Select(int.Parse).ToArray();
+            var latestIds = ExecuteLatestBySymUtil.ExecuteLambda(items =>
+                from q in items
+                where sizes.Contains(q.AskSize)
+                select q, 1, "AskSize");
             return latestIds;
         }
     }

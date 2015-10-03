@@ -16,6 +16,8 @@
  */
 #endregion
 using System;
+using System.Collections;
+using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
 using Apaf.NFSdb.Core.Column;
@@ -167,6 +169,51 @@ namespace Apaf.NFSdb.Core.Queries.Queryable
             {
                 throw new NotImplementedException();
             }
+        }
+
+        public void IndexCollectionScan(string memberName, IEnumerable values)
+        {
+            var p = new RowScanPlanItem(_journal, _tx);
+            var column = _journal.Metadata.GetColumnByPropertyName(memberName);
+            switch (column.FieldType)
+            {
+                case EFieldType.Byte:
+                    p.AddContainsScan(column, ToIList<byte>(values));
+                    break;
+                case EFieldType.Bool:
+                    p.AddContainsScan(column, ToIList<bool>(values));
+                    break;
+                case EFieldType.Int16:
+                    p.AddContainsScan(column, ToIList<short>(values));
+                    break;
+                case EFieldType.Int32:
+                    p.AddContainsScan(column, ToIList<int>(values));
+                    break;
+                case EFieldType.Int64:
+                    p.AddContainsScan(column, ToIList<long>(values));
+                    break;
+                case EFieldType.Double:
+                    p.AddContainsScan(column, ToIList<double>(values));
+                    break;
+                case EFieldType.Symbol:
+                case EFieldType.String:
+                    p.AddContainsScan(column, ToIList<string>(values));
+                    break;
+                case EFieldType.DateTime:
+                case EFieldType.DateTimeEpochMilliseconds:
+                    p.AddContainsScan(column, ToIList<DateTime>(values));
+                    break;
+                default:
+                    throw new NFSdbQueryableNotSupportedException("Column of type {1} cannot be bound to Contains expressions", column.FieldType);
+            }
+            _planHead = p;
+        }
+
+        private IList<TT> ToIList<TT>(IEnumerable values)
+        {
+            var dir = values as IList<TT>;
+            if (dir != null) return dir;
+            return values.Cast<TT>().ToList();
         }
 
         public void IndexCollectionScan<TT>(string memberName, TT[] values)

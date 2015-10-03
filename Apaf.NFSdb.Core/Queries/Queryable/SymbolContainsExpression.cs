@@ -16,6 +16,7 @@
  */
 #endregion
 using System;
+using System.Collections;
 using System.Linq.Expressions;
 
 namespace Apaf.NFSdb.Core.Queries.Queryable
@@ -23,9 +24,9 @@ namespace Apaf.NFSdb.Core.Queries.Queryable
     public class SymbolContainsExpression : Expression
     {
         private readonly Expression _match;
-        private readonly string[] _values;
+        private readonly IEnumerable _values;
 
-        public SymbolContainsExpression(Expression match, string[] values)
+        public SymbolContainsExpression(Expression match, IEnumerable values)
         {
             _match = match;
             _values = values;
@@ -46,7 +47,7 @@ namespace Apaf.NFSdb.Core.Queries.Queryable
             get { return _match; }
         }
 
-        public string[] Values
+        public IEnumerable Values
         {
             get { return _values; }
         }

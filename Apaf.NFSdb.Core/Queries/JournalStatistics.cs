@@ -15,6 +15,8 @@
  * limitations under the License.
  */
 #endregion
+
+using System.Collections.Generic;
 using System.Linq;
 using Apaf.NFSdb.Core.Column;
 using Apaf.NFSdb.Core.Configuration;
@@ -35,7 +37,7 @@ namespace Apaf.NFSdb.Core.Queries
             _partitionManager = partitionManager;
         }
 
-        public long GetCardinalityByColumnValue<T>(IReadTransactionContext tx, ColumnMetadata col, T[] values)
+        public long GetCardinalityByColumnValue<T>(IReadTransactionContext tx, ColumnMetadata col, IList<T> values)
         {
             if (col.Indexed)
             {
@@ -45,7 +47,7 @@ namespace Apaf.NFSdb.Core.Queries
                     return values.Sum(value => part.GetSymbolRowCount(col.FieldID, value, tx));
                 }
             }
-            return _metadata.Settings.RecordHint / col.HintDistinctCount * values.Length;
+            return _metadata.Settings.RecordHint / col.HintDistinctCount * values.Count;
         }
 
         public int GetColumnDistinctCardinality(IReadTransactionContext tx, ColumnMetadata column)

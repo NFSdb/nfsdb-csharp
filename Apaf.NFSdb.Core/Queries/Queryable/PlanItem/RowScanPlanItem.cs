@@ -40,7 +40,7 @@ namespace Apaf.NFSdb.Core.Queries.Queryable.PlanItem
             Timestamps = new DateRange();
         }
 
-        public void AddContainsScan<T>(ColumnMetadata column, T[] literals)
+        public void AddContainsScan<T>(ColumnMetadata column, IList<T> literals)
         {
             var newFilter = new SymbolFilter<T>(column, literals);
             AddFilter(newFilter);
@@ -266,7 +266,7 @@ namespace Apaf.NFSdb.Core.Queries.Queryable.PlanItem
             }
         }
 
-        private T[] ExtractColumnContains<T>(ColumnMetadata column)
+        private IList<T> ExtractColumnContains<T>(ColumnMetadata column)
         {
             var mainF = _partitionFilter as SymbolFilter<T>;
             if (mainF != null && mainF.Column.FieldID == column.FieldID)

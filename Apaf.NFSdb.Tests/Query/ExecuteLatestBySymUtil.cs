@@ -11,7 +11,7 @@ namespace Apaf.NFSdb.Tests.Query
 {
     public class ExecuteLatestBySymUtil
     {
-        public static string ExecuteLambda(Func<IQueryable<Quote>, IQueryable<Quote>> lambda, int increment = 2)
+        public static string ExecuteLambda(Func<IQueryable<Quote>, IQueryable<Quote>> lambda, int increment = 2, string latestByCol = "Sym")
         {
             Utils.ClearJournal<Quote>();
             var config = Utils.ReadConfig<Quote>();
@@ -21,20 +21,20 @@ namespace Apaf.NFSdb.Tests.Query
                 !string.Equals("Sym", s.Name, StringComparison.OrdinalIgnoreCase)).ToList();
 
             Utils.ClearJournal<Quote>();
-            var nonIndexed = ExecuteLamdaOnJournal(lambda, increment, config);
+            var nonIndexed = ExecuteLamdaOnJournal(lambda, increment, config, latestByCol);
 
             Assert.That(nonIndexed, Is.EqualTo(indexed), "Unindexed version does not equal to indexed version");
             return nonIndexed;
         }
 
-        private static string ExecuteLamdaOnJournal(Func<IQueryable<Quote>, IQueryable<Quote>> lambda, int increment, JournalElement config)
+        private static string ExecuteLamdaOnJournal(Func<IQueryable<Quote>, IQueryable<Quote>> lambda, int increment, JournalElement config, string latestByCol = "Sym")
         {
             using (var qj = Utils.CreateJournal<Quote>(config, EFileAccess.ReadWrite))
             {
                 AppendRecords(qj, 0, increment);
                 var rdr = qj.OpenReadTx();
 
-                var qts = lambda(rdr.GetLatestItemsBy("Sym"));
+                var qts = lambda(rdr.GetLatestItemsBy(latestByCol));
 
                 // Act.
                 var result = qts.AsEnumerable().Select(q => q.Timestamp);
@@ -53,6 +53,7 @@ namespace Apaf.NFSdb.Tests.Query
                     wr.Append(new Quote
                     {
                         Ask = i,
+                        AskSize = i % 20,
                         Ex = "Ex_" + i % 20,
                         Sym = "Symbol_" + i % 20,
                         Timestamp = startDate + i * increment

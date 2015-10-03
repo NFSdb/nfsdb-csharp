@@ -17,7 +17,6 @@
 #endregion
 using System;
 using System.Collections;
-using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
 using Apaf.NFSdb.Core.Tx;
@@ -75,9 +74,9 @@ namespace Apaf.NFSdb.Core.Queries.Queryable
 
         protected override Expression VisitMethodCall(MethodCallExpression m)
         {
-            if (m.Method.DeclaringType == typeof(System.Linq.Queryable)
-                || m.Method.DeclaringType == typeof(Enumerable)
-                || m.Method.DeclaringType == typeof(List<string>))
+            if (m.Method.DeclaringType == typeof (System.Linq.Queryable)
+                || (m.Method.DeclaringType == typeof(Enumerable))
+                || (m.Method.DeclaringType != null && typeof(IEnumerable).IsAssignableFrom(m.Method.DeclaringType)))
             {
                 switch (m.Method.Name)
                 {
@@ -116,35 +115,17 @@ namespace Apaf.NFSdb.Core.Queries.Queryable
             var constSource = source as ConstantExpression;
             if (constSource != null && !IsQuery(constSource))
             {
-                var values = new List<string>();
-                var stringEnum = constSource.Value as IEnumerable<string>;
+                var stringEnum = constSource.Value as IEnumerable;
                 if (stringEnum != null)
                 {
-                    values.AddRange(stringEnum);
+                    match = Visit(match);
+                    return new SymbolContainsExpression(match, stringEnum);
                 }
-                else
-                {
-                    foreach (object value in (IEnumerable) constSource.Value)
-                    {
-                        var str = value as string;
-                        if (str == null)
-                        {
-                            throw new NFSdbQueryableNotSupportedException(
-                                "List<string>.Contains, string[].Contains allowed only. Unable to execute" +
-                                " Contains on source of type {0}", value);
-                        }
-                        values.Add((string) value);
-                    }
-                }
-                match = Visit(match);
-                return new SymbolContainsExpression(match, values.ToArray());
             }
-            else
-            {
-                throw new NFSdbQueryableNotSupportedException(
-                           "List.Contains, Array.Contains allowed only. Unable to execute Contains on {0}.",
-                           constSource);
-            }
+
+            throw new NFSdbQueryableNotSupportedException(
+                "List.Contains, Array.Contains allowed only. Unable to execute Contains on {0}.",
+                constSource);
         }
 
         private bool IsQuery(Expression expression)
