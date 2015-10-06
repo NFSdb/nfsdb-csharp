@@ -33,6 +33,10 @@ namespace Apaf.NFSdb.Core.Column
         public unsafe string GetString(long rowID, IReadContext readContext)
         {
             var byteArray = GetBytes(rowID, readContext);
+            if (byteArray == null)
+            {
+                return null;
+            }
             var charlen = byteArray.Length/2;
 
 #if BIGENDIAN
@@ -171,7 +175,7 @@ namespace Apaf.NFSdb.Core.Column
             get { return EFieldType.String; }
         }
 
-        public string Get(long rowID, IReadContext readContext)
+        string ITypedColumn<string>.Get(long rowID, IReadContext readContext)
         {
             return GetString(rowID, readContext);
         }

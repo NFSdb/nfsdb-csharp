@@ -20,6 +20,7 @@ using System.Linq;
 using System.Linq.Expressions;
 using Apaf.NFSdb.Core.Column;
 using Apaf.NFSdb.Core.Configuration;
+using Apaf.NFSdb.Core.Queries.Queryable.Expressions;
 using Apaf.NFSdb.Core.Tx;
 using Apaf.NFSdb.Core.Writes;
 
@@ -87,47 +88,55 @@ namespace Apaf.NFSdb.Core.Queries.Queryable
                 case EJournalExpressionType.Contains:
                     return VisitContains((SymbolContainsExpression)exp);
                 case EJournalExpressionType.Single:
-                    return VisitCall((SingleItemExpression) exp);
+                case EJournalExpressionType.Count:
+                case EJournalExpressionType.LongCount:
                 case EJournalExpressionType.Reverse:
-                    return VisitCall((OrderExpression)exp);
-
+                    return VisitCall((PostResultExpression)exp);
+                case EJournalExpressionType.OrderBy:
+                case EJournalExpressionType.OrderByDescending:
+                    return VisitOrderBy((OrderExpression) exp);
+                case EJournalExpressionType.Take:
+                case EJournalExpressionType.Skip:
+                    return VisitCall((SliceExpression) exp);
+                case EJournalExpressionType.LatestBy:
+                    return VisitLatestBy((LatestBySymbolExpression) exp);
                 default:
                     throw new NFSdbQueryableNotSupportedException(
                         "Expression {0} cannot be bound to Journal operation.", exp);
             }
         }
 
-        private ResultSetBuilder<T> VisitCall(OrderExpression m)
+        private ResultSetBuilder<T> VisitLatestBy(LatestBySymbolExpression exp)
         {
-            var result = new ResultSetBuilder<T>(_journal, _tx);
-            switch (m.Operation)
-            {
-                case EJournalExpressionType.Reverse:
-                    result.Reverse(Visit(m.Body));
-                    break;
-
-                default:
-                    throw new NFSdbQueryableNotSupportedException(
-                        "Expression call {0} cannot be bound to Journal operation.", m);
-            }
-
+            var result = exp.Body != null ? Visit(exp.Body) : new ResultSetBuilder<T>(_journal, _tx);
+            result.TakeLatestBy(exp.LatestBy);
             return result;
         }
 
-        private ResultSetBuilder<T> VisitCall(SingleItemExpression m)
+        private ResultSetBuilder<T> VisitOrderBy(OrderExpression exp)
         {
-            var result = new ResultSetBuilder<T>(_journal, _tx);
-            switch (m.Operation)
+            var result = Visit(exp.Body);
+            var ex = exp.Predicate.Body as MemberExpression;
+            if (ex != null)
             {
-                case EJournalExpressionType.Single:
-                    result.TakeSingle(Visit(m.Body));
-                    break;
-
-                default:
-                    throw new NFSdbQueryableNotSupportedException(
-                        "Expression call {0} cannot be bound to Journal operation.", m);
+                var member = ExHelper.GetMemberName(ex, typeof (T));
+                result.ApplyOrderBy(member, (EJournalExpressionType)exp.NodeType);
+                return result;
             }
+            throw new NFSdbQueryableNotSupportedException("Order by is not supported on predicate {0}", exp.Predicate);
+        }
 
+        private ResultSetBuilder<T> VisitCall(PostResultExpression m)
+        {
+            var result = Visit(m.Body);
+            result.ApplyLinq(m.Operation);
+            return result;
+        }
+
+        private ResultSetBuilder<T> VisitCall(SliceExpression m)
+        {
+            var result = Visit(m.Body);
+            result.ApplyLinq(m.Operation, m.Count);
             return result;
         }
 

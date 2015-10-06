@@ -15,34 +15,29 @@
  * limitations under the License.
  */
 #endregion
+
 using System.Linq.Expressions;
 
-namespace Apaf.NFSdb.Core.Queries.Queryable
+namespace Apaf.NFSdb.Core.Queries.Queryable.Expressions
 {
-    public class SingleItemExpression : Expression
+    public class OrderExpression : PostResultExpression
     {
-        private readonly Expression _body;
-        private readonly EJournalExpressionType _operation;
+        private readonly LambdaExpression _predicate;
 
-        public SingleItemExpression(Expression body, EJournalExpressionType operation)
+        public OrderExpression(Expression body, EJournalExpressionType operation)
+            : base(body, operation)
         {
-            _body = body;
-            _operation = operation;
         }
 
-        public EJournalExpressionType Operation
+        public OrderExpression(Expression body, EJournalExpressionType operation, LambdaExpression predicate)
+            : base(body, operation)
         {
-            get { return _operation; }
+            _predicate = predicate;
         }
 
-        public override ExpressionType NodeType
+        public LambdaExpression Predicate
         {
-            get { return (ExpressionType)_operation; }
-        }
-
-        public Expression Body
-        {
-            get { return _body; }
+            get { return _predicate; }
         }
     }
 }

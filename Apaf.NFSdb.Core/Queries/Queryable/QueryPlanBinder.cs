@@ -19,9 +19,11 @@ using System;
 using System.Collections;
 using System.Linq;
 using System.Linq.Expressions;
+using Apaf.NFSdb.Core.Queries.Queryable.Expressions;
 using Apaf.NFSdb.Core.Tx;
 using IQToolkit;
 using IQToolkit.Data.Common;
+using OrderExpression = Apaf.NFSdb.Core.Queries.Queryable.Expressions.OrderExpression;
 
 namespace Apaf.NFSdb.Core.Queries.Queryable
 {
@@ -152,7 +154,7 @@ namespace Apaf.NFSdb.Core.Queries.Queryable
             {
                 throw new NFSdbQueryableNotSupportedException("Use Single to select item of Journal type");
             }
-            return new SingleItemExpression(Visit(predicate.Body), EJournalExpressionType.Single);
+            return new PostResultExpression(Visit(predicate.Body), EJournalExpressionType.Single);
         }
         
         /// <summary>

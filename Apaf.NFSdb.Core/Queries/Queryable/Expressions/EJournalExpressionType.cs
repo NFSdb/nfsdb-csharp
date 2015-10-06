@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 #endregion
-namespace Apaf.NFSdb.Core.Queries.Queryable
+namespace Apaf.NFSdb.Core.Queries.Queryable.Expressions
 {
     public enum EJournalExpressionType
     {
@@ -23,6 +23,13 @@ namespace Apaf.NFSdb.Core.Queries.Queryable
         Single = 50001,
         First = 50002,
         Last = 50003,
-        Reverse = 50004
+        Reverse = 50004,
+        LongCount = 50005,
+        Count = 50006,
+        OrderBy = 50007,
+        OrderByDescending = 50008,
+        Take = 50009,
+        Skip = 50010,
+        LatestBy = 50011
     }
 }

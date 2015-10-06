@@ -21,6 +21,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
 using Apaf.NFSdb.Core.Column;
+using Apaf.NFSdb.Core.Queries.Queryable.Expressions;
 using Apaf.NFSdb.Core.Queries.Queryable.PlanItem;
 using Apaf.NFSdb.Core.Tx;
 
@@ -28,11 +29,34 @@ namespace Apaf.NFSdb.Core.Queries.Queryable
 {
     public class ResultSetBuilder<T>
     {
+        private class DirectExpression
+        {
+            public readonly EJournalExpressionType Expression;
+            public readonly string Property;
+            public readonly int Count;
+
+            public DirectExpression(EJournalExpressionType expression)
+            {
+                Expression = expression;
+            }
+
+            public DirectExpression(EJournalExpressionType expression, string property)
+            {
+                Expression = expression;
+                Property = property;
+            }
+
+            public DirectExpression(EJournalExpressionType expression, int count)
+            {
+                Expression = expression;
+                Count = count;
+            }
+        }
+
         private readonly IJournal<T> _journal;
         private readonly IReadTransactionContext _tx;
         private IPlanItem _planHead;
-        private bool _takeSingle;
-        private bool _reverse;
+        private readonly List<DirectExpression> _directExpressions = new List<DirectExpression>();
 
         public ResultSetBuilder(IJournal<T> journal, IReadTransactionContext tx)
         {
@@ -52,19 +76,118 @@ namespace Apaf.NFSdb.Core.Queries.Queryable
             {
                 _planHead = new TimestampRangePlanItem(DateInterval.Any);
             }
-            var result = new ResultSet<T>(_planHead.Execute(_journal, _tx, ERowIDSortDirection.Desc), _tx);
+            IEnumerable<long> rowIDs = _planHead.Execute(_journal, _tx, GetTimestampOrder());
+            return BindPostResult(rowIDs);
+        }
 
-            if (_reverse)
+        private ERowIDSortDirection GetTimestampOrder()
+        {
+            var order = ERowIDSortDirection.Desc;
+            string timestampProperty = null;
+            if (_journal.Metadata.TimestampFieldID != null)
             {
-                result = result.Reverse();
+                timestampProperty = _journal.Metadata.GetColumnById(_journal.Metadata.TimestampFieldID.Value).PropertyName;
             }
 
-            // Bind call.
-            if (_takeSingle)
+            bool hadNonTimestampOrder = false;
+            foreach (var tranform in _directExpressions)
             {
-                return result.Single();
+                switch (tranform.Expression)
+                {
+                    case EJournalExpressionType.Reverse:
+                        if (!hadNonTimestampOrder)
+                        {
+                            order = order == ERowIDSortDirection.Asc
+                                ? ERowIDSortDirection.Desc
+                                : ERowIDSortDirection.Asc;
+                        }
+                        break;
+
+                    case EJournalExpressionType.LongCount:
+                    case EJournalExpressionType.Count:
+                        if (!hadNonTimestampOrder)
+                        {
+                            // No benefit of pre-sorting. Use natural order.
+                            return ERowIDSortDirection.Desc;
+                        }
+                        break;
+
+                    case EJournalExpressionType.OrderBy:
+                    case EJournalExpressionType.OrderByDescending:
+                        if (tranform.Property == timestampProperty)
+                        {
+                            order = tranform.Expression == EJournalExpressionType.OrderBy
+                                ? ERowIDSortDirection.Asc
+                                : ERowIDSortDirection.Desc;
+                        }
+                        else
+                        {
+                            hadNonTimestampOrder = true;
+                        }
+                        break;
+                }
             }
-            return result;
+            return order;
+        }
+
+        private object BindPostResult(IEnumerable<long> rowIds)
+        {
+            string timestampProperty = null;
+            if (_journal.Metadata.TimestampFieldID != null)
+            {
+                timestampProperty = _journal.Metadata.GetColumnById(_journal.Metadata.TimestampFieldID.Value).PropertyName;
+            }
+
+            bool hadNonTimestampOrder = false;
+
+            foreach (var tranform in _directExpressions)
+            {
+                switch (tranform.Expression)
+                {
+                    case EJournalExpressionType.Single:
+                        return new ResultSet<T>(rowIds, _tx).Single();
+                    case EJournalExpressionType.First:
+                        return new ResultSet<T>(rowIds, _tx).First();
+                    case EJournalExpressionType.Last:
+                        return new ResultSet<T>(rowIds, _tx).Last();
+                    case EJournalExpressionType.Reverse:
+                        if (hadNonTimestampOrder)
+                        {
+                            rowIds = rowIds.Reverse();
+                        }
+                        break;
+                    case EJournalExpressionType.LongCount:
+                        return rowIds.LongCount();
+                    case EJournalExpressionType.Count:
+                        return rowIds.Count();
+
+                    case EJournalExpressionType.OrderByDescending:
+                    case EJournalExpressionType.OrderBy:
+                        if (tranform.Property != timestampProperty)
+                        {
+                            hadNonTimestampOrder = true;
+                            rowIds = BindOrderBy(rowIds, tranform);
+                        }
+                        break;
+
+                    case EJournalExpressionType.Take:
+                        rowIds = rowIds.Take(tranform.Count);
+                        break;
+                    case EJournalExpressionType.Skip:
+                        rowIds = rowIds.Skip(tranform.Count);
+                        break;
+
+                    default:
+                        throw new NFSdbQueryableNotSupportedException(
+                            "Expression {0} is not expected to be post operation", tranform.Expression);
+                }
+            }
+            return new ResultSet<T>(rowIds, _tx);
+        }
+
+        private IEnumerable<long> BindOrderBy(IEnumerable<long> rowIds, DirectExpression tranform)
+        {
+            throw new NotImplementedException();
         }
 
         private IPlanItem OptimizePlan(IPlanItem planHead)
@@ -108,6 +231,21 @@ namespace Apaf.NFSdb.Core.Queries.Queryable
                 default:
                     throw new NFSdbQueryableNotSupportedException();
             }
+        }
+
+        public void ApplyLinq(EJournalExpressionType operation)
+        {
+            _directExpressions.Add(new DirectExpression(operation));
+        }
+
+        public void ApplyLinq(EJournalExpressionType operation, int count)
+        {
+            _directExpressions.Add(new DirectExpression(operation, count));
+        }
+
+        public void ApplyOrderBy(string member, EJournalExpressionType expression)
+        {
+            _directExpressions.Add(new DirectExpression(expression, member));
         }
 
         public void Logical(ResultSetBuilder<T> left, ResultSetBuilder<T> right, ExpressionType op)
@@ -349,16 +487,5 @@ namespace Apaf.NFSdb.Core.Queries.Queryable
             throw new NotSupportedException("Plan type is not supported " + planHead.GetType());
         }
 
-        public void TakeSingle(ResultSetBuilder<T> other)
-        {
-            _takeSingle = true;
-            _planHead = other._planHead;
-        }
-
-        public void Reverse(ResultSetBuilder<T> visit)
-        {
-            _reverse = true;
-            _planHead = visit._planHead;
-        }
     }
 }

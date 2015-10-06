@@ -58,6 +58,10 @@ namespace Apaf.NFSdb.Core.Column
         public byte[] GetBytes(long rowID, IReadContext readContext)
         {
             var beginOffset = _index.ReadInt64(rowID * MetadataConstants.STRING_INDEX_FILE_RECORD_SIZE);
+            if (beginOffset == MetadataConstants.INDEX_NULL_DATA_VALUE)
+            {
+                return null;
+            }
             var arrayLength = ReadLength(_data, beginOffset);
             if (arrayLength == 0)
             {
@@ -71,6 +75,10 @@ namespace Apaf.NFSdb.Core.Column
         public unsafe int GetBytes(long rowID, byte* bytePtr, int startIndex, IReadContext readContext)
         {
             var beginOffset = _index.ReadInt64(rowID * MetadataConstants.STRING_INDEX_FILE_RECORD_SIZE);
+            if (beginOffset == MetadataConstants.INDEX_NULL_DATA_VALUE)
+            {
+                return MetadataConstants.INDEX_NULL_DATA_VALUE;
+            }
             var arrayLength = ReadLength(_data, beginOffset);
             if (arrayLength == 0)
             {

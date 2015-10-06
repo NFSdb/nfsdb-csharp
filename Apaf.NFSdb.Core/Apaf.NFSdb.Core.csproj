@@ -164,14 +164,16 @@
     <Compile Include="Queries\IColumnFilter.cs" />
     <Compile Include="Queries\ILatestBySymbolFilter.cs" />
     <Compile Include="Queries\Queryable\ERowIDSortDirection.cs" />
-    <Compile Include="Queries\Queryable\OrderExpression.cs" />
+    <Compile Include="Queries\Queryable\Expressions\LatestBySymbolExpression.cs" />
+    <Compile Include="Queries\Queryable\Expressions\OrderExpression.cs" />
+    <Compile Include="Queries\Queryable\Expressions\PostResultExpression.cs" />
+    <Compile Include="Queries\Queryable\Expressions\SliceExpression.cs" />
     <Compile Include="Queries\Queryable\PlanItem\ColumnScanPlanItemCore.cs" />
     <Compile Include="Queries\ResultSetFactory.cs" />
     <Compile Include="Server\IJournalServer.cs" />
     <Compile Include="Server\AsyncJournalServer.cs" />
     <Compile Include="Storage\EFileFlags.cs" />
     <Compile Include="Storage\IJournalDiagnostics.cs" />
-    <Compile Include="Queries\Queryable\SingleItemExpression.cs" />
     <Compile Include="Storage\IPartitionManagerCore.cs" />
     <Compile Include="Storage\IPartitionRangeLock.cs" />
     <Compile Include="Storage\IPartitionReader.cs" />
@@ -221,7 +223,7 @@
     <Compile Include="Queries\Queryable\PlanItem\RowScanPlanItem.cs" />
     <Compile Include="Queries\Queryable\ExpressionEvaluatorVisitor.cs" />
     <Compile Include="Queries\Queryable\PlanItem\IntersectPlanItem.cs" />
-    <Compile Include="Queries\Queryable\EJournalExpressionType.cs" />
+    <Compile Include="Queries\Queryable\Expressions\EJournalExpressionType.cs" />
     <Compile Include="Queries\Queryable\NJournalQuaryableNotSupportedException.cs" />
     <Compile Include="Storage\IJournalMetadataCore.cs" />
     <Compile Include="Storage\IPartitionCore.cs" />
@@ -241,7 +243,7 @@
     <Compile Include="Queries\Queryable\PlanItem\TimestampRangePlanItem.cs" />
     <Compile Include="Queries\Queryable\QueryPlanBinder.cs" />
     <Compile Include="Queries\Queryable\ResultSetBuilder.cs" />
-    <Compile Include="Queries\Queryable\SymbolContainsExpression.cs" />
+    <Compile Include="Queries\Queryable\Expressions\SymbolContainsExpression.cs" />
     <Compile Include="Queries\Queryable\PlanItem\UnionPlanItem.cs" />
     <Compile Include="Queries\SymbolFilter.cs" />
     <Compile Include="Storage\AccessorHelper.cs" />
