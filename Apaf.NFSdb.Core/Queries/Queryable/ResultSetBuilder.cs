@@ -187,7 +187,10 @@ namespace Apaf.NFSdb.Core.Queries.Queryable
 
         private IEnumerable<long> BindOrderBy(IEnumerable<long> rowIds, DirectExpression tranform)
         {
-            throw new NotImplementedException();
+            var column = _journal.MetadataCore.GetColumnByPropertyName(tranform.Property);
+            var allRows = rowIds.ToList();
+            allRows.Sort(column.GetComparer(_tx, tranform.Expression == EJournalExpressionType.OrderBy));
+            return allRows;
         }
 
         private IPlanItem OptimizePlan(IPlanItem planHead)

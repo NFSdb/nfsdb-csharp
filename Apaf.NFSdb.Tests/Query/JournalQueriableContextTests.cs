@@ -362,6 +362,13 @@ namespace Apaf.NFSdb.Tests.Query
                 items => items.Single(q => q.Timestamp == fromInclusive));
         }
 
+        [TestCase(10, ExpectedResult = "10")]
+        public string Supports_order_by_ex(int take)
+        {
+            return ExecuteLambda(
+                items => items.Take(take).OrderBy(t => t.Ex));
+        }
+
         private string ExecuteLambda(Func<IQueryable<Quote>, Quote> lambda, int increment = 2)
         {
             return ExecuteLambda(l => new[] { lambda(l) }, increment);

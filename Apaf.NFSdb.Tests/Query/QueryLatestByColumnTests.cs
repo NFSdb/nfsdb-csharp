@@ -143,7 +143,6 @@ namespace Apaf.NFSdb.Tests.Query
             return latestIds;
         }
 
-
         [TestCase("19,10", ExpectedResult = "299,290")]
         public string Should_return_latest_by_int(string askSizes)
         {
