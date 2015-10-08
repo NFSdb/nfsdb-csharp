@@ -108,43 +108,78 @@ namespace Apaf.NFSdb.Core.Queries
         public IEnumerable<long> Filter(IEnumerable<PartitionRowIDRange> partitions,
             IReadTransactionContext tx, ERowIDSortDirection sortDirection)
         {
-            if (_values != null)
+            if (_column.Indexed)
             {
-                var items = new IEnumerable<long>[_values.Count];
-                return partitions.SelectMany(part =>
+                if (_values != null)
                 {
-                    var partition = tx.Read(part.PartitionID);
-                    for (int v = 0; v < _values.Count; v++)
+                    var items = new IEnumerable<long>[_values.Count];
+                    return partitions.SelectMany(part =>
                     {
-                        var symbolValue = _values[v];
-                        var rowIDs = TakeFromTo(part, partition.GetSymbolRows(_column.FieldID, symbolValue, tx));
+                        var partition = tx.Read(part.PartitionID);
+                        for (int v = 0; v < _values.Count; v++)
+                        {
+                            var symbolValue = _values[v];
+                            var rowIDs = TakeFromTo(part, partition.GetSymbolRows(_column.FieldID, symbolValue, tx));
+                            if (sortDirection == ERowIDSortDirection.Asc)
+                            {
+                                // Todo: use tx.ReadContext and reuse buffers.
+                                rowIDs = rowIDs.Reverse();
+                            }
+                            items[v] = rowIDs;
+                        }
+
+                        if (sortDirection == ERowIDSortDirection.None)
+                        {
+                            return items.SelectMany(i => i);
+                        }
+                        return MergeSorted(items, sortDirection);
+                    });
+                }
+                else
+                {
+                    return partitions.SelectMany(part =>
+                    {
+                        var partition = tx.Read(part.PartitionID);
+                        var rowIDs = TakeFromTo(part, partition.GetSymbolRows(_column.FieldID, _value, tx));
                         if (sortDirection == ERowIDSortDirection.Asc)
                         {
-                            // Todo: use tx.ReadContext and reuse buffers.
                             rowIDs = rowIDs.Reverse();
                         }
-                        items[v] = rowIDs;
-                    }
+                        return rowIDs;
+                    });
+                }
 
-                    if (sortDirection == ERowIDSortDirection.None)
+            }
+
+            return partitions.SelectMany(part =>
+            {
+                var partition = tx.Read(part.PartitionID);
+                return IsPartitionMatch(tx, part, partition, sortDirection);
+            });
+        }
+
+        private IEnumerable<long> IsPartitionMatch(IReadTransactionContext tx, PartitionRowIDRange part, 
+            IPartitionReader partition, ERowIDSortDirection sortDirection)
+        {
+            if (sortDirection == ERowIDSortDirection.Asc)
+            {
+                for (long rowId = part.Low; rowId <= part.High; rowId++)
+                {
+                    if (IsMatch(partition, tx.ReadCache, rowId))
                     {
-                        return items.SelectMany(i => i);
+                        yield return RowIDUtil.ToRowID(part.PartitionID, rowId); ;
                     }
-                    return MergeSorted(items, sortDirection);
-                });
+                }
             }
             else
             {
-                return partitions.SelectMany(part =>
+                for (long rowId = part.High; rowId >= part.Low; rowId--)
                 {
-                    var partition = tx.Read(part.PartitionID);
-                    var rowIDs = TakeFromTo(part, partition.GetSymbolRows(_column.FieldID, _value, tx));
-                    if (sortDirection == ERowIDSortDirection.Asc)
+                    if (IsMatch(partition, tx.ReadCache, rowId))
                     {
-                        rowIDs = rowIDs.Reverse();
+                        yield return RowIDUtil.ToRowID(part.PartitionID, rowId);
                     }
-                    return rowIDs;
-                });
+                }
             }
         }
 

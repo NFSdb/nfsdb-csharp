@@ -27,9 +27,11 @@ namespace Apaf.NFSdb.Core.Queries.Queryable.Expressions
         LongCount = 50005,
         Count = 50006,
         OrderBy = 50007,
-        OrderByDescending = 50008,
-        Take = 50009,
-        Skip = 50010,
-        LatestBy = 50011
+        ThenOrderBy = 50008,
+        OrderByDescending = 50009,
+        ThenOrderByDescending = 50010,
+        Take = 50011,
+        Skip = 50012,
+        LatestBy = 50013
     }
 }

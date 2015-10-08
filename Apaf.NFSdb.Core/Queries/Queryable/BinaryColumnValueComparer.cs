@@ -11,7 +11,7 @@ namespace Apaf.NFSdb.Core.Queries.Queryable
         private readonly bool _asc;
         private readonly int _filedId;
 
-        public BinaryColumnValueComparer(int fieldId, IReadTransactionContext tx, bool asc)
+        public   BinaryColumnValueComparer(int fieldId, IReadTransactionContext tx, bool asc)
         {
             _filedId = fieldId;
             _tx = tx;

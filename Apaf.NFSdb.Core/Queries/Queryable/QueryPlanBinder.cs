@@ -91,6 +91,30 @@ namespace Apaf.NFSdb.Core.Queries.Queryable
                     case "Reverse":
                         return BindReverse(m.Arguments[0]);
 
+                    case "OrderBy":
+                        return BindOrderBy(m.Arguments[0], GetLambda(m.Arguments[1]), EJournalExpressionType.OrderBy);
+
+                    case "ThenBy":
+                        return BindOrderBy(m.Arguments[0], GetLambda(m.Arguments[1]), EJournalExpressionType.OrderBy);
+
+                    case "OrderByDescending":
+                        return BindOrderBy(m.Arguments[0], GetLambda(m.Arguments[1]), EJournalExpressionType.OrderByDescending);
+
+                    case "ThenByDescending":
+                        return BindOrderBy(m.Arguments[0], GetLambda(m.Arguments[1]), EJournalExpressionType.OrderBy);
+
+                    case "Count":
+                        return new PostResultExpression(Visit(m.Arguments[0]), EJournalExpressionType.Count);
+
+                    case "LongCount":
+                        return new PostResultExpression(Visit(m.Arguments[0]), EJournalExpressionType.LongCount);
+
+                    case "Take":
+                        return new SliceExpression(Visit(m.Arguments[0]), EJournalExpressionType.Take, GetConstant<int>(m.Arguments[1]));
+
+                    case "Skip":
+                        return new SliceExpression(Visit(m.Arguments[0]), EJournalExpressionType.Skip, GetConstant<int>(m.Arguments[1]));
+
                     case "Contains":
                         if (m.Arguments.Count == 2)
                         {
@@ -105,6 +129,25 @@ namespace Apaf.NFSdb.Core.Queries.Queryable
             }
 
             return base.VisitMethodCall(m);
+        }
+
+        private TT GetConstant<TT>(Expression expression)
+        {
+            var c = expression as ConstantExpression;
+            if (c != null)
+            {
+                if (c.Type == typeof (TT))
+                {
+                    return (TT)c.Value;
+                }
+            }
+            throw new NFSdbQueryableNotSupportedException("Expected constant expression of type {0} but got {1}",
+                typeof(T).Name, expression);
+        }
+
+        private Expression BindOrderBy(Expression source, LambdaExpression lambdaExpression, EJournalExpressionType direction)
+        {
+            return new OrderExpression(Visit(source), direction, lambdaExpression);
         }
 
         private Expression BindReverse(Expression expression)

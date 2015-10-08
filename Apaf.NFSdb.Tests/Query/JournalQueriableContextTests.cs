@@ -362,11 +362,13 @@ namespace Apaf.NFSdb.Tests.Query
                 items => items.Single(q => q.Timestamp == fromInclusive));
         }
 
-        [TestCase(10, ExpectedResult = "10")]
-        public string Supports_order_by_ex(int take)
+        [TestCase(10, "Symbol_0", ExpectedResult = "1,1,1,1,1,2,2,2,2,2")]
+        public string Supports_order_by_Bid(int take, string sym)
         {
             return ExecuteLambda(
-                items => items.Take(take).OrderBy(t => t.Ex));
+                items => items.OrderByDescending(t => t.Timestamp)
+                    .Where(it => it.Bid == 1.0 || it.Bid == 2.0).Take(take).OrderBy(t => t.Bid),
+                quotes => quotes.Select(q => q.Bid));
         }
 
         private string ExecuteLambda(Func<IQueryable<Quote>, Quote> lambda, int increment = 2)
@@ -379,7 +381,13 @@ namespace Apaf.NFSdb.Tests.Query
             return ExecuteLambda(l => lambda(l).AsEnumerable(), increment);
         }
 
+
         private string ExecuteLambda(Func<IQueryable<Quote>, IEnumerable<Quote>> lambda, int increment = 2)
+        {
+            return ExecuteLambda(lambda, tt => tt.Select(q => q.Timestamp), increment);
+        }
+
+        private string ExecuteLambda<T>(Func<IQueryable<Quote>, IEnumerable<Quote>> lambda, Func<IEnumerable<Quote>, IEnumerable<T>> formatLambda, int increment = 2)
         {
             Utils.ClearJournal<Quote>();
             var config = Utils.ReadConfig<Quote>();
@@ -396,7 +404,7 @@ namespace Apaf.NFSdb.Tests.Query
                 var qts = lambda(rdr.Items);
 
                 // Act.
-                var result = qts.Select(q => q.Timestamp);
+                var result = formatLambda(qts);
 
                 // Verify.
                 return string.Join(",", result);
@@ -415,6 +423,7 @@ namespace Apaf.NFSdb.Tests.Query
                         Ask = i,
                         Ex = "Ex_" + i %20,
                         Sym = "Symbol_" + i%20,
+                        Bid = i % 5,
                         Timestamp = startDate + i*increment
                     });
                 }

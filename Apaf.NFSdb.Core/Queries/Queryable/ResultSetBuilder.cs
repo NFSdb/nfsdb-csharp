@@ -171,7 +171,7 @@ namespace Apaf.NFSdb.Core.Queries.Queryable
                         break;
 
                     case EJournalExpressionType.Take:
-                        rowIds = rowIds.Take(tranform.Count);
+                        rowIds = rowIds.OrderBy(i => i).ThenBy(i => i).Take(tranform.Count);
                         break;
                     case EJournalExpressionType.Skip:
                         rowIds = rowIds.Skip(tranform.Count);
