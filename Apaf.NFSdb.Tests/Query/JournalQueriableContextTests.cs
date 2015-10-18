@@ -374,6 +374,25 @@ namespace Apaf.NFSdb.Tests.Query
                 quotes => quotes.Select(q => q.Bid));
         }
 
+        [TestCase(10, "Symbol_0", ExpectedResult = "1,1,1,1,1,1,1,1,1,1")]
+        public string Supports_take_after_order_by(int take, string sym)
+        {
+            return ExecuteLambda(
+                (items, latest) => items.OrderByDescending(t => t.Timestamp)
+                    .Where(it => it.Bid == 1.0 || it.Bid == 2.0).OrderBy(t => t.Bid).Take(take),
+                quotes => quotes.Select(q => q.Bid));
+        }
+
+
+        [Ignore("WIP")]
+        [TestCase(10, "Symbol_0", ExpectedResult = "0,20,40,60,80,100,120,140,160,180")]
+        public string Supports_order_by_timestamp_asc(int take, string sym)
+        {
+            return ExecuteLambda(
+                items => items.OrderBy(t => t.Timestamp)
+                    .Where(it => it.Sym == sym).Take(take), 1);
+        }
+
 
         [TestCase("Symbol_0",200, ExpectedResult = "280,260,240,220,200")]
         public string Supports_where_after_where(string sym1, long minTimestamp)

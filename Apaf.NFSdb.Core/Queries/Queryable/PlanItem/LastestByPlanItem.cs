@@ -22,20 +22,22 @@ using Apaf.NFSdb.Core.Tx;
 
 namespace Apaf.NFSdb.Core.Queries.Queryable.PlanItem
 {
-    public class LastestByIdPlanItem<T> : IPlanItem
+    public class LastestByPlanItem<T> : IPlanItem
     {
         private readonly ColumnMetadata _column;
         private long? _cardinality;
         private readonly T[] _keys;
+        private IPlanItem _child;
 
-        public LastestByIdPlanItem(ColumnMetadata column)
+        public LastestByPlanItem(ColumnMetadata column, IPlanItem child = null)
         {
             _column = column;
+            _child = child;
             Timestamps = new DateRange();
         }
 
-        public LastestByIdPlanItem(ColumnMetadata column, T[] literals)
-            : this(column)
+        public LastestByPlanItem(ColumnMetadata column, T[] literals, IPlanItem child = null)
+            : this(column, child)
         {
             _keys = literals;
         }
@@ -43,8 +45,8 @@ namespace Apaf.NFSdb.Core.Queries.Queryable.PlanItem
         public IEnumerable<long> Execute(IJournalCore journal, IReadTransactionContext tx, ERowIDSortDirection sortDirection)
         {
             var intervalFilter = new PartitionIntervalIterator();
-            var symbolFilter = new LatestBySymbolFilter<T>(journal, _column, _keys);
-
+            var symbolFilter = new LatestByFilter<T>(journal, _column, _keys);
+            
             return Timestamps.AllIntervals.Reverse().SelectMany(interval =>
                 symbolFilter.Filter(intervalFilter.IteratePartitions(
                     tx.ReverseReadPartitions, interval, tx), tx, sortDirection)

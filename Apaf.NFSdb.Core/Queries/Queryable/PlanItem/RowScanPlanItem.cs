@@ -236,30 +236,30 @@ namespace Apaf.NFSdb.Core.Queries.Queryable.PlanItem
             switch (column.FieldType)
             {
                 case EFieldType.Byte:
-                    _partitionFilter = new LatestBySymbolFilter<byte>(_journal, column, ExtractColumnContains<byte>(column));
+                    _partitionFilter = new LatestByFilter<byte>(_journal, column, ExtractColumnContains<byte>(column));
                     break;
                 case EFieldType.Bool:
-                    _partitionFilter = new LatestBySymbolFilter<bool>(_journal, column, ExtractColumnContains<bool>(column));
+                    _partitionFilter = new LatestByFilter<bool>(_journal, column, ExtractColumnContains<bool>(column));
                     break;
                 case EFieldType.Int16:
-                    _partitionFilter = new LatestBySymbolFilter<short>(_journal, column, ExtractColumnContains<short>(column));
+                    _partitionFilter = new LatestByFilter<short>(_journal, column, ExtractColumnContains<short>(column));
                     break;
                 case EFieldType.Int32:
-                    _partitionFilter = new LatestBySymbolFilter<int>(_journal, column, ExtractColumnContains<int>(column));
+                    _partitionFilter = new LatestByFilter<int>(_journal, column, ExtractColumnContains<int>(column));
                     break;
                 case EFieldType.Int64:
-                    _partitionFilter = new LatestBySymbolFilter<long>(_journal, column, ExtractColumnContains<long>(column));
+                    _partitionFilter = new LatestByFilter<long>(_journal, column, ExtractColumnContains<long>(column));
                     break;
                 case EFieldType.Double:
-                    _partitionFilter = new LatestBySymbolFilter<double>(_journal, column, ExtractColumnContains<double>(column));
+                    _partitionFilter = new LatestByFilter<double>(_journal, column, ExtractColumnContains<double>(column));
                     break;
                 case EFieldType.Symbol:
                 case EFieldType.String:
-                    _partitionFilter = new LatestBySymbolFilter<string>(_journal, column, ExtractColumnContains<string>(column));
+                    _partitionFilter = new LatestByFilter<string>(_journal, column, ExtractColumnContains<string>(column));
                     break;
                 case EFieldType.DateTime:
                 case EFieldType.DateTimeEpochMilliseconds:
-                    _partitionFilter = new LatestBySymbolFilter<DateTime>(_journal, column, ExtractColumnContains<DateTime>(column));
+                    _partitionFilter = new LatestByFilter<DateTime>(_journal, column, ExtractColumnContains<DateTime>(column));
                     break;
                 default:
                     throw new NFSdbQueryableNotSupportedException("Latest by {0} column is not supported.", column.FieldType);

@@ -26,13 +26,13 @@ using Apaf.NFSdb.Core.Tx;
 namespace Apaf.NFSdb.Core.Queries
 {
 
-    public class LatestBySymbolFilter<T> : IPartitionFilter, ILatestBySymbolFilter
+    public class LatestByFilter<T> : IPartitionFilter, ILatestBySymbolFilter
     {
         private readonly IJournalCore _journal;
         private readonly ColumnMetadata _column;
         private readonly IList<T> _keys;
 
-        public LatestBySymbolFilter(IJournalCore journal, ColumnMetadata column, IList<T> keys)
+        public LatestByFilter(IJournalCore journal, ColumnMetadata column, IList<T> keys)
         {
             _journal = journal;
             _column = column;

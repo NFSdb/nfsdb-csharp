@@ -223,7 +223,7 @@
     <Compile Include="Queries\IQueryStatistics.cs" />
     <Compile Include="Storage\Serializer\JournalSerializers.cs" />
     <Compile Include="Queries\JournalStatistics.cs" />
-    <Compile Include="Queries\LatestBySymbolFilter.cs" />
+    <Compile Include="Queries\LatestByFilter.cs" />
     <Compile Include="Queries\Queryable\DateRange.cs" />
     <Compile Include="Queries\Queryable\ExHelper.cs" />
     <Compile Include="Queries\Queryable\PlanItem\RowScanPlanItem.cs" />
@@ -245,7 +245,7 @@
     <Compile Include="Queries\Queryable\IPlanItem.cs" />
     <Compile Include="Queries\Queryable\JournalQueryable.cs" />
     <Compile Include="Queries\Queryable\JournalQueryProvider.cs" />
-    <Compile Include="Queries\Queryable\PlanItem\LastestByIdPlanItem.cs" />
+    <Compile Include="Queries\Queryable\PlanItem\LastestByPlanItem.cs" />
     <Compile Include="Queries\Queryable\PlanItem\TimestampRangePlanItem.cs" />
     <Compile Include="Queries\Queryable\QueryPlanBinder.cs" />
     <Compile Include="Queries\Queryable\ResultSetBuilder.cs" />
