@@ -150,8 +150,6 @@
     <Compile Include="Columns\PocoModel\Trade.cs" />
     <Compile Include="Common\DisposableTempDir.cs" />
     <Compile Include="Common\TestUtils.cs" />
-    <Compile Include="Concurrency\SharedExclusiveLockTests.cs" />
-    <Compile Include="Performance\InterlockedTests.cs" />
     <Compile Include="Query\ExecuteLatestBySymUtil.cs" />
     <Compile Include="Query\JournalPocoQueriableContextTests.cs" />
     <Compile Include="Query\QueryLatestByColumnTests.cs" />

@@ -153,7 +153,6 @@
     <Compile Include="Column\IStringColumn.cs" />
     <Compile Include="Collections\ObjIntHashMap.cs" />
     <Compile Include="Column\ITypedColumn.cs" />
-    <Compile Include="Concurrency\SharedExclusiveLock.cs" />
     <Compile Include="Configuration\BinaryElement.cs" />
     <Compile Include="Configuration\DateTimeElement.cs" />
     <Compile Include="Configuration\DateTimeMode.cs" />
