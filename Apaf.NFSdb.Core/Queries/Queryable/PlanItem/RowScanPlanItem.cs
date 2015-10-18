@@ -365,49 +365,54 @@ namespace Apaf.NFSdb.Core.Queries.Queryable.PlanItem
         {
             var c1 = GetOnlySymbolScan();
             var c2 = rowScan2.GetOnlySymbolScan();
-            if (c1 != null && c1.FieldID == c2.FieldID)
+            if (c1 != null && c2 != null && c1.FieldID == c2.FieldID)
             {
                 switch (c1.FieldType)
                 {
                     case EFieldType.Byte:
                         _partitionFilter = new SymbolFilter<byte>(c1,
-                            ExtractColumnContains<byte>(c1).Concat(rowScan2.ExtractColumnContains<byte>(c2)).ToArray());
+                            ExtractColumnContains<byte>(c1).Concat(rowScan2.ExtractColumnContains<byte>(c2))
+                            .Distinct().ToArray());
                         break;
                     case EFieldType.Bool:
                         _partitionFilter = new SymbolFilter<bool>(c1,
-                            ExtractColumnContains<bool>(c1).Concat(rowScan2.ExtractColumnContains<bool>(c2)).ToArray());
+                            ExtractColumnContains<bool>(c1).Concat(rowScan2.ExtractColumnContains<bool>(c2))
+                            .Distinct().ToArray());
                         break;
                     case EFieldType.Int16:
                         _partitionFilter = new SymbolFilter<Int16>(c1,
-                            ExtractColumnContains<Int16>(c1).Concat(rowScan2.ExtractColumnContains<Int16>(c2)).ToArray());
+                            ExtractColumnContains<Int16>(c1).Concat(rowScan2.ExtractColumnContains<Int16>(c2))
+                            .Distinct().ToArray());
                         break;
                     case EFieldType.Int32:
                         _partitionFilter = new SymbolFilter<int>(c1,
-                            ExtractColumnContains<int>(c1).Concat(rowScan2.ExtractColumnContains<int>(c2)).ToArray());
+                            ExtractColumnContains<int>(c1).Concat(rowScan2.ExtractColumnContains<int>(c2))
+                            .Distinct().ToArray());
                         break;
                     case EFieldType.Int64:
                         _partitionFilter = new SymbolFilter<long>(c1,
-                            ExtractColumnContains<long>(c1).Concat(rowScan2.ExtractColumnContains<long>(c2)).ToArray());
+                            ExtractColumnContains<long>(c1).Concat(rowScan2.ExtractColumnContains<long>(c2))
+                            .Distinct().ToArray());
                         break;
                     case EFieldType.Double:
                         _partitionFilter = new SymbolFilter<double>(c1,
                             ExtractColumnContains<double>(c1)
                                 .Concat(rowScan2.ExtractColumnContains<double>(c2))
-                                .ToArray());
+                                .Distinct().ToArray());
                         break;
                     case EFieldType.Symbol:
                     case EFieldType.String:
                         _partitionFilter = new SymbolFilter<string>(c1,
                             ExtractColumnContains<string>(c1)
                                 .Concat(rowScan2.ExtractColumnContains<string>(c2))
-                                .ToArray());
+                                .Distinct().ToArray());
                         break;
                     case EFieldType.DateTime:
                     case EFieldType.DateTimeEpochMilliseconds:
                         _partitionFilter = new SymbolFilter<DateTime>(c1,
                             ExtractColumnContains<DateTime>(c1)
                                 .Concat(rowScan2.ExtractColumnContains<DateTime>(c2))
-                                .ToArray());
+                                .Distinct().ToArray());
                         break;
                     default:
                         return false;

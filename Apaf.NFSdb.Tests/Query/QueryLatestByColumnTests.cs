@@ -150,7 +150,7 @@ namespace Apaf.NFSdb.Tests.Query
             var latestIds = ExecuteLatestBySymUtil.ExecuteLambda(items =>
                 from q in items
                 where sizes.Contains(q.AskSize)
-                select q, 1, "AskSize");
+                select q, 1, q => q.AskSize);
             return latestIds;
         }
     }

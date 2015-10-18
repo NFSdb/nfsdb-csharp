@@ -48,7 +48,6 @@ namespace Apaf.NFSdb.Core.Queries.Queryable
         protected override Expression Visit(Expression exp)
         {
             exp = PartialEvaluator.Eval(exp, CanBeEvaluatedLocally);
-
             Expression result = base.Visit(exp);
 
             if (result != null)
@@ -78,10 +77,14 @@ namespace Apaf.NFSdb.Core.Queries.Queryable
         {
             if (m.Method.DeclaringType == typeof (System.Linq.Queryable)
                 || (m.Method.DeclaringType == typeof(Enumerable))
-                || (m.Method.DeclaringType != null && typeof(IEnumerable).IsAssignableFrom(m.Method.DeclaringType)))
+                || (m.Method.DeclaringType != null && typeof(IEnumerable).IsAssignableFrom(m.Method.DeclaringType))
+                || m.Method.DeclaringType == typeof (JournalQueriableExtensions))
             {
                 switch (m.Method.Name)
                 {
+                    case "Union":
+                        return BindUnion(m.Type, m.Arguments[0], m.Arguments[1]);
+
                     case "Where":
                         return BindWhere(m.Type, m.Arguments[0], GetLambda(m.Arguments[1]));
 
@@ -125,10 +128,49 @@ namespace Apaf.NFSdb.Core.Queries.Queryable
                             return BindContains(m.Object, m.Arguments[0]);
                         }
                         break;
+
+                    case "LatestBy":
+                        if (m.Arguments.Count == 2)
+                        {
+                            return BindLatestBy(m.Arguments[0],  GetLambda(m.Arguments[1]));
+                        }
+                        break;
                 }
             }
 
+
             return base.VisitMethodCall(m);
+        }
+
+        private Expression BindLatestBy(Expression ex1, LambdaExpression lambda)
+        {
+            var prop = lambda.Body as MemberExpression;
+            if (prop != null)
+            {
+                return new LatestBySymbolExpression(prop.Member.Name, Visit(ex1));
+            }
+            throw new NFSdbQueryableNotSupportedException("LatestBy is only supported with property" +
+                                                          " expression, but instead had '{0}'",
+                lambda);
+        }
+
+        private Expression BindUnion(Type type, Expression expression1, Expression expression2)
+        {
+            if (typeof(IQueryable<T>).IsAssignableFrom(type))
+            {
+                var mc1 = expression1 as MethodCallExpression;
+                var mc2 = expression2 as MethodCallExpression;
+                if (mc1 != null && mc2 != null)
+                {
+                    if (IsQuery(mc1.Arguments[0]) && IsQuery(mc2.Arguments[0]))
+                    {
+                        return new UnionExpression(Visit(mc1), Visit(mc2));
+                    }
+                }
+            }
+            throw new NFSdbQueryableNotSupportedException("Union of 2 journal queriables supported. " +
+                                                          "Attempted to join '{0}' with '{1}' instead.",
+                expression1, expression2);
         }
 
         private TT GetConstant<TT>(Expression expression)
@@ -188,7 +230,19 @@ namespace Apaf.NFSdb.Core.Queries.Queryable
                     "Usage of expressions in select statment is not allowed."
                     + " Please convert to IEnumerable and perform select statement.");
             }
-            return Visit(predicate.Body);
+            var where = Visit(predicate.Body);
+            if (source is ConstantExpression)
+            {
+                return where;
+            }
+
+            source = Visit(source);
+            if (!(source is PostResultExpression))
+            {
+                return new IntersectExpression(source, where);
+            }
+
+            return where;
         }
 
         private Expression BindSingle(Type resultType, Expression source, LambdaExpression predicate)

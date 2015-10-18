@@ -1,7 +1,9 @@
 ﻿using System;
 using System.Linq;
+using System.Linq.Expressions;
 using Apaf.NFSdb.Core;
 using Apaf.NFSdb.Core.Configuration;
+using Apaf.NFSdb.Core.Queries;
 using Apaf.NFSdb.Core.Storage;
 using Apaf.NFSdb.Tests.Columns.ThriftModel;
 using Apaf.NFSdb.TestShared;
@@ -11,7 +13,14 @@ namespace Apaf.NFSdb.Tests.Query
 {
     public class ExecuteLatestBySymUtil
     {
-        public static string ExecuteLambda(Func<IQueryable<Quote>, IQueryable<Quote>> lambda, int increment = 2, string latestByCol = "Sym")
+        public static string ExecuteLambda(Func<IQueryable<Quote>, IQueryable<Quote>> lambda, 
+            int increment)
+        {
+            return ExecuteLambda(lambda, increment, q => q.Sym);
+        }
+
+        public static string ExecuteLambda<TKey>(Func<IQueryable<Quote>, IQueryable<Quote>> lambda, 
+            int increment, Expression<Func<Quote, TKey>> latestBy)
         {
             Utils.ClearJournal<Quote>();
             var config = Utils.ReadConfig<Quote>();
@@ -21,20 +30,28 @@ namespace Apaf.NFSdb.Tests.Query
                 !string.Equals("Sym", s.Name, StringComparison.OrdinalIgnoreCase)).ToList();
 
             Utils.ClearJournal<Quote>();
-            var nonIndexed = ExecuteLamdaOnJournal(lambda, increment, config, latestByCol);
+            var nonIndexed = ExecuteLamdaOnJournal(lambda, increment, config, latestBy);
 
             Assert.That(nonIndexed, Is.EqualTo(indexed), "Unindexed version does not equal to indexed version");
             return nonIndexed;
         }
 
-        private static string ExecuteLamdaOnJournal(Func<IQueryable<Quote>, IQueryable<Quote>> lambda, int increment, JournalElement config, string latestByCol = "Sym")
+        private static string ExecuteLamdaOnJournal(Func<IQueryable<Quote>, IQueryable<Quote>> lambda,
+            int increment,
+            JournalElement config)
+        {
+            return ExecuteLamdaOnJournal(lambda, increment, config, q => q.Sym);
+        }
+
+        private static string ExecuteLamdaOnJournal<TKey>(Func<IQueryable<Quote>, IQueryable<Quote>> lambda, int increment,
+            JournalElement config, Expression<Func<Quote, TKey>> latestBy)
         {
             using (var qj = Utils.CreateJournal<Quote>(config, EFileAccess.ReadWrite))
             {
                 AppendRecords(qj, 0, increment);
                 var rdr = qj.OpenReadTx();
 
-                var qts = lambda(rdr.GetLatestItemsBy(latestByCol));
+                var qts = lambda(rdr.Items.LatestBy(latestBy));
 
                 // Act.
                 var result = qts.AsEnumerable().Select(q => q.Timestamp);

@@ -32,6 +32,8 @@ namespace Apaf.NFSdb.Core.Queries.Queryable.Expressions
         ThenOrderByDescending = 50010,
         Take = 50011,
         Skip = 50012,
-        LatestBy = 50013
+        LatestBy = 50013,
+        Intersect = 50014,
+        Union = 50015
     }
 }

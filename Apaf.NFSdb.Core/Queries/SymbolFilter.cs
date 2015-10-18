@@ -112,13 +112,14 @@ namespace Apaf.NFSdb.Core.Queries
             {
                 if (_values != null)
                 {
-                    var items = new IEnumerable<long>[_values.Count];
+                    var valueSet = _values.Distinct().ToList();
+                    var items = new IEnumerable<long>[valueSet.Count];
                     return partitions.SelectMany(part =>
                     {
                         var partition = tx.Read(part.PartitionID);
-                        for (int v = 0; v < _values.Count; v++)
+                        for (int v = 0; v < valueSet.Count; v++)
                         {
-                            var symbolValue = _values[v];
+                            var symbolValue = valueSet[v];
                             var rowIDs = TakeFromTo(part, partition.GetSymbolRows(_column.FieldID, symbolValue, tx));
                             if (sortDirection == ERowIDSortDirection.Asc)
                             {

@@ -64,23 +64,6 @@ namespace Apaf.NFSdb.Core.Queries
             get { return _queryable.Value; }
         }
 
-        public IQueryable<T> GetLatestItemsBy(string columnName)
-        {
-            var column = _journal.Metadata.Columns.FirstOrDefault(c => c.PropertyName == columnName);
-            if (column == null)
-            {
-                throw new NFSdbConfigurationException("Column {0} does not exists", columnName);
-            }
-            
-            JournalQueryable<T> val;
-            if (!_latestBySymbol.TryGetValue(columnName, out val))
-            {
-                val = _latestBySymbol[columnName] = new JournalQueryable<T>(
-                    JournalQueryProvider<T>.LatestBy(columnName, _journal, _transactionContext));
-            }
-            return val;
-        }
-
         public ResultSet<T> AllByKeyOverInterval<TT>(TT value, DateInterval interval)
         {
             return AllBySymbolValueOverInterval(_journal.Metadata.KeySymbol, value, interval);

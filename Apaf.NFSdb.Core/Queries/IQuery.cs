@@ -31,6 +31,5 @@ namespace Apaf.NFSdb.Core.Queries
         int PartitionCount { get; }
 
         IQueryable<T> Items { get; }
-        IQueryable<T> GetLatestItemsBy(string columnName);
     }
 }

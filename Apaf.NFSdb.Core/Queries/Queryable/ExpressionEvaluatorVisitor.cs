@@ -99,11 +99,24 @@ namespace Apaf.NFSdb.Core.Queries.Queryable
                 case EJournalExpressionType.Skip:
                     return VisitCall((SliceExpression) exp);
                 case EJournalExpressionType.LatestBy:
-                    return VisitLatestBy((LatestBySymbolExpression) exp);
+                    return VisitLatestBy((LatestBySymbolExpression)exp);
+                case EJournalExpressionType.Intersect:
+                    var intsct = (IntersectExpression) exp;
+                    return VisitSet(intsct.Left, intsct.Right, ExpressionType.And);
+                case EJournalExpressionType.Union:
+                    var union = (UnionExpression)exp;
+                    return VisitSet(union.Left, union.Right, ExpressionType.Or);
                 default:
                     throw new NFSdbQueryableNotSupportedException(
                         "Expression {0} cannot be bound to Journal operation.", exp);
             }
+        }
+
+        private ResultSetBuilder<T> VisitSet(Expression left, Expression right, ExpressionType operation)
+        {
+            var res = new ResultSetBuilder<T>(_journal, _tx);
+            res.Logical(Visit(left), Visit(right), operation);
+            return res;
         }
 
         private ResultSetBuilder<T> VisitLatestBy(LatestBySymbolExpression exp)

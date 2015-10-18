@@ -20,6 +20,7 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
 using Apaf.NFSdb.Core;
+using Apaf.NFSdb.Core.Queries;
 using Apaf.NFSdb.Core.Storage;
 using Apaf.NFSdb.Tests.Columns.ThriftModel;
 using Apaf.NFSdb.TestShared;
@@ -51,6 +52,7 @@ namespace Apaf.NFSdb.Tests.Query
                          select q, 1);
         }
 
+        [TestCase("Symbol_0", "Symbol_0", ExpectedResult = "280,260,240,220,200,180,160,140,120,100,80,60,40,20,0")]
         [TestCase("Symbol_0", "Symbol_14", ExpectedResult = "294,280,274,260,254,240,234,220,214,200,194,180,174,160,154,140,134,120,114,100,94,80,74,60,54,40,34,20,14,0")]
         [TestCase("Symbol_1", "Symbol_12", ExpectedResult = "292,281,272,261,252,241,232,221,212,201,192,181,172,161,152,141,132,121,112,101,92,81,72,61,52,41,32,21,12,1")]
         public string Symbol_filters_with_or_operator(string value, string exValue)
@@ -75,6 +77,7 @@ namespace Apaf.NFSdb.Tests.Query
 
         [TestCase("Symbol_3,Symbol_12", ExpectedResult = "292,283,272,263,252,243,232,223,212,203,192,183,172,163,152,143,132,123,112,103,92,83,72,63,52,43,32,23,12,3")]
         [TestCase("Symbol_3,Symbol_132", ExpectedResult = "283,263,243,223,203,183,163,143,123,103,83,63,43,23,3")]
+        [TestCase("Symbol_0,Symbol_0", ExpectedResult = "280,260,240,220,200,180,160,140,120,100,80,60,40,20,0")]
         [TestCase("", ExpectedResult = "")]
         [TestCase("alsdjfal", ExpectedResult = "")]
         public string Symbol_list_contains(string values)
@@ -366,11 +369,48 @@ namespace Apaf.NFSdb.Tests.Query
         public string Supports_order_by_Bid(int take, string sym)
         {
             return ExecuteLambda(
-                items => items.OrderByDescending(t => t.Timestamp)
+                (items, latest) => items.OrderByDescending(t => t.Timestamp)
                     .Where(it => it.Bid == 1.0 || it.Bid == 2.0).Take(take).OrderBy(t => t.Bid),
                 quotes => quotes.Select(q => q.Bid));
         }
 
+
+        [TestCase("Symbol_0",200, ExpectedResult = "280,260,240,220,200")]
+        public string Supports_where_after_where(string sym1, long minTimestamp)
+        {
+            return ExecuteLambda(
+                items => (from q in items where q.Sym == sym1 select q)
+                    .Where(q => q.Timestamp >= minTimestamp), 1);
+        }
+
+        [TestCase("Symbol_0", "Symbol_14", ExpectedResult = "294,280,274,260,254,240,234,220,214,200,194,180,174,160,154,140,134,120,114,100,94,80,74,60,54,40,34,20,14,0")]
+        [TestCase("Symbol_0", "Symbol_0", ExpectedResult = "280,260,240,220,200,180,160,140,120,100,80,60,40,20,0")]
+        public string Union_symbol_filter(string sym1, string sym2)
+        {
+            return ExecuteLambda(
+                items => (from q in items where q.Sym == sym1 select q)
+                    .Union(from q in items where q.Sym == sym2 select q), 1);
+        }
+
+        [TestCase("Symbol_0", "Ex_14", ExpectedResult = "294,280,274,260,254,240,234,220,214,200,194,180,174,160,154,140,134,120,114,100,94,80,74,60,54,40,34,20,14,0")]
+        [TestCase("Symbol_0", "Ex_0", ExpectedResult = "280,260,240,220,200,180,160,140,120,100,80,60,40,20,0")]
+        public string Union_symbol_and_ex_filters(string sym1, string ex)
+        {
+            return ExecuteLambda(
+                items => (from q in items where q.Sym == sym1 select q)
+                    .Union(from q in items where q.Ex == ex select q), 1);
+        }
+
+        [TestCase("Symbol_0", "Ex_14", ExpectedResult = "294,280,260,240,220,200,180,160,140,120,100,80,60,40,20,0")]
+        [TestCase("Symbol_0", "Ex_0", ExpectedResult = "280,260,240,220,200,180,160,140,120,100,80,60,40,20,0")]
+        public string Union_with_latest_by(string sym1, string ex)
+        {
+            return ExecuteLambda(
+                (items, latest) => (from q in items where q.Sym == sym1 select q)
+                    .Union(from q in latest where q.Ex == ex select q),
+                     quotes => quotes.Select(q => q.Timestamp), 1);
+        }
+        
         private string ExecuteLambda(Func<IQueryable<Quote>, Quote> lambda, int increment = 2)
         {
             return ExecuteLambda(l => new[] { lambda(l) }, increment);
@@ -384,10 +424,11 @@ namespace Apaf.NFSdb.Tests.Query
 
         private string ExecuteLambda(Func<IQueryable<Quote>, IEnumerable<Quote>> lambda, int increment = 2)
         {
-            return ExecuteLambda(lambda, tt => tt.Select(q => q.Timestamp), increment);
+            return ExecuteLambda((items, latest) => lambda(items), tt => tt.Select(q => q.Timestamp), increment);
         }
 
-        private string ExecuteLambda<T>(Func<IQueryable<Quote>, IEnumerable<Quote>> lambda, Func<IEnumerable<Quote>, IEnumerable<T>> formatLambda, int increment = 2)
+        private string ExecuteLambda<T>(Func<IQueryable<Quote>, IQueryable<Quote>, IEnumerable<Quote>> lambda, 
+            Func<IEnumerable<Quote>, IEnumerable<T>> formatLambda, int increment = 2)
         {
             Utils.ClearJournal<Quote>();
             var config = Utils.ReadConfig<Quote>();
@@ -401,7 +442,7 @@ namespace Apaf.NFSdb.Tests.Query
             {
                 var rdr = qj.OpenReadTx();
 
-                var qts = lambda(rdr.Items);
+                var qts = lambda(rdr.Items, rdr.Items.LatestBy(q => q.Sym));
 
                 // Act.
                 var result = formatLambda(qts);

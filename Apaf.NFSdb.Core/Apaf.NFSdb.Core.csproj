@@ -164,12 +164,15 @@
     <Compile Include="Exceptions\NFSdbLockTimeoutException.cs" />
     <Compile Include="Queries\IColumnFilter.cs" />
     <Compile Include="Queries\ILatestBySymbolFilter.cs" />
+    <Compile Include="Queries\JournalQueriableExtensions.cs" />
     <Compile Include="Queries\Queryable\BinaryColumnValueComparer.cs" />
     <Compile Include="Queries\Queryable\ColumnCompareExtensions.cs" />
     <Compile Include="Queries\Queryable\ColumnValueComparer.cs" />
     <Compile Include="Queries\Queryable\ERowIDSortDirection.cs" />
+    <Compile Include="Queries\Queryable\Expressions\UnionExpression.cs" />
     <Compile Include="Queries\Queryable\Expressions\LatestBySymbolExpression.cs" />
     <Compile Include="Queries\Queryable\Expressions\OrderExpression.cs" />
+    <Compile Include="Queries\Queryable\Expressions\IntersectExpression.cs" />
     <Compile Include="Queries\Queryable\Expressions\PostResultExpression.cs" />
     <Compile Include="Queries\Queryable\Expressions\SliceExpression.cs" />
     <Compile Include="Queries\Queryable\PlanItem\ColumnScanPlanItemCore.cs" />

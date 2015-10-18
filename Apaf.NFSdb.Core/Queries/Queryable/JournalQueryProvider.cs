@@ -26,7 +26,6 @@ namespace Apaf.NFSdb.Core.Queries.Queryable
     {
         private readonly IJournal<T> _journal;
         private readonly IReadTransactionContext _tx;
-        private string _latestBySymbol;
         private QueryCache _cache;
 
         public JournalQueryProvider(IJournal<T> journal, IReadTransactionContext tx)
@@ -39,7 +38,7 @@ namespace Apaf.NFSdb.Core.Queries.Queryable
             IReadTransactionContext tx)
         {
             var provider = new JournalQueryProvider<T>(journal, tx);
-            provider._latestBySymbol = symbolName;
+            provider.LatestBySymbol = symbolName;
             return provider;
         }
 
@@ -54,6 +53,8 @@ namespace Apaf.NFSdb.Core.Queries.Queryable
             set { _cache = value; }
         }
 
+        public string LatestBySymbol { get; private set; }
+
         public override object Execute(Expression expression)
         {
             var lambda = expression as LambdaExpression;
@@ -63,9 +64,9 @@ namespace Apaf.NFSdb.Core.Queries.Queryable
             }
 
             var result = GetExecutionPlan(expression);
-            if (_latestBySymbol != null)
+            if (LatestBySymbol != null)
             {
-                result.TakeLatestBy(_latestBySymbol);
+                result.TakeLatestBy(LatestBySymbol);
             }
             return result.Build();
         }
