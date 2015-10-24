@@ -256,35 +256,7 @@ namespace Apaf.NFSdb.Core.Queries.Queryable
         {
             if (op == ExpressionType.And)
             {
-                if (left._planHead is TimestampRangePlanItem
-                    && right._planHead is TimestampRangePlanItem)
-                {
-                    _planHead = left._planHead;
-                    _planHead.Intersect(right._planHead);
-                }
-                else if (right._planHead is TimestampRangePlanItem)
-                {
-                    _planHead = left._planHead;
-                    _planHead.Intersect(right._planHead);
-                }
-                else if (left._planHead is TimestampRangePlanItem)
-                {
-                    _planHead = right._planHead;
-                    _planHead.Intersect(left._planHead);
-                }
-                else if (left._planHead is RowScanPlanItem && right._planHead is RowScanPlanItem)
-                {
-                    var rowScan1 = (RowScanPlanItem) left._planHead;
-                    var rowScan2 = (RowScanPlanItem)right._planHead;
-                    if (rowScan1.TryIntersect(rowScan2))
-                    {
-                        _planHead = left.PlanItem;
-                    }
-                }
-                else
-                {
-                    _planHead = new IntersectPlanItem(left._planHead, right._planHead);
-                }
+                _planHead = OptimizeIntersect(left._planHead, right._planHead);
             }
             else if (op == ExpressionType.Or)
             {
@@ -297,8 +269,8 @@ namespace Apaf.NFSdb.Core.Queries.Queryable
                 }
                 if (left._planHead is RowScanPlanItem && right._planHead is RowScanPlanItem)
                 {
-                    var rowScan1 = (RowScanPlanItem)left._planHead;
-                    var rowScan2 = (RowScanPlanItem)right._planHead;
+                    var rowScan1 = (RowScanPlanItem) left._planHead;
+                    var rowScan2 = (RowScanPlanItem) right._planHead;
                     if (rowScan1.TryUnion(rowScan2))
                     {
                         _planHead = left.PlanItem;
@@ -311,6 +283,31 @@ namespace Apaf.NFSdb.Core.Queries.Queryable
             {
                 throw new NotImplementedException();
             }
+        }
+
+        private static IPlanItem OptimizeIntersect(IPlanItem left, IPlanItem right)
+        {
+            if (right is TimestampRangePlanItem)
+            {
+                left.Intersect(right);
+                return left;
+            }
+            if (left is TimestampRangePlanItem)
+            {
+                right.Intersect(left);
+                return right;
+            }
+            
+            if (left is RowScanPlanItem && right is RowScanPlanItem)
+            {
+                var rowScan1 = (RowScanPlanItem) left;
+                var rowScan2 = (RowScanPlanItem) right;
+                if (rowScan1.TryIntersect(rowScan2))
+                {
+                    return left;
+                }
+            }
+            return new IntersectPlanItem(left, right);
         }
 
         public void IndexCollectionScan(string memberName, IEnumerable values)
@@ -500,6 +497,11 @@ namespace Apaf.NFSdb.Core.Queries.Queryable
                                                || e.Expression == EJournalExpressionType.Single
                                                || e.Expression == EJournalExpressionType.Skip
                                                || e.Expression == EJournalExpressionType.Take);
+        }
+
+        public void ApplyFilter(ResultSetBuilder<T> filter)
+        {
+            _planHead = OptimizeIntersect(_planHead, filter._planHead);
         }
     }
 }

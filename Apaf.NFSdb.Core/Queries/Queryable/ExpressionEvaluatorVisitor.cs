@@ -123,9 +123,8 @@ namespace Apaf.NFSdb.Core.Queries.Queryable
                         "Where cannot be applied after Take, Skip, Single, First or Count expressions.", exp);
             }
             var filter = Visit(exp.Filter);
-            var res = new ResultSetBuilder<T>(_journal, _tx);
-            res.Logical(source, filter, ExpressionType.And);
-            return res;
+            source.ApplyFilter(filter);
+            return source;
         }
 
         private ResultSetBuilder<T> VisitSet(Expression left, Expression right, ExpressionType operation)

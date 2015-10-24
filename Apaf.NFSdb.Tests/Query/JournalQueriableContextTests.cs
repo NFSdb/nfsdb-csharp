@@ -384,7 +384,6 @@ namespace Apaf.NFSdb.Tests.Query
         }
 
 
-        [Ignore("WIP")]
         [TestCase(10, "Symbol_0", ExpectedResult = "0,20,40,60,80,100,120,140,160,180")]
         public string Supports_order_by_timestamp_asc(int take, string sym)
         {
