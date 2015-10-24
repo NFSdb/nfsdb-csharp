@@ -106,10 +106,26 @@ namespace Apaf.NFSdb.Core.Queries.Queryable
                 case EJournalExpressionType.Union:
                     var union = (UnionExpression)exp;
                     return VisitSet(union.Left, union.Right, ExpressionType.Or);
+                case EJournalExpressionType.Filter:
+                    return VisitFilter((FilterExpression) exp);
                 default:
                     throw new NFSdbQueryableNotSupportedException(
                         "Expression {0} cannot be bound to Journal operation.", exp);
             }
+        }
+
+        private ResultSetBuilder<T> VisitFilter(FilterExpression exp)
+        {
+            var source = Visit(exp.Source);
+            if (!source.CanApplyFilter())
+            {
+                throw new NFSdbQueryableNotSupportedException(
+                        "Where cannot be applied after Take, Skip, Single, First or Count expressions.", exp);
+            }
+            var filter = Visit(exp.Filter);
+            var res = new ResultSetBuilder<T>(_journal, _tx);
+            res.Logical(source, filter, ExpressionType.And);
+            return res;
         }
 
         private ResultSetBuilder<T> VisitSet(Expression left, Expression right, ExpressionType operation)

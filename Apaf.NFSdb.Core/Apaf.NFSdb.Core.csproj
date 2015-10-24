@@ -168,6 +168,7 @@
     <Compile Include="Queries\Queryable\ColumnCompareExtensions.cs" />
     <Compile Include="Queries\Queryable\ColumnValueComparer.cs" />
     <Compile Include="Queries\Queryable\ERowIDSortDirection.cs" />
+    <Compile Include="Queries\Queryable\Expressions\FilterExpression.cs" />
     <Compile Include="Queries\Queryable\Expressions\UnionExpression.cs" />
     <Compile Include="Queries\Queryable\Expressions\LatestBySymbolExpression.cs" />
     <Compile Include="Queries\Queryable\Expressions\OrderExpression.cs" />

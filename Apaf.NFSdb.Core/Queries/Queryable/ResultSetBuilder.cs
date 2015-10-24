@@ -62,6 +62,7 @@ namespace Apaf.NFSdb.Core.Queries.Queryable
         {
             _journal = journal;
             _tx = tx;
+            _planHead = new TimestampRangePlanItem(DateInterval.Any);
         }
 
         public IPlanItem PlanItem { get { return _planHead; }}
@@ -490,5 +491,15 @@ namespace Apaf.NFSdb.Core.Queries.Queryable
             throw new NotSupportedException("Plan type is not supported " + planHead.GetType());
         }
 
+        public bool CanApplyFilter()
+        {
+            return !_directExpressions.Any(e => e.Expression == EJournalExpressionType.Count
+                                               || e.Expression == EJournalExpressionType.First
+                                               || e.Expression == EJournalExpressionType.Last
+                                               || e.Expression == EJournalExpressionType.LongCount
+                                               || e.Expression == EJournalExpressionType.Single
+                                               || e.Expression == EJournalExpressionType.Skip
+                                               || e.Expression == EJournalExpressionType.Take);
+        }
     }
 }

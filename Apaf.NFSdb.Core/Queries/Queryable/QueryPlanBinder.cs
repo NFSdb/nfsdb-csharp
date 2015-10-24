@@ -237,12 +237,12 @@ namespace Apaf.NFSdb.Core.Queries.Queryable
             }
 
             source = Visit(source);
-            if (!(source is PostResultExpression))
+            if (!(source is FilterExpression) && !(source is PostResultExpression))
             {
                 return new IntersectExpression(source, where);
             }
 
-            return where;
+            return new FilterExpression(where, source);
         }
 
         private Expression BindSingle(Type resultType, Expression source, LambdaExpression predicate)

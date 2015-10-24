@@ -34,6 +34,7 @@ namespace Apaf.NFSdb.Core.Queries.Queryable.Expressions
         Skip = 50012,
         LatestBy = 50013,
         Intersect = 50014,
-        Union = 50015
+        Union = 50015,
+        Filter = 50016,
     }
 }

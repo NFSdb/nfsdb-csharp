@@ -2,15 +2,15 @@
 
 namespace Apaf.NFSdb.Core.Queries.Queryable.Expressions
 {
-    public class IntersectExpression : Expression
+    public class FilterExpression : Expression
     {
-        private readonly Expression _left;
-        private readonly Expression _right;
+        private readonly Expression _filter;
+        private readonly Expression _source;
 
-        public IntersectExpression(Expression left, Expression right)
+        public FilterExpression(Expression filter, Expression source)
         {
-            _left = left;
-            _right = right;
+            _filter = filter;
+            _source = source;
         }
 
         public EJournalExpressionType Operation
@@ -20,17 +20,17 @@ namespace Apaf.NFSdb.Core.Queries.Queryable.Expressions
 
         public override ExpressionType NodeType
         {
-            get { return (ExpressionType)EJournalExpressionType.Intersect; }
+            get { return (ExpressionType)EJournalExpressionType.Filter; }
         }
 
-        public Expression Left
+        public Expression Filter
         {
-            get { return _left; }
+            get { return _filter; }
         }
 
-        public Expression Right
+        public Expression Source
         {
-            get { return _right; }
+            get { return _source; }
         }
     }
 }
