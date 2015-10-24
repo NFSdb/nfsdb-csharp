@@ -393,6 +393,16 @@ namespace Apaf.NFSdb.Tests.Query
         }
 
 
+        [TestCase(0, 10, ExpectedResult = "280,281,282,283,284,285,286,287,288,289")]
+        [TestCase(0, 20, ExpectedResult = "280,281,282,283,284,285,286,287,288,289,290,291,292,293,294,295,296,297,298,299")]
+        [TestCase(1, 1, ExpectedResult = "281")]
+        public string Supports_order_by_timestamp_asc_with_latest_by(int skip, int take)
+        {
+            return ExecuteLambda(
+                items => items.LatestBy(i => i.Sym).OrderBy(t => t.Timestamp).Skip(skip).Take(take), 1);
+        }
+
+
         [TestCase("Symbol_0",200, ExpectedResult = "280,260,240,220,200")]
         public string Supports_where_after_where(string sym1, long minTimestamp)
         {

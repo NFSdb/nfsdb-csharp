@@ -22,6 +22,8 @@ namespace Apaf.NFSdb.Core.Queries
     public struct DateInterval
     {
         private static readonly DateInterval ANY = new DateInterval(DateTime.MinValue, DateTime.MaxValue);
+        private static readonly DateInterval NONE = new DateInterval(DateTime.MinValue, DateTime.MinValue);
+
         public DateTime Start { get; private set; }
         public DateTime End { get; private set; }
 
@@ -34,6 +36,11 @@ namespace Apaf.NFSdb.Core.Queries
         public static DateInterval Any
         {
             get { return ANY;  }
+        }
+
+        public static DateInterval None
+        {
+            get { return NONE; }
         }
 
         public static DateInterval From(DateTime start)

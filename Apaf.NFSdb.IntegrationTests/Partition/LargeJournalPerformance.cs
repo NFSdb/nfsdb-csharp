@@ -119,6 +119,7 @@ namespace Apaf.NFSdb.IntegrationTests.Partition
 
 
         [Test]
+        [Explicit]
         [Category("Performance")]
         public void Should_open_minimum_files()
         {

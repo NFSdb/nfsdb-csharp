@@ -244,6 +244,15 @@ namespace Apaf.NFSdb.Core.Queries.Queryable
 
         public void ApplyLinq(EJournalExpressionType operation, int count)
         {
+            if (operation == EJournalExpressionType.Skip && count == 0) return;
+            if (operation == EJournalExpressionType.Take && count == int.MaxValue) return;
+            if (operation == EJournalExpressionType.Take && count == 0)
+            {
+                // No rows to be selected.
+                _planHead.Intersect(new TimestampRangePlanItem(DateInterval.None));
+                return;
+            }
+
             _directExpressions.Add(new DirectExpression(operation, count));
         }
 
