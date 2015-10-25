@@ -189,16 +189,17 @@ namespace Apaf.NFSdb.Core.Tx
             return actual;
         }
 
-        private void WriteInt32Array(int[] array, ref long offset)
+        private unsafe void WriteInt32Array(int[] array, ref long offset)
         {
             if (array != null)
             {
-                WriteUInt16((uint) array.Length, ref offset);
-                foreach (var item in array)
+                WriteUInt16((UInt16) array.Length, ref offset);
+                var len = array.Length * sizeof(int);
+                fixed (int* arrayPointer = array)
                 {
-                    _data.WriteInt32(offset, item);
-                    offset += 4;
+                    _data.WriteBytes(offset, (byte*)arrayPointer, len);
                 }
+                offset += len;
             }
             else
             {
@@ -206,15 +207,17 @@ namespace Apaf.NFSdb.Core.Tx
             }
         }
 
-        private void WriteInt64Array(long[] array, ref long offset)
+        private unsafe void WriteInt64Array(long[] array, ref long offset)
         {
             if (array != null)
             {
-                WriteUInt16((uint) array.Length, ref offset);
-                for(int i =0; i < array.Length; i++)
+                WriteUInt16((UInt16) array.Length, ref offset);
+                var len = array.Length * sizeof(long);
+                fixed (long* arrayPointer = array)
                 {
-                    WriteInt64(array[i], ref offset);
+                    _data.WriteBytes(offset, (byte*)arrayPointer, len);
                 }
+                offset += len;
             }
             else
             {
@@ -224,7 +227,7 @@ namespace Apaf.NFSdb.Core.Tx
 
         private unsafe void WriteUInt16(uint value, ref long offset)
         {
-            _data.WriteBytes(offset, (byte*)(&value), 4);
+            _data.WriteBytes(offset, (byte*)(&value), 2);
             offset += 2;
         }
 
@@ -269,7 +272,7 @@ namespace Apaf.NFSdb.Core.Tx
             return value;
         }
 
-        private unsafe int ReadUInt16(ref long offset)
+        private unsafe UInt16 ReadUInt16(ref long offset)
         {
             UInt16 value;
             _data.ReadBytes(offset, (byte*)(&value), 2);
@@ -277,26 +280,30 @@ namespace Apaf.NFSdb.Core.Tx
             return value;
         }
 
-        private int[] ReadInt32Array(ref long offset)
+        private unsafe int[] ReadInt32Array(ref long offset)
         {
             int sz = ReadUInt16(ref offset);
-            var lagIndexPointers = new int[sz];
-            for (int i = 0; i < sz; i++)
+            var result = new int[sz];
+            var len = sz*sizeof (int);
+            fixed (int* resultPointer = result)
             {
-                lagIndexPointers[i] = ReadInt32(ref offset);
+                _data.ReadBytes(offset, (byte*)resultPointer, len);
             }
-            return lagIndexPointers;
+            offset += len;
+            return result;
         }
 
-        private long[] ReadInt64Array(ref long offset)
+        private unsafe long[] ReadInt64Array(ref long offset)
         {
             int sz = ReadUInt16(ref offset);
-            var lagIndexPointers = new long[sz];
-            for (int i = 0; i < sz; i++)
+            var result = new long[sz];
+            var len = sz * sizeof(long);
+            fixed (long* resultPointer = result)
             {
-                lagIndexPointers[i] = ReadInt64(ref offset);
+                _data.ReadBytes(offset, (byte*)resultPointer, len);
             }
-            return lagIndexPointers;
+            offset += len;
+            return result;
         }
     }
 }
