@@ -91,6 +91,10 @@ namespace Apaf.NFSdb.Core.Queries.Queryable
                 case EJournalExpressionType.Count:
                 case EJournalExpressionType.LongCount:
                 case EJournalExpressionType.Reverse:
+                case EJournalExpressionType.First:
+                case EJournalExpressionType.FirstOrDefault:
+                case EJournalExpressionType.Last:
+                case EJournalExpressionType.LastOrDefault:
                     return VisitCall((PostResultExpression)exp);
                 case EJournalExpressionType.OrderBy:
                 case EJournalExpressionType.OrderByDescending:

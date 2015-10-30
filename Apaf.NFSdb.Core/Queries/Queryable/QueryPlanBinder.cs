@@ -17,6 +17,7 @@
 #endregion
 using System;
 using System.Collections;
+using System.Collections.ObjectModel;
 using System.Linq;
 using System.Linq.Expressions;
 using Apaf.NFSdb.Core.Queries.Queryable.Expressions;
@@ -89,7 +90,19 @@ namespace Apaf.NFSdb.Core.Queries.Queryable
                         return BindWhere(m.Type, m.Arguments[0], GetLambda(m.Arguments[1]));
 
                     case "Single":
-                        return BindSingle(m.Type, m.Arguments[0], GetLambda(m.Arguments[1]));
+                        return BindPostResult(m.Type, m.Arguments, EJournalExpressionType.Single);
+
+                    case "First":
+                        return BindPostResult(m.Type, m.Arguments, EJournalExpressionType.First);
+
+                    case "Last":
+                        return BindPostResult(m.Type, m.Arguments, EJournalExpressionType.Last);
+
+                    case "FirstOrDefault":
+                        return BindPostResult(m.Type, m.Arguments, EJournalExpressionType.FirstOrDefault);
+
+                    case "LastOrDefault":
+                        return BindPostResult(m.Type, m.Arguments, EJournalExpressionType.LastOrDefault);
 
                     case "Reverse":
                         return BindReverse(m.Arguments[0]);
@@ -245,13 +258,20 @@ namespace Apaf.NFSdb.Core.Queries.Queryable
             return new FilterExpression(where, source);
         }
 
-        private Expression BindSingle(Type resultType, Expression source, LambdaExpression predicate)
+        private Expression BindPostResult(Type resultType, ReadOnlyCollection<Expression> arguments, EJournalExpressionType expressionType)
         {
             if (resultType != typeof(T))
             {
-                throw new NFSdbQueryableNotSupportedException("Use Single to select item of Journal type");
+                throw new NFSdbQueryableNotSupportedException("{0} operation canonly be bound to JournalQueryable of {1} but used on {2}",
+                    expressionType, typeof(T).Name, resultType);
             }
-            return new PostResultExpression(Visit(predicate.Body), EJournalExpressionType.Single);
+            var source = arguments[0];
+            if (arguments.Count > 1)
+            {
+                var lambda = GetLambda(arguments[1]);
+                return new PostResultExpression(new FilterExpression(Visit(lambda.Body), Visit(source)), expressionType);
+            }
+            return new PostResultExpression(Visit(source), expressionType);
         }
         
         /// <summary>

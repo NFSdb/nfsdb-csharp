@@ -26,6 +26,197 @@ namespace Apaf.NFSdb.Tests.Query
             Assert.That(result, Is.EqualTo("281,264,263,262,261,260,241"));
         }
 
+        [Test]
+        public void Supports_first()
+        {
+            string result =
+                ExecuteLambdaSingle(
+                    items => (from q in items
+                              where ((q.Timestamp >= new DateTime(260) && q.Timestamp < new DateTime(265))
+                                    || q.Sym == "Symbol_1") && q.Timestamp >= new DateTime(241)
+                              select q).First(), 1);
+
+            Assert.That(result, Is.EqualTo("281"));
+        }
+
+        [Test]
+        public void Supports_first_with_sub_where()
+        {
+            string result =
+                ExecuteLambdaSingle(
+                    items => (from q in items
+                              where ((q.Timestamp >= new DateTime(260) && q.Timestamp < new DateTime(265))
+                                    || q.Sym == "Symbol_1")
+                              select q).First(q => q.Timestamp <= new DateTime(241)), 1);
+
+            Assert.That(result, Is.EqualTo("241"));
+        }
+
+        [Test]
+        public void Throws_when_first_returns_empty_result()
+        {
+            Assert.Throws<InvalidOperationException>
+                (() =>
+                ExecuteLambdaSingle(
+                    items => (from q in items
+                              where ((q.Timestamp >= new DateTime(260) && q.Timestamp < new DateTime(265))
+                                    || q.Sym == "Symbol_1")
+                              select q).First(q => q.Timestamp <= new DateTime(0)), 1));
+        }
+
+        [Test]
+        public void Supports_first_or_default()
+        {
+            string result =
+                ExecuteLambdaSingle(
+                    items => (from q in items
+                             where ((q.Timestamp >= new DateTime(260) && q.Timestamp < new DateTime(265))
+                                   || q.Sym == "Symbol_1") && q.Timestamp >= new DateTime(241)
+                             select q).FirstOrDefault(), 1);
+
+            Assert.That(result, Is.EqualTo("281"));
+        }
+
+        [Test]
+        public void Supports_first_or_default_with_sub_where()
+        {
+            string result =
+                ExecuteLambdaSingle(
+                    items => (from q in items
+                              where ((q.Timestamp >= new DateTime(260) && q.Timestamp < new DateTime(265))
+                                    || q.Sym == "Symbol_1")
+                              select q).FirstOrDefault(q => q.Timestamp <= new DateTime(241)), 1);
+
+            Assert.That(result, Is.EqualTo("241"));
+        }
+
+        [Test]
+        public void Supports_first_or_default_with_null_result()
+        {
+            string result =
+                ExecuteLambdaSingle(
+                    items => (from q in items
+                              where ((q.Timestamp >= new DateTime(260) && q.Timestamp < new DateTime(265))
+                                    || q.Sym == "Symbol_1")
+                              select q).FirstOrDefault(q => q.Timestamp <= new DateTime(0)), 1);
+
+            Assert.That(result, Is.Null);
+        }
+
+        [Test]
+        public void Supports_last_or_default_with_sub_where()
+        {
+            string result =
+                ExecuteLambdaSingle(
+                    items => (from q in items
+                              where ((q.Timestamp >= new DateTime(260) && q.Timestamp < new DateTime(265))
+                                    || q.Sym == "Symbol_1")
+                              select q).LastOrDefault(q => q.Timestamp <= new DateTime(241)), 1);
+
+            Assert.That(result, Is.EqualTo("1"));
+        }
+
+
+        [Test]
+        public void Supports_last_with_sub_where()
+        {
+            string result =
+                ExecuteLambdaSingle(
+                    items => (from q in items
+                              where ((q.Timestamp >= new DateTime(260) && q.Timestamp < new DateTime(265))
+                                    || q.Sym == "Symbol_1")
+                              select q).Last(q => q.Timestamp <= new DateTime(241)), 1);
+
+            Assert.That(result, Is.EqualTo("1"));
+        }
+
+        [Test]
+        public void Supports_last()
+        {
+            string result =
+                ExecuteLambdaSingle(
+                    items => (from q in items
+                              where ((q.Timestamp >= new DateTime(260) && q.Timestamp < new DateTime(265))
+                                    || q.Sym == "Symbol_1")
+                              select q).Last(), 1);
+
+            Assert.That(result, Is.EqualTo("1"));
+        }
+
+        [Test]
+        public void Throws_when_last_returns_no_results()
+        {
+            Assert.Throws<InvalidOperationException>
+                (() =>
+                    ExecuteLambdaSingle(
+                        items => (from q in items
+                            where ((q.Timestamp >= new DateTime(260) && q.Timestamp < new DateTime(265))
+                                   || q.Sym == "Symbol_1")
+                            select q).Last(q => q.Timestamp <= DateTime.MinValue), 1));
+        }
+
+        [Test]
+        public void Supports_last_or_default_with_null_result()
+        {
+            string result =
+                ExecuteLambdaSingle(
+                    items => (from q in items
+                              where ((q.Timestamp >= new DateTime(260) && q.Timestamp < new DateTime(265))
+                                    || q.Sym == "Symbol_1")
+                              select q).LastOrDefault(q => q.Timestamp <= new DateTime(0)), 1);
+
+            Assert.That(result, Is.Null);
+        }
+
+        [Test]
+        public void Supports_single()
+        {
+            string result =
+                ExecuteLambdaSingle(
+                    items => (from q in items
+                              where ((q.Timestamp >= new DateTime(260) && q.Timestamp < new DateTime(265))
+                                    || q.Sym == "Symbol_1") && q.Timestamp >= new DateTime(281)
+                              select q).Single(), 1);
+
+            Assert.That(result, Is.EqualTo("281"));
+        }
+
+        [Test]
+        public void Supports_single_with_where()
+        {
+            string result =
+                ExecuteLambdaSingle(
+                    items => (from q in items
+                              where ((q.Timestamp >= new DateTime(260) && q.Timestamp < new DateTime(265))
+                                    || q.Sym == "Symbol_1")
+                              select q).Single(q => q.Timestamp >= new DateTime(281)), 1);
+
+            Assert.That(result, Is.EqualTo("281"));
+        }
+
+        private string ExecuteLambdaSingle(Func<IQueryable<DateTimeQuote>, DateTimeQuote> lambda, int increment = 2)
+        {
+            Utils.ClearJournal<DateTimeQuote>();
+            var config = Utils.ReadConfig<DateTimeQuote>();
+            config.SerializerName = MetadataConstants.POCO_SERIALIZER_NAME;
+
+            using (var qj = CreateJournal<DateTimeQuote>(config, EFileAccess.ReadWrite))
+            {
+                AppendRecords(qj, 0, increment);
+            }
+
+            using (var qj = CreateJournal<DateTimeQuote>(config))
+            {
+                var rdr = qj.OpenReadTx();
+
+                var qts = lambda(rdr.Items);
+
+                // Verify.
+                return qts == null ? null : qts.Timestamp.Ticks.ToString();
+            }
+
+        }
+
         private string ExecuteLambda(Func<IQueryable<DateTimeQuote>, IEnumerable<DateTimeQuote>> lambda, int increment = 2)
         {
             Utils.ClearJournal<DateTimeQuote>();

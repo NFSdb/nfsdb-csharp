@@ -36,5 +36,7 @@ namespace Apaf.NFSdb.Core.Queries.Queryable.Expressions
         Intersect = 50014,
         Union = 50015,
         Filter = 50016,
+        FirstOrDefault = 50017,
+        LastOrDefault = 50018
     }
 }

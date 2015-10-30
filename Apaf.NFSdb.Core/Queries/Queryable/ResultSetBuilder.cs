@@ -177,6 +177,10 @@ namespace Apaf.NFSdb.Core.Queries.Queryable
                     case EJournalExpressionType.Skip:
                         rowIds = rowIds.Skip(tranform.Count);
                         break;
+                    case EJournalExpressionType.FirstOrDefault:
+                        return new ResultSet<T>(rowIds, _tx).FirstOrDefault();
+                    case EJournalExpressionType.LastOrDefault:
+                        return new ResultSet<T>(rowIds, _tx).LastOrDefault();
 
                     default:
                         throw new NFSdbQueryableNotSupportedException(
