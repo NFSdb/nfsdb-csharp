@@ -130,6 +130,8 @@ namespace Apaf.NFSdb.Core.Storage
         {
             // Try locking.
             var localCopy = _columnStorage;
+            if (localCopy == null) return;
+
             if (Interlocked.CompareExchange(ref _refCount, -1, 0) == 0)
             {
                 _isStorageInitialized = false;

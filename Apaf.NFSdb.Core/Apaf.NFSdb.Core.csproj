@@ -158,6 +158,7 @@
     <Compile Include="Configuration\DateTimeMode.cs" />
     <Compile Include="Configuration\JournalBuilder.cs" />
     <Compile Include="EPartitionCloseStrategy.cs" />
+    <Compile Include="Exceptions\NFSdbEmptyFileException.cs" />
     <Compile Include="Exceptions\NFSdbIOException.cs" />
     <Compile Include="Exceptions\NFSdbLockException.cs" />
     <Compile Include="Exceptions\NFSdbLockTimeoutException.cs" />

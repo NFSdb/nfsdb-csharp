@@ -128,7 +128,6 @@
     <Compile Include="Partition\LargeJournalPerformance.cs" />
     <Compile Include="Reading\PocoQuoteJournalTests.cs" />
     <Compile Include="Reading\QuoteJournalTests.cs" />
-    <Compile Include="Reading\QuotePartitionTests.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="RecordGenerator.cs" />
     <Compile Include="TestConstants.cs" />

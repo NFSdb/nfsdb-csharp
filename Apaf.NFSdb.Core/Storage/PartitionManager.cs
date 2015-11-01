@@ -248,8 +248,8 @@ namespace Apaf.NFSdb.Core.Storage
                     " Record with timestamp {1} cannot be inserted when" +
                     " the last appended record's timestamp is {2}",
                     _metadata.Settings.DefaultPath,
-                    tx.LastAppendTimestamp,
-                    dateTime);
+                    dateTime,
+                    tx.LastAppendTimestamp);
             }
 
             int lastPartitionID;

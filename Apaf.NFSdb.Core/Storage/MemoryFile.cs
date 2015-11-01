@@ -17,10 +17,12 @@
 #endregion
 using System;
 using System.ComponentModel;
+using System.Diagnostics;
 using System.IO;
 using System.IO.MemoryMappedFiles;
 using System.Runtime.InteropServices;
 using System.Threading;
+using Apaf.NFSdb.Core.Column;
 using Apaf.NFSdb.Core.Exceptions;
 using Microsoft.Win32.SafeHandles;
 
@@ -45,7 +47,7 @@ namespace Apaf.NFSdb.Core.Storage
             _fullName = Path.GetFullPath(fileName);
         }
 
-        private void CheckFileSize()
+        private void CheckFileSize(int retry)
         {
             try
             {
@@ -73,6 +75,11 @@ namespace Apaf.NFSdb.Core.Storage
             }
             catch (IOException ex)
             {
+                if (retry > 0)
+                {
+                    CheckFileSize(retry - 1);
+                    return;
+                }
                 throw new NFSdbIOException("Unable to create file or directory for path {0}", ex, Filename);
             }
         }
@@ -123,7 +130,7 @@ namespace Apaf.NFSdb.Core.Storage
             // First chunk (0 offset).
             if (!_fileOpened)
             {
-                CheckFileSize();
+                CheckFileSize(MetadataConstants.CREATE_FILE_RETRIES);
             }
 
             if (offset == 0)
@@ -135,11 +142,8 @@ namespace Apaf.NFSdb.Core.Storage
                     var fi = new FileInfo(_fullName);
                     if (size > fi.Length)
                     {
-                        using (var file = File.Open(_fullName, FileMode.Open, 
-                            FileAccess.Write, FileShare.ReadWrite))
-                        {
-                            file.SetLength(size);
-                        }
+                        throw new NFSdbConfigurationException("Opening file {0} for reading with offset {1} and size {2}. File size is not big enough.",
+                            _fullName, offset, size);
                     }
                 }
             }
@@ -148,6 +152,30 @@ namespace Apaf.NFSdb.Core.Storage
             var fileAccess = CalculateFileAccess();
             var fileShare = CalculateFileShare();
 
+            return OpenFile(offset, size, fileAccess, fileShare);
+        }
+
+        private IRawFilePart OpenFile(long offset, long size, FileAccess fileAccess, FileShare fileShare)
+        {
+            try
+            {
+                return OpenFileCore(offset, size, fileAccess, fileShare);
+            }
+            catch (NFSdbBaseExcepton)
+            {
+                throw;
+            }
+            catch (Exception ex)
+            {
+                Trace.TraceWarning(
+                    "Failed to open file '{0}' with mode '{1}', access '{2}' and sharing '{3}'. Error {4}",
+                    _fullName, FileMode.Open, fileAccess, fileShare, ex);
+                throw;
+            }
+        }
+
+        private IRawFilePart OpenFileCore(long offset, long size, FileAccess fileAccess, FileShare fileShare)
+        {
             using (var file = File.Open(_fullName, FileMode.Open, fileAccess, fileShare))
             {
                 _fileOpened = true;
@@ -156,21 +184,30 @@ namespace Apaf.NFSdb.Core.Storage
                 {
                     if (IntPtr.Size <= 4)
                     {
-                        throw new NFSdbLowAddressSpaceException("Please use 64 bit process to address > 1.5 Gb of data");
+                        throw new NFSdbLowAddressSpaceException(
+                            "Please use 64 bit process to address > 1.5 Gb of data");
                     }
                 }
                 if (targetFileSize > file.Length)
                 {
-                    // It should never come here if offset is 0
-                    // but be already resized.
-                    file.SetLength(targetFileSize);
+                    if (_access == EFileAccess.ReadWrite)
+                    {
+                        // It should never come here if offset is 0
+                        // but be already resized.
+                        file.SetLength(targetFileSize);
+                    }
+                    else
+                    {
+                        throw new NFSdbConfigurationException("Bit hint for file {0} is set incorrectly - attempt to read block beyond end of file.",
+                            _fullName);
+                    }
                 }
                 var mmAccess = _access == EFileAccess.Read
-                        ? MemoryMappedFileAccess.Read
-                        : MemoryMappedFileAccess.ReadWrite;
-                
+                    ? MemoryMappedFileAccess.Read
+                    : MemoryMappedFileAccess.ReadWrite;
+
                 using (var rmmf1 = MemoryMappedFile.CreateFromFile(file, null, file.Length,
-                        mmAccess, null, HandleInheritability.None, false))
+                    mmAccess, null, HandleInheritability.None, false))
                 {
                     try
                     {
@@ -182,9 +219,9 @@ namespace Apaf.NFSdb.Core.Storage
                     catch (IOException ex)
                     {
                         throw new NFSdbIOException("Unable to create memory mapped file" +
-                                                        " with address {0}, size {1} and offset {1}. " +
-                                                        "See InnerException for details.",
-                                                        ex, _fullName, offset, size);
+                                                   " with address {0}, size {1} and offset {1}. " +
+                                                   "See InnerException for details.",
+                            ex, _fullName, offset, size);
                     }
                 }
             }
@@ -198,8 +235,8 @@ namespace Apaf.NFSdb.Core.Storage
 
         private FileAccess CalculateFileAccess()
         {
-            return !_fileOpened && _access == EFileAccess.Read ?
-                FileAccess.Read : FileAccess.ReadWrite;
+            return _access == EFileAccess.ReadWrite ?
+                FileAccess.ReadWrite : FileAccess.Read;
         }
 
         public string Filename { get; private set; }

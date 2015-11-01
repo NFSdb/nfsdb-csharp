@@ -18,8 +18,13 @@
 using System;
 using System.Diagnostics;
 using System.Linq;
+using System.Threading;
+using System.Threading.Tasks;
 using Apaf.NFSdb.Core;
+using Apaf.NFSdb.Core.Column;
+using Apaf.NFSdb.Core.Configuration;
 using Apaf.NFSdb.Core.Exceptions;
+using Apaf.NFSdb.Core.Queries;
 using Apaf.NFSdb.Core.Storage;
 using Apaf.NFSdb.Core.Writes;
 using Apaf.NFSdb.TestModel.Model;
@@ -31,9 +36,9 @@ namespace Apaf.NFSdb.IntegrationTests.Writing
     [TestFixture]
     public class TradeJournalTests
     {
-        private IJournal<Trade> CreateJournal()
+        private IJournal<Trade> CreateJournal(EFileAccess access = EFileAccess.ReadWrite)
         {
-            return Utils.CreateJournal<Trade>(EFileAccess.ReadWrite);
+            return Utils.CreateJournal<Trade>(access);
         }
 
         [Test]
@@ -227,6 +232,77 @@ namespace Apaf.NFSdb.IntegrationTests.Writing
                     wr.Commit();
                 }
             }
+        }
+
+        [Test]
+        public void AddsFilePartsWhenReaderOpen()
+        {
+            var conf = Utils.ReadConfig<Trade>();
+            conf.RecordHint = 100000;
+
+            Utils.ClearJournal<Trade>();
+            TimeSpan cleanLatency = TimeSpan.FromMilliseconds(10);
+                // Change reader bit hints.
+            var conf2 = conf;
+
+            using (var journalReader = CreateJournal<Trade>(conf2, TimeSpan.FromSeconds(10), access: EFileAccess.Read))
+            {
+                IQuery<Trade> rdr = null;
+                var trade = new Trade();
+
+                var cancel = new CancellationTokenSource();
+                var tnk = cancel.Token;
+                var readTask = Task.Factory.StartNew(() =>
+                {
+                    while (!tnk.IsCancellationRequested)
+                    {
+                        using (rdr = journalReader.OpenReadTx())
+                        {
+                            var items = rdr.Items.Take(100).ToArray();
+                            if (items.Length > 0)
+                            {
+                                Console.WriteLine("Max timestamp items " + items.Last().Timestamp);
+                            }
+                        }
+                    }
+                }, cancel.Token);
+
+                const int batches = 1000;
+                for (int i = 0; i < batches; i++)
+                {
+                    try
+                    {
+                        using (var journal = CreateJournal<Trade>(conf, cleanLatency, access: EFileAccess.ReadWrite))
+                        {
+                            using (var wr = journal.OpenWriteTx())
+                            {
+                                for (int j = 0; j < 1000; j++)
+                                {
+                                    trade.Timestamp = (i*batches + j)*3000L;
+                                    wr.Append(trade);
+                                }
+                                wr.Commit();
+                            }
+                        }
+                    }
+                    catch (Exception)
+                    {
+                        Console.WriteLine("Failed on iteration " + i);
+                        throw;
+                    }
+                }
+                cancel.Cancel();
+            }
+        }
+
+
+        public static IJournal<T> CreateJournal<T>(JournalElement config, TimeSpan latency, EFileAccess access = EFileAccess.Read)
+        {
+            return new JournalBuilder(config)
+                .WithAccess(access)
+                .WithSerializerFactoryName(MetadataConstants.THRIFT_SERIALIZER_NAME)
+                .WithServerTasksLatency(latency)
+                .ToJournal<T>();
         }
     }
 }

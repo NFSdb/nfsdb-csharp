@@ -54,6 +54,21 @@ namespace Apaf.NFSdb.Tests.Storage
             Assert.Throws(typeof(AccessViolationException), () => _handlers[0].WriteInt64(0, 12));
         }
 
+
+        [Test]
+        public void Can_share_file_writing_and_reading()
+        {
+            _handlers[0] = CreateCompFile(1024, EFileAccess.ReadWrite);
+            _handlers[1] = CreateCompFile(1024, EFileAccess.Read);
+            for (int i = 0; i < 10; i++)
+            {
+                _handlers[0].Dispose();
+                _handlers[0] = CreateCompFile(1024, EFileAccess.ReadWrite);
+                _handlers[0].WriteInt64(0, 12);
+                _handlers[1].ReadInt64(0);
+            }
+        }
+
         [Test]
         public void CanFacilitateOneWriter()
         {

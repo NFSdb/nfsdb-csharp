@@ -288,6 +288,7 @@ namespace Apaf.NFSdb.Core.Storage
                 _memoryPtr = null;
                 _view.SafeMemoryMappedViewHandle.ReleasePointer();
                 _view.SafeMemoryMappedViewHandle.Dispose();
+                _view.Dispose();
             }
 
             if (disposed)

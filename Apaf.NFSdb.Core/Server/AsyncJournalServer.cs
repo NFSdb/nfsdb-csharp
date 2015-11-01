@@ -87,7 +87,7 @@ namespace Apaf.NFSdb.Core.Server
                 // Remove all completed.
                 i++;
                 int processed = _tasks.Count;
-                _tasks.RemoveRange(i, processed);
+                _tasks.RemoveRange(i, processed - i);
 
                 // Set tasks tracker.
                 var tasksLeft = Interlocked.Add(ref _tasksInQueue, -processed);
