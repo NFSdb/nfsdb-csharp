@@ -56,17 +56,24 @@ namespace Apaf.NFSdb.Core.Storage
 
                 if (!fi.Exists)
                 {
-                    if (fi.Directory != null && !fi.Directory.Exists)
+                    if (_access == EFileAccess.ReadWrite)
                     {
-                        fi.Directory.Create();
-                    }
+                        if (fi.Directory != null && !fi.Directory.Exists)
+                        {
+                            fi.Directory.Create();
+                        }
 
-                    using (var newFile = File.Create(fi.FullName))
-                    {
-                        ProcessFileFlags(newFile.SafeFileHandle);
-                        newFile.SetLength(size);
+                        using (var newFile = File.Create(fi.FullName))
+                        {
+                            ProcessFileFlags(newFile.SafeFileHandle);
+                            newFile.SetLength(size);
+                        }
+                        Size = size;
                     }
-                    Size = size;
+                    else
+                    {
+                        throw new NFSdbInvalidReadException("File {0} does not exists", _fullName);
+                    }
                 }
                 else
                 {
@@ -133,18 +140,14 @@ namespace Apaf.NFSdb.Core.Storage
                 CheckFileSize(MetadataConstants.CREATE_FILE_RETRIES);
             }
 
-            if (offset == 0)
+            if (_access == EFileAccess.Read)
             {
-                // File access will be enforced.
-                // Pre-check the file is big enough separately.
-                if (_access == EFileAccess.Read)
+                var fi = new FileInfo(_fullName);
+                if (size + offset > fi.Length)
                 {
-                    var fi = new FileInfo(_fullName);
-                    if (size > fi.Length)
-                    {
-                        throw new NFSdbConfigurationException("Opening file {0} for reading with offset {1} and size {2}. File size is not big enough.",
-                            _fullName, offset, size);
-                    }
+                    throw new NFSdbInvalidReadException(
+                        "Opening file {0} for reading with offset {1} and size {2}. File size is not big enough.",
+                        _fullName, offset, size);
                 }
             }
 

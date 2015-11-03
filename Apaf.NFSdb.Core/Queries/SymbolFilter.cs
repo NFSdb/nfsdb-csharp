@@ -250,7 +250,7 @@ namespace Apaf.NFSdb.Core.Queries
 
             protected override int Compare(IEnumerator<long> i1, IEnumerator<long> i2)
             {
-                if (_asc && i1.Current > i2.Current && !_asc) return 1;
+                if (_asc && i1.Current > i2.Current) return 1;
                 if (!_asc && i1.Current < i2.Current) return 1;
                 return -1;
             }

@@ -18,6 +18,7 @@
 using System;
 using System.IO;
 using System.Linq;
+using Apaf.NFSdb.Core.Exceptions;
 using Apaf.NFSdb.Core.Storage;
 using NUnit.Framework;
 
@@ -50,6 +51,9 @@ namespace Apaf.NFSdb.Tests.Storage
         [Test] 
         public void ReadOnlyViewRejectsWrite()
         {
+            _handlers[1] = CreateCompFile(1024, EFileAccess.ReadWrite);
+            _handlers[1].WriteInt64(0, 12);
+
             _handlers[0] = CreateCompFile(1024, EFileAccess.Read);
             Assert.Throws(typeof(AccessViolationException), () => _handlers[0].WriteInt64(0, 12));
         }
@@ -75,7 +79,7 @@ namespace Apaf.NFSdb.Tests.Storage
             const int chunkSize = 1024;
             const int chunkCount = 4;
             _handlers[0] = CreateCompFile(chunkSize, EFileAccess.Read);
-            Read(_handlers[0], chunkCount, chunkSize);
+            Assert.Throws<NFSdbInvalidReadException>(() => Read(_handlers[0], chunkCount, chunkSize));
             
             _handlers[1] = CreateCompFile(chunkSize, EFileAccess.ReadWrite);
             Read(_handlers[1], chunkCount, chunkSize);
@@ -104,22 +108,28 @@ namespace Apaf.NFSdb.Tests.Storage
         {
             _handlers[0] = CreateCompFile(chunkSize, EFileAccess.ReadWrite);
             _handlers[1] = CreateCompFile(chunkSize, EFileAccess.Read);
+
             // Pre-create lazy readers.
-            var readNums = Enumerable.Range(0, iterations)
-                .Select(i => _handlers[1].ReadInt64(i * chunkSize)).ToArray();
+            for (int i = 0; i < iterations; i++)
+            {
+                _handlers[0].WriteInt64(i * chunkSize, i);
+            }
+            for (int i = 0; i < iterations; i++)
+            {
+                _handlers[1].ReadInt64(i*chunkSize);
+            }
 
             // Act.
             for (int i = 0; i < iterations; i++)
             {
-                _handlers[0].WriteInt64(i*chunkSize, i);
+                _handlers[0].WriteInt64(i*chunkSize, i * 2);
             }
-            //_handlers[0].Flush();
 
             // Verify.
             //_handlers[1].Flush();
             var readResult = Enumerable.Range(0, iterations)
                 .Select(i => _handlers[1].ReadInt64(i*chunkSize)).ToArray();
-            Assert.AreEqual(string.Join("|", Enumerable.Range(0, iterations)), 
+            Assert.AreEqual(string.Join("|", Enumerable.Range(0, iterations).Select(i => i*2)), 
                 string.Join("|", readResult));
         }
 

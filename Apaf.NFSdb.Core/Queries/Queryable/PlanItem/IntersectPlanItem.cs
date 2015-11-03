@@ -52,9 +52,9 @@ namespace Apaf.NFSdb.Core.Queries.Queryable.PlanItem
 
             if (_left.Cardinality(journal, tx) < _right.Cardinality(journal, tx))
             {
-                return Intersect(_left.Execute(journal, tx, sort), _right.Execute(journal, tx, sort));
+                return Intersect(_left.Execute(journal, tx, sort), _right.Execute(journal, tx, sort), sort);
             }
-            return Intersect(_right.Execute(journal, tx, sort), _left.Execute(journal, tx, sort));
+            return Intersect(_right.Execute(journal, tx, sort), _left.Execute(journal, tx, sort), sort);
         }
 
         public long Cardinality(IJournalCore journal, IReadTransactionContext tx)
@@ -74,7 +74,47 @@ namespace Apaf.NFSdb.Core.Queries.Queryable.PlanItem
         public IPlanItem Left { get { return _left; } }
         public IPlanItem Right { get { return _right; } }
 
-        private IEnumerable<long> Intersect(IEnumerable<long> enum1, IEnumerable<long> enum2)
+        private IEnumerable<long> Intersect(IEnumerable<long> enum1, IEnumerable<long> enum2, ERowIDSortDirection sort)
+        {
+            if (sort != ERowIDSortDirection.Asc)
+            {
+                return IntersectDesc(enum1, enum2);
+            }
+            return IntersectAsc(enum1, enum2);
+        }
+
+        private IEnumerable<long> IntersectAsc(IEnumerable<long> enum1, IEnumerable<long> enum2)
+        {
+            var e1 = enum1.GetEnumerator();
+            var e2 = enum2.GetEnumerator();
+
+            var e1Next = e1.MoveNext();
+            var e2Next = e2.MoveNext();
+
+            var ei1 = e1Next ? e1.Current : long.MaxValue;
+            var ei2 = e2Next ? e2.Current : long.MaxValue;
+
+            while (e1Next && e2Next)
+            {
+                if (ei1 == ei2)
+                {
+                    yield return ei1;
+                }
+
+                if (ei1 < ei2)
+                {
+                    e1Next = e1.MoveNext();
+                    if (e1Next) ei1 = e1.Current;
+                }
+                else
+                {
+                    e2Next = e2.MoveNext();
+                    ei2 = e2Next ? e2.Current : long.MaxValue;
+                }
+            }
+        }
+
+        private IEnumerable<long> IntersectDesc(IEnumerable<long> enum1, IEnumerable<long> enum2)
         {
             var e1 = enum1.GetEnumerator();
             var e2 = enum2.GetEnumerator();
@@ -85,7 +125,7 @@ namespace Apaf.NFSdb.Core.Queries.Queryable.PlanItem
             var ei1 = e1Next ? e1.Current : long.MinValue;
             var ei2 = e2Next ? e2.Current : long.MinValue;
 
-            while (e1Next || e2Next)
+            while (e1Next && e2Next)
             {
                 if (ei1 == ei2)
                 {
@@ -103,7 +143,6 @@ namespace Apaf.NFSdb.Core.Queries.Queryable.PlanItem
                     ei2 = e2Next ? e2.Current : long.MinValue;
                 }
             }
-
         }
     }
 }

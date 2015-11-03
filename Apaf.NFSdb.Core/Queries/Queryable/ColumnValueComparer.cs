@@ -35,8 +35,21 @@ namespace Apaf.NFSdb.Core.Queries.Queryable
             var col1 = _tx.Read(part1).ReadColumn(_filedId);
             var col2 = (part1 == part2) ? col1 : _tx.Read(part2).ReadColumn(_filedId);
 
-            return ((ITypedColumn<TT>)col1).Get(lrow1, _tx.ReadCache).CompareTo(
-                ((ITypedColumn<TT>)col2).Get(lrow2, _tx.ReadCache));
+            var val1 = ((ITypedColumn<TT>) col1).Get(lrow1, _tx.ReadCache);
+            var val2 = ((ITypedColumn<TT>)col2).Get(lrow2, _tx.ReadCache);
+
+            if (val1 != null)
+            {
+                return ((ITypedColumn<TT>)col1).Get(lrow1, _tx.ReadCache).CompareTo(
+                    ((ITypedColumn<TT>)col2).Get(lrow2, _tx.ReadCache));
+            }
+
+            if (val2 == null)
+            {
+                return 0;
+            }
+            return -1;
+
         }
     }
 }

@@ -392,6 +392,14 @@ namespace Apaf.NFSdb.Tests.Query
                     .Where(it => it.Sym == sym).Take(take), 1);
         }
 
+        [TestCase(30, "Symbol_0", ExpectedResult = "0,11,12")]
+        public string Supports_order_by_timestamp_asc_with_where(int take, string sym)
+        {
+            return ExecuteLambda(
+                items => items.Where(t => t.Sym == "Symbol_0" || t.Sym == "Symbol_11" || t.Sym == "Symbol_12")
+                    .Where(t => t.Timestamp < 20)
+                    .OrderBy(t => t.Timestamp).Take(take), 1);
+        }
 
         [TestCase(0, 10, ExpectedResult = "280,281,282,283,284,285,286,287,288,289")]
         [TestCase(0, 20, ExpectedResult = "280,281,282,283,284,285,286,287,288,289,290,291,292,293,294,295,296,297,298,299")]
@@ -436,6 +444,16 @@ namespace Apaf.NFSdb.Tests.Query
             return ExecuteLambda(
                 (items, latest) => (from q in items where q.Sym == sym1 select q)
                     .Union(from q in latest where q.Ex == ex select q),
+                     quotes => quotes.Select(q => q.Timestamp), 1);
+        }
+
+        [TestCase("Symbol_0", "Ex_14", ExpectedResult = "0,20,40,60,80,100,120,140,160,180,200,220,240,260,280")]
+        [TestCase("Symbol_0", "Ex_0", ExpectedResult = "0,20,40,60,80,100,120,140,160,180,200,220,240,260,280")]
+        public string Union_with_latest_by_order_asc(string sym1, string ex)
+        {
+            return ExecuteLambda(
+                (items, latest) => (from q in items where q.Sym == sym1 select q)
+                    .Union(from q in latest where q.Ex == ex select q).Where(q => q.Bid == 0).OrderBy(t => t.Timestamp),
                      quotes => quotes.Select(q => q.Timestamp), 1);
         }
         

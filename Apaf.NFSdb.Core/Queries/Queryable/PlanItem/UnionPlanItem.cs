@@ -35,13 +35,59 @@ namespace Apaf.NFSdb.Core.Queries.Queryable.PlanItem
 
         public IEnumerable<long> Execute(IJournalCore journal, IReadTransactionContext tx, ERowIDSortDirection sort)
         {
-            return MergeDistinct(_left.Execute(journal, tx, sort), _right.Execute(journal, tx, sort));
+            return MergeDistinct(_left.Execute(journal, tx, sort), _right.Execute(journal, tx, sort), sort);
         }
 
         public IPlanItem Left { get { return _left; } }
         public IPlanItem Right { get { return _right; } }
 
-        private IEnumerable<long> MergeDistinct(IEnumerable<long> enum1, IEnumerable<long> enum2)
+        private IEnumerable<long> MergeDistinct(IEnumerable<long> enum1, IEnumerable<long> enum2, ERowIDSortDirection sort)
+        {
+            if (sort != ERowIDSortDirection.Asc)
+            {
+                return MergeDistinctDesc(enum1, enum2);
+            }
+            return MergeDistinctAsc(enum1, enum2);
+        }
+
+        private IEnumerable<long> MergeDistinctAsc(IEnumerable<long> enum1, IEnumerable<long> enum2)
+        {
+            var e1 = enum1.GetEnumerator();
+            var e2 = enum2.GetEnumerator();
+
+            var e1Next = e1.MoveNext();
+            var e2Next = e2.MoveNext();
+            var lastRet = long.MaxValue;
+
+            var ei1 = e1Next ? e1.Current : long.MaxValue;
+            var ei2 = e2Next ? e2.Current : long.MaxValue;
+
+            while (e1Next || e2Next)
+            {
+                if (ei1 < ei2)
+                {
+                    if (ei1 != lastRet)
+                    {
+                        yield return ei1;
+                        lastRet = ei1;
+                    }
+                    e1Next = e1.MoveNext();
+                    ei1 = e1Next ? e1.Current : long.MaxValue;
+                }
+                else
+                {
+                    if (ei2 != lastRet)
+                    {
+                        yield return ei2;
+                        lastRet = ei2;
+                    }
+                    e2Next = e2.MoveNext();
+                    ei2 = e2Next ? e2.Current : long.MaxValue;
+                }
+            }
+        }
+
+        private static IEnumerable<long> MergeDistinctDesc(IEnumerable<long> enum1, IEnumerable<long> enum2)
         {
             var e1 = enum1.GetEnumerator();
             var e2 = enum2.GetEnumerator();
