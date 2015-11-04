@@ -2,8 +2,8 @@
 using System.Linq;
 using Apaf.NFSdb.Core.Storage;
 using Apaf.NFSdb.IntegrationTests;
-using Apaf.NFSdb.TestModel.Model;
 using Apaf.NFSdb.TestShared;
+using Apaf.NFSdb.TestShared.Model;
 using NUnit.Framework;
 
 namespace Apaf.NFSdb.TestRunner.IntegrationTests

@@ -118,10 +118,6 @@
       <Project>{DFEF46E9-19E8-4A16-B129-28C422C844E8}</Project>
       <Name>Apaf.NFSdb.IntegrationTests</Name>
     </ProjectReference>
-    <ProjectReference Include="..\Apaf.NFSdb.TestModel\Apaf.NFSdb.TestModel.csproj">
-      <Project>{111644BA-19F7-48FC-BD9E-B94A7686D178}</Project>
-      <Name>Apaf.NFSdb.TestModel</Name>
-    </ProjectReference>
     <ProjectReference Include="..\Apaf.NFSdb.TestShared\Apaf.NFSdb.TestShared.csproj">
       <Project>{91B718CD-06C1-4863-A251-18F5E4D3FA49}</Project>
       <Name>Apaf.NFSdb.TestShared</Name>

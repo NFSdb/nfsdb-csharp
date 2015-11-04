@@ -1,5 +1,5 @@
 namespace java org.java.journal.test.model
-namespace csharp Apaf.NFSdb.TestModel.Model
+namespace csharp Apaf.NFSdb.TestShared.Model
 
 struct Quote {
      1: required i64 timestamp;

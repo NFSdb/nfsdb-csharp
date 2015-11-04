@@ -13,7 +13,7 @@ using Thrift;
 using Thrift.Collections;
 using Thrift.Protocol;
 using Thrift.Transport;
-namespace Apaf.NJournal.TestModel.Model
+namespace Apaf.NFSdb.TestShared.Model
 {
 
   [Serializable]

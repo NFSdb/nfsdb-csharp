@@ -64,7 +64,7 @@ namespace Apaf.NFSdb.Core.Column
         public SymbolMapColumn(IRawFile data, IRawFile datak, IRawFile datar,
             IRawFile symd, IRawFile symi, 
             IRawFile symk, IRawFile symr, 
-            string propertyName, int capacity, int recordCountHint, int maxLen, 
+            string propertyName, int capacity, long recordCountHint, int maxLen, 
             SymbolCache symbolCache) : this(data, symd, symi, symk, symr, propertyName, capacity, maxLen, symbolCache)
         {
             _datarIndex = new IndexColumn(datak, datar, capacity, recordCountHint);

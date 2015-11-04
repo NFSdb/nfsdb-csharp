@@ -13,84 +13,19 @@ using Thrift;
 using Thrift.Collections;
 using Thrift.Protocol;
 using Thrift.Transport;
-namespace Apaf.NJournal.TestModel.Model
+namespace Apaf.NFSdb.TestShared.Model
 {
 
   [Serializable]
-  public partial class PlaceGraph : TBase
+  public partial class Trade : TBase
   {
-    private string _subj;
-    private string _subjType;
-    private string _predicate;
-    private string _obj;
-    private string _objType;
     private long _timestamp;
-    private bool _deleted;
-
-    public string Subj
-    {
-      get
-      {
-        return _subj;
-      }
-      set
-      {
-        __isset.subj = true;
-        this._subj = value;
-      }
-    }
-
-    public string SubjType
-    {
-      get
-      {
-        return _subjType;
-      }
-      set
-      {
-        __isset.subjType = true;
-        this._subjType = value;
-      }
-    }
-
-    public string Predicate
-    {
-      get
-      {
-        return _predicate;
-      }
-      set
-      {
-        __isset.predicate = true;
-        this._predicate = value;
-      }
-    }
-
-    public string Obj
-    {
-      get
-      {
-        return _obj;
-      }
-      set
-      {
-        __isset.obj = true;
-        this._obj = value;
-      }
-    }
-
-    public string ObjType
-    {
-      get
-      {
-        return _objType;
-      }
-      set
-      {
-        __isset.objType = true;
-        this._objType = value;
-      }
-    }
+    private string _sym;
+    private double _price;
+    private int _size;
+    private int _stop;
+    private string _cond;
+    private string _ex;
 
     public long Timestamp
     {
@@ -105,16 +40,81 @@ namespace Apaf.NJournal.TestModel.Model
       }
     }
 
-    public bool Deleted
+    public string Sym
     {
       get
       {
-        return _deleted;
+        return _sym;
       }
       set
       {
-        __isset.deleted = true;
-        this._deleted = value;
+        __isset.sym = true;
+        this._sym = value;
+      }
+    }
+
+    public double Price
+    {
+      get
+      {
+        return _price;
+      }
+      set
+      {
+        __isset.price = true;
+        this._price = value;
+      }
+    }
+
+    public int Size
+    {
+      get
+      {
+        return _size;
+      }
+      set
+      {
+        __isset.size = true;
+        this._size = value;
+      }
+    }
+
+    public int Stop
+    {
+      get
+      {
+        return _stop;
+      }
+      set
+      {
+        __isset.stop = true;
+        this._stop = value;
+      }
+    }
+
+    public string Cond
+    {
+      get
+      {
+        return _cond;
+      }
+      set
+      {
+        __isset.cond = true;
+        this._cond = value;
+      }
+    }
+
+    public string Ex
+    {
+      get
+      {
+        return _ex;
+      }
+      set
+      {
+        __isset.ex = true;
+        this._ex = value;
       }
     }
 
@@ -122,16 +122,16 @@ namespace Apaf.NJournal.TestModel.Model
     public Isset __isset;
     [Serializable]
     public struct Isset {
-      public bool subj;
-      public bool subjType;
-      public bool predicate;
-      public bool obj;
-      public bool objType;
       public bool timestamp;
-      public bool deleted;
+      public bool sym;
+      public bool price;
+      public bool size;
+      public bool stop;
+      public bool cond;
+      public bool ex;
     }
 
-    public PlaceGraph() {
+    public Trade() {
     }
 
     public void Read (TProtocol iprot)
@@ -147,50 +147,50 @@ namespace Apaf.NJournal.TestModel.Model
         switch (field.ID)
         {
           case 1:
-            if (field.Type == TType.String) {
-              Subj = iprot.ReadString();
-            } else { 
-              TProtocolUtil.Skip(iprot, field.Type);
-            }
-            break;
-          case 2:
-            if (field.Type == TType.String) {
-              SubjType = iprot.ReadString();
-            } else { 
-              TProtocolUtil.Skip(iprot, field.Type);
-            }
-            break;
-          case 3:
-            if (field.Type == TType.String) {
-              Predicate = iprot.ReadString();
-            } else { 
-              TProtocolUtil.Skip(iprot, field.Type);
-            }
-            break;
-          case 4:
-            if (field.Type == TType.String) {
-              Obj = iprot.ReadString();
-            } else { 
-              TProtocolUtil.Skip(iprot, field.Type);
-            }
-            break;
-          case 5:
-            if (field.Type == TType.String) {
-              ObjType = iprot.ReadString();
-            } else { 
-              TProtocolUtil.Skip(iprot, field.Type);
-            }
-            break;
-          case 6:
             if (field.Type == TType.I64) {
               Timestamp = iprot.ReadI64();
             } else { 
               TProtocolUtil.Skip(iprot, field.Type);
             }
             break;
+          case 2:
+            if (field.Type == TType.String) {
+              Sym = iprot.ReadString();
+            } else { 
+              TProtocolUtil.Skip(iprot, field.Type);
+            }
+            break;
+          case 3:
+            if (field.Type == TType.Double) {
+              Price = iprot.ReadDouble();
+            } else { 
+              TProtocolUtil.Skip(iprot, field.Type);
+            }
+            break;
+          case 4:
+            if (field.Type == TType.I32) {
+              Size = iprot.ReadI32();
+            } else { 
+              TProtocolUtil.Skip(iprot, field.Type);
+            }
+            break;
+          case 5:
+            if (field.Type == TType.I32) {
+              Stop = iprot.ReadI32();
+            } else { 
+              TProtocolUtil.Skip(iprot, field.Type);
+            }
+            break;
+          case 6:
+            if (field.Type == TType.String) {
+              Cond = iprot.ReadString();
+            } else { 
+              TProtocolUtil.Skip(iprot, field.Type);
+            }
+            break;
           case 7:
-            if (field.Type == TType.Bool) {
-              Deleted = iprot.ReadBool();
+            if (field.Type == TType.String) {
+              Ex = iprot.ReadString();
             } else { 
               TProtocolUtil.Skip(iprot, field.Type);
             }
@@ -205,63 +205,63 @@ namespace Apaf.NJournal.TestModel.Model
     }
 
     public void Write(TProtocol oprot) {
-      TStruct struc = new TStruct("PlaceGraph");
+      TStruct struc = new TStruct("Trade");
       oprot.WriteStructBegin(struc);
       TField field = new TField();
-      if (Subj != null && __isset.subj) {
-        field.Name = "subj";
-        field.Type = TType.String;
-        field.ID = 1;
-        oprot.WriteFieldBegin(field);
-        oprot.WriteString(Subj);
-        oprot.WriteFieldEnd();
-      }
-      if (SubjType != null && __isset.subjType) {
-        field.Name = "subjType";
-        field.Type = TType.String;
-        field.ID = 2;
-        oprot.WriteFieldBegin(field);
-        oprot.WriteString(SubjType);
-        oprot.WriteFieldEnd();
-      }
-      if (Predicate != null && __isset.predicate) {
-        field.Name = "predicate";
-        field.Type = TType.String;
-        field.ID = 3;
-        oprot.WriteFieldBegin(field);
-        oprot.WriteString(Predicate);
-        oprot.WriteFieldEnd();
-      }
-      if (Obj != null && __isset.obj) {
-        field.Name = "obj";
-        field.Type = TType.String;
-        field.ID = 4;
-        oprot.WriteFieldBegin(field);
-        oprot.WriteString(Obj);
-        oprot.WriteFieldEnd();
-      }
-      if (ObjType != null && __isset.objType) {
-        field.Name = "objType";
-        field.Type = TType.String;
-        field.ID = 5;
-        oprot.WriteFieldBegin(field);
-        oprot.WriteString(ObjType);
-        oprot.WriteFieldEnd();
-      }
       if (__isset.timestamp) {
         field.Name = "timestamp";
         field.Type = TType.I64;
-        field.ID = 6;
+        field.ID = 1;
         oprot.WriteFieldBegin(field);
         oprot.WriteI64(Timestamp);
         oprot.WriteFieldEnd();
       }
-      if (__isset.deleted) {
-        field.Name = "deleted";
-        field.Type = TType.Bool;
+      if (Sym != null && __isset.sym) {
+        field.Name = "sym";
+        field.Type = TType.String;
+        field.ID = 2;
+        oprot.WriteFieldBegin(field);
+        oprot.WriteString(Sym);
+        oprot.WriteFieldEnd();
+      }
+      if (__isset.price) {
+        field.Name = "price";
+        field.Type = TType.Double;
+        field.ID = 3;
+        oprot.WriteFieldBegin(field);
+        oprot.WriteDouble(Price);
+        oprot.WriteFieldEnd();
+      }
+      if (__isset.size) {
+        field.Name = "size";
+        field.Type = TType.I32;
+        field.ID = 4;
+        oprot.WriteFieldBegin(field);
+        oprot.WriteI32(Size);
+        oprot.WriteFieldEnd();
+      }
+      if (__isset.stop) {
+        field.Name = "stop";
+        field.Type = TType.I32;
+        field.ID = 5;
+        oprot.WriteFieldBegin(field);
+        oprot.WriteI32(Stop);
+        oprot.WriteFieldEnd();
+      }
+      if (Cond != null && __isset.cond) {
+        field.Name = "cond";
+        field.Type = TType.String;
+        field.ID = 6;
+        oprot.WriteFieldBegin(field);
+        oprot.WriteString(Cond);
+        oprot.WriteFieldEnd();
+      }
+      if (Ex != null && __isset.ex) {
+        field.Name = "ex";
+        field.Type = TType.String;
         field.ID = 7;
         oprot.WriteFieldBegin(field);
-        oprot.WriteBool(Deleted);
+        oprot.WriteString(Ex);
         oprot.WriteFieldEnd();
       }
       oprot.WriteFieldStop();
@@ -269,21 +269,21 @@ namespace Apaf.NJournal.TestModel.Model
     }
 
     public override string ToString() {
-      StringBuilder sb = new StringBuilder("PlaceGraph(");
-      sb.Append("Subj: ");
-      sb.Append(Subj);
-      sb.Append(",SubjType: ");
-      sb.Append(SubjType);
-      sb.Append(",Predicate: ");
-      sb.Append(Predicate);
-      sb.Append(",Obj: ");
-      sb.Append(Obj);
-      sb.Append(",ObjType: ");
-      sb.Append(ObjType);
-      sb.Append(",Timestamp: ");
+      StringBuilder sb = new StringBuilder("Trade(");
+      sb.Append("Timestamp: ");
       sb.Append(Timestamp);
-      sb.Append(",Deleted: ");
-      sb.Append(Deleted);
+      sb.Append(",Sym: ");
+      sb.Append(Sym);
+      sb.Append(",Price: ");
+      sb.Append(Price);
+      sb.Append(",Size: ");
+      sb.Append(Size);
+      sb.Append(",Stop: ");
+      sb.Append(Stop);
+      sb.Append(",Cond: ");
+      sb.Append(Cond);
+      sb.Append(",Ex: ");
+      sb.Append(Ex);
       sb.Append(")");
       return sb.ToString();
     }

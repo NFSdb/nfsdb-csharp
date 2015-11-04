@@ -31,7 +31,7 @@ namespace Apaf.NFSdb.Core.Configuration
         private readonly int _maxOpenPartitions;
         private readonly int _openPartitionTtl;
         private EPartitionType _partitionType;
-        private readonly int _recordHint;
+        private readonly long _recordHint;
         private readonly string _timestampColumn;
 
         public JournalSettings(JournalElement jconf, IEnumerable<ColumnMetadata> actualColumns)
@@ -71,7 +71,7 @@ namespace Apaf.NFSdb.Core.Configuration
             get { return _partitionType; }
         }
 
-        public int RecordHint
+        public long RecordHint
         {
             get { return _recordHint; }
         }

@@ -23,8 +23,8 @@ using System.Threading.Tasks;
 using Apaf.NFSdb.Core.Queries;
 using Apaf.NFSdb.Core.Storage;
 using Apaf.NFSdb.IntegrationTests.Reading;
-using Apaf.NFSdb.TestModel.Model;
 using Apaf.NFSdb.TestShared;
+using Apaf.NFSdb.TestShared.Model;
 
 namespace Apaf.NFSdb.TestRunner
 {

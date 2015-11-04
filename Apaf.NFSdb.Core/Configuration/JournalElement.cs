@@ -61,7 +61,7 @@ namespace Apaf.NFSdb.Core.Configuration
         public EPartitionType PartitionType { get; set; }
 
         [XmlAttribute("recordHint")]
-        public int RecordHint { get; set; }
+        public long RecordHint { get; set; }
 
         [XmlAttribute("openPartitionTTL")]
         public int OpenPartitionTtl { get; set; }

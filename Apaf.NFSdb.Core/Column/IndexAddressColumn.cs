@@ -74,7 +74,7 @@ namespace Apaf.NFSdb.Core.Column
         private readonly int _rowBlockSize;
         private readonly int _rowBlockLenBitHint;
 
-        public IndexAddressColumn(IRawFile kData, int capacity, int recordCountHint)
+        public IndexAddressColumn(IRawFile kData, int capacity, long recordCountHint)
         {
             _fileID = kData.FileID;
             _partitionID = kData.PartitionID;

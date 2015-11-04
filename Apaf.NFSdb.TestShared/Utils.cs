@@ -23,7 +23,7 @@ using Apaf.NFSdb.Core.Column;
 using Apaf.NFSdb.Core.Configuration;
 using Apaf.NFSdb.Core.Server;
 using Apaf.NFSdb.Core.Storage;
-using Apaf.NFSdb.TestModel.Model;
+using Apaf.NFSdb.TestShared.Model;
 
 namespace Apaf.NFSdb.TestShared
 {
@@ -40,7 +40,7 @@ namespace Apaf.NFSdb.TestShared
         public static JournalElement ReadConfig<T>()
         {
             using (Stream dbXml = typeof(Quote).Assembly.GetManifestResourceStream(
-                "Apaf.NFSdb.TestModel.Resources.nfsdb.xml"))
+                "Apaf.NFSdb.TestShared.Resources.nfsdb.xml"))
             {
                 var dbElement = new ConfigurationReader().ReadConfiguration(dbXml);
                 var jconf = dbElement.Journals.Single(j => j.Class.EndsWith("." + typeof(T).Name));
@@ -60,7 +60,7 @@ namespace Apaf.NFSdb.TestShared
         public static void ClearJournal<T>(string folderPath = null)
         {
             using (Stream dbXml = typeof (Quote).Assembly.GetManifestResourceStream(
-                "Apaf.NFSdb.TestModel.Resources.nfsdb.xml"))
+                "Apaf.NFSdb.TestShared.Resources.nfsdb.xml"))
             {
                 if (folderPath == null)
                 {
@@ -99,7 +99,7 @@ namespace Apaf.NFSdb.TestShared
         {
             var mmFactory = new CompositeFileFactory(fileFlags);
             using (var dbXml = typeof(Quote).Assembly.GetManifestResourceStream(
-                "Apaf.NFSdb.TestModel.Resources.nfsdb.xml"))
+                "Apaf.NFSdb.TestShared.Resources.nfsdb.xml"))
             {
                 var dbElement = new ConfigurationReader().ReadConfiguration(dbXml);
                 var jconf = dbElement.Journals.Single(j => j.Class.EndsWith("." + typeof(T).Name));

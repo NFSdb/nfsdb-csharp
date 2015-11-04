@@ -19,13 +19,12 @@ using System;
 using System.Collections.Concurrent;
 using System.Diagnostics;
 using System.Linq;
-using System.Threading;
 using System.Threading.Tasks;
 using Apaf.NFSdb.Core;
 using Apaf.NFSdb.Core.Storage;
 using Apaf.NFSdb.Core.Writes;
-using Apaf.NFSdb.TestModel.Model;
 using Apaf.NFSdb.TestShared;
+using Apaf.NFSdb.TestShared.Model;
 using NUnit.Framework;
 
 namespace Apaf.NFSdb.IntegrationTests.Reading

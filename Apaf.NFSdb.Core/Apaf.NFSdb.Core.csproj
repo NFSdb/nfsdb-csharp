@@ -338,4 +338,30 @@
   <Target Name="AfterBuild">
   </Target>
   -->
+  <Import Project="..\packages\ILRepack.MSBuild.Task.1.0.9\build\ILRepack.MSBuild.Task.targets" Condition="Exists('..\packages\ILRepack.MSBuild.Task.1.0.9\build\ILRepack.MSBuild.Task.targets')" />
+  <!-- ILRepack -->
+	<Target Name="AfterBuild" Condition="'$(Configuration)' == 'Release'">
+
+	   <ItemGroup>
+		<InputAssemblies Include="$(OutputPath)\IQToolkit.Data.dll" />
+		<InputAssemblies Include="$(OutputPath)\IQToolkit.dll" />
+		<InputAssemblies Include="$(OutputPath)\Apaf.NFSdb.Core.dll" />
+	   </ItemGroup>
+
+	   <ItemGroup>
+		<!-- Must be a fully qualified name -->
+		<DoNotInternalizeAssemblies Include="Apaf.NFSdb.Core" /> 
+	   </ItemGroup>
+
+	   <ILRepack 
+		Parallel="true"
+		Internalize="true"
+		InternalizeExclude="@(DoNotInternalizeAssemblies)"
+		InputAssemblies="@(InputAssemblies)"
+		TargetKind="Dll"
+		OutputFile="$(OutputPath)\$(AssemblyName).dll"
+	   />
+
+	</Target>
+	<!-- /ILRepack -->
 </Project>

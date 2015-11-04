@@ -27,8 +27,8 @@ using Apaf.NFSdb.Core.Exceptions;
 using Apaf.NFSdb.Core.Queries;
 using Apaf.NFSdb.Core.Storage;
 using Apaf.NFSdb.Core.Writes;
-using Apaf.NFSdb.TestModel.Model;
 using Apaf.NFSdb.TestShared;
+using Apaf.NFSdb.TestShared.Model;
 using NUnit.Framework;
 
 namespace Apaf.NFSdb.IntegrationTests.Writing
