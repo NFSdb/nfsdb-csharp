@@ -1,5 +1,6 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="4.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="..\packages\Antlr4.4.3.0\build\Antlr4.props" Condition="Exists('..\packages\Antlr4.4.3.0\build\Antlr4.props')" />
   <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
   <PropertyGroup>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
@@ -117,6 +118,9 @@
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <ItemGroup>
+    <Reference Include="Antlr4.Runtime.net40">
+      <HintPath>..\packages\Antlr4.Runtime.4.3.0\lib\net40-client\Antlr4.Runtime.net40.dll</HintPath>
+    </Reference>
     <Reference Include="IQToolkit">
       <HintPath>..\Lib\IQTookit\IQToolkit.dll</HintPath>
     </Reference>
@@ -162,6 +166,7 @@
     <Compile Include="Exceptions\NFSdbIOException.cs" />
     <Compile Include="Exceptions\NFSdbLockException.cs" />
     <Compile Include="Exceptions\NFSdbLockTimeoutException.cs" />
+    <Compile Include="Exceptions\NFSdbSyntaxException.cs" />
     <Compile Include="Queries\IColumnFilter.cs" />
     <Compile Include="Queries\ILatestBySymbolFilter.cs" />
     <Compile Include="Queries\JournalQueriableExtensions.cs" />
@@ -324,11 +329,17 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />
+    <Antlr4 Include="Ql\Gramma\Ql.g4">
+      <Generator>MSBuild:Compile</Generator>
+      <CustomToolNamespace>Apaf.NFSdb.Core.Ql.Gramma</CustomToolNamespace>
+    </Antlr4>
   </ItemGroup>
   <ItemGroup>
     <WCFMetadata Include="Service References\" />
   </ItemGroup>
-  <ItemGroup />
+  <ItemGroup>
+    <Content Include="Ql\Gramma\gramma_license.txt" />
+  </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <Import Project="$(SolutionDir)\.nuget\nuget.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
@@ -340,28 +351,18 @@
   -->
   <Import Project="..\packages\ILRepack.MSBuild.Task.1.0.9\build\ILRepack.MSBuild.Task.targets" Condition="Exists('..\packages\ILRepack.MSBuild.Task.1.0.9\build\ILRepack.MSBuild.Task.targets')" />
   <!-- ILRepack -->
-	<Target Name="AfterBuild" Condition="'$(Configuration)' == 'Release'">
-
-	   <ItemGroup>
-		<InputAssemblies Include="$(OutputPath)\IQToolkit.Data.dll" />
-		<InputAssemblies Include="$(OutputPath)\IQToolkit.dll" />
-		<InputAssemblies Include="$(OutputPath)\Apaf.NFSdb.Core.dll" />
-	   </ItemGroup>
-
-	   <ItemGroup>
-		<!-- Must be a fully qualified name -->
-		<DoNotInternalizeAssemblies Include="Apaf.NFSdb.Core" /> 
-	   </ItemGroup>
-
-	   <ILRepack 
-		Parallel="true"
-		Internalize="true"
-		InternalizeExclude="@(DoNotInternalizeAssemblies)"
-		InputAssemblies="@(InputAssemblies)"
-		TargetKind="Dll"
-		OutputFile="$(OutputPath)\$(AssemblyName).dll"
-	   />
-
-	</Target>
-	<!-- /ILRepack -->
+  <Target Name="AfterBuild" Condition="'$(Configuration)' == 'Release'">
+    <ItemGroup>
+      <InputAssemblies Include="$(OutputPath)\IQToolkit.Data.dll" />
+      <InputAssemblies Include="$(OutputPath)\IQToolkit.dll" />
+      <InputAssemblies Include="$(OutputPath)\Apaf.NFSdb.Core.dll" />
+    </ItemGroup>
+    <ItemGroup>
+      <!-- Must be a fully qualified name -->
+      <DoNotInternalizeAssemblies Include="Apaf.NFSdb.Core" />
+    </ItemGroup>
+    <ILRepack Parallel="true" Internalize="true" InternalizeExclude="@(DoNotInternalizeAssemblies)" InputAssemblies="@(InputAssemblies)" TargetKind="Dll" OutputFile="$(OutputPath)\$(AssemblyName).dll" />
+  </Target>
+  <Import Project="..\packages\Antlr4.4.3.0\build\Antlr4.targets" Condition="Exists('..\packages\Antlr4.4.3.0\build\Antlr4.targets')" />
+  <!-- /ILRepack -->
 </Project>
