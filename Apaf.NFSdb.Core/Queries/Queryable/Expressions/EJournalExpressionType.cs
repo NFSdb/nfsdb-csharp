@@ -37,6 +37,9 @@ namespace Apaf.NFSdb.Core.Queries.Queryable.Expressions
         Union = 50015,
         Filter = 50016,
         FirstOrDefault = 50017,
-        LastOrDefault = 50018
+        LastOrDefault = 50018,
+        Journal = 50019,
+        Column = 50020,
+        Comparison = 50021
     }
 }

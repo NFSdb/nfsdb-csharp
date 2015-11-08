@@ -1,7 +1,7 @@
 grammar Ql;
 
 parse
- : ( select_stmt | error )* EOF
+ : select_stmt
  ;
 
 error
@@ -12,65 +12,45 @@ error
  ;
 
 select_stmt
- : select_or_values ( compound_operator select_or_values )*
+ : select_core ( compound_operator select_core )*
    ( K_ORDER K_BY ordering_term ( ',' ordering_term )* )?
-   ( K_LIMIT expr ( ( K_OFFSET | ',' ) expr )? )?
  ;
 
-select_or_values
- : K_SELECT ( K_DISTINCT | K_ALL )? result_column ( ',' result_column )*
-   ( K_FROM ( table_or_subquery ( ',' table_or_subquery )* | join_clause ) )?
-   ( K_WHERE expr )?
+select_core
+ : K_SELECT ( K_LIMIT expr ( ( K_OFFSET | ',' ) expr )? )?
+   ( K_FROM table_or_subquery )?
+   ( K_WHERE where_expr )?
    ( K_GROUP K_BY expr ( ',' expr )* ( K_HAVING expr )? )?
- | K_VALUES '(' expr ( ',' expr )* ')' ( ',' '(' expr ( ',' expr )* ')' )*
  ;
 
 type_name
  : name+ ( '(' signed_number ')'
          | '(' signed_number ',' signed_number ')' )?
  ;
+ 
+where_expr
+ : expr
+ ;
 
 /*
     NFSdb understands the following binary operators, in order from highest to
     lowest precedence:
 
-    ||
-    *    /    %
-    +    -
-    <<   >>   &    |
     <    <=   >    >=
-    =    ==   !=   <>   IS   IS NOT   IN   LIKE   MATCH   REGEXP
+    =    ==   IN   NOT IN
     AND
     OR
 */
 expr
- : literal_value
- | BIND_PARAMETER
- | ( ( database_name '.' )? table_name '.' )? column_name
- | unary_operator expr
- | expr '||' expr
- | expr ( '*' | '/' | '%' ) expr
- | expr ( '+' | '-' ) expr
- | expr ( '<<' | '>>' | '&' | '|' ) expr
- | expr ( '<' | '<=' | '>' | '>=' ) expr
- | expr ( '=' | '==' | '!=' | '<>' | K_IS | K_IS K_NOT | K_IN | K_LIKE | K_MATCH | K_REGEXP ) expr
- | expr K_AND expr
- | expr K_OR expr
- | function_name '(' ( K_DISTINCT? expr ( ',' expr )* | '*' )? ')'
- | '(' expr ')'
- | K_CAST '(' expr K_AS type_name ')'
- | expr K_COLLATE collation_name
- | expr K_NOT? ( K_LIKE | K_REGEXP | K_MATCH ) expr ( K_ESCAPE expr )?
- | expr ( K_ISNULL | K_NOTNULL | K_NOT K_NULL )
- | expr K_IS K_NOT? expr
- | expr K_NOT? K_BETWEEN expr K_AND expr
- | expr K_NOT? K_IN ( '(' ( select_stmt
-                          | expr ( ',' expr )*
-                          )? 
-                      ')'
-                    | ( database_name '.' )? table_name )
- | ( ( K_NOT )? K_EXISTS )? '(' select_stmt ')'
- | K_CASE expr? ( K_WHEN expr K_THEN expr )+ ( K_ELSE expr )? K_END
+ : literal_value                                              #LiteralExpr
+ | ( ( database_name '.' )? table_name '.' )? column_name     #ColumnNameExpr
+ | unary_operator expr                                        #UnaryExpr
+ | expr op=( '<' | '<=' | '>' | '>=' | '=' | '==' | '!=' | '<>' ) expr       #ComparisonExpr
+ | expr op=K_AND expr                                            #LogicalAndExpr
+ | expr op=K_OR expr                                             #LogicalOrExpr
+ | '(' expr ')'                                               #ParensExpr
+ | expr K_NOT? op=K_IN ( '(' expr ( ',' expr )*                
+                      ')')                                    #InListExpr
  ;
 
 qualified_table_name
@@ -78,47 +58,15 @@ qualified_table_name
  ;
 
 ordering_term
- : expr ( K_COLLATE collation_name )? ( K_ASC | K_DESC )?
+ : expr ( K_ASC | K_DESC )?
  ;
 
 common_table_expression
  : table_name ( '(' column_name ( ',' column_name )* ')' )? K_AS '(' select_stmt ')'
  ;
 
-result_column
- : '*'
- | table_name '.' '*'
- | expr ( K_AS? column_alias )?
- ;
-
 table_or_subquery
  : ( database_name '.' )? table_name ( K_AS? table_alias )?   
- | '(' ( table_or_subquery ( ',' table_or_subquery )*
-       | join_clause )
-   ')' ( K_AS? table_alias )?
- | '(' select_stmt ')' ( K_AS? table_alias )?
- ;
-
-join_clause
- : table_or_subquery ( join_operator table_or_subquery join_constraint )*
- ;
-
-join_operator
- : ','
- | K_NATURAL? ( K_LEFT K_OUTER? | K_INNER | K_CROSS )? K_JOIN
- ;
-
-join_constraint
- : ( K_ON expr
-   | K_USING '(' column_name ( ',' column_name )* ')' )?
- ;
-
-select_core
- : K_SELECT ( K_DISTINCT | K_ALL )? result_column ( ',' result_column )*
-   ( K_FROM ( table_or_subquery ( ',' table_or_subquery )* | join_clause ) )?
-   ( K_WHERE expr )?
-   ( K_GROUP K_BY expr ( ',' expr )* ( K_HAVING expr )? )?
- | K_VALUES '(' expr ( ',' expr )* ')' ( ',' '(' expr ( ',' expr )* ')' )*
  ;
 
 compound_operator
@@ -137,13 +85,9 @@ signed_number
  ;
 
 literal_value
- : NUMERIC_LITERAL
- | STRING_LITERAL
- | BLOB_LITERAL
- | K_NULL
- | K_CURRENT_TIME
- | K_CURRENT_DATE
- | K_CURRENT_TIMESTAMP
+ : NUMERIC_LITERAL        #NumericLiteral
+ | STRING_LITERAL         #StringLiteral
+ | K_NULL                 #NullLiteral
  ;
 
 unary_operator
@@ -355,7 +299,7 @@ BIND_PARAMETER
  ;
 
 STRING_LITERAL
- : '\'' ( ~'\'' | '\'\'' )* '\''
+ : '\'' op=( ~'\'' | '\'\'' )* '\''
  ;
 
 BLOB_LITERAL

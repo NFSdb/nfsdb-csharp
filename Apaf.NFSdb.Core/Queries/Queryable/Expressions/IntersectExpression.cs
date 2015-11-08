@@ -32,5 +32,10 @@ namespace Apaf.NFSdb.Core.Queries.Queryable.Expressions
         {
             get { return _source; }
         }
+
+        public override string ToString()
+        {
+            return string.Format("From {0} Where {1}", Source, Filter);
+        }
     }
 }

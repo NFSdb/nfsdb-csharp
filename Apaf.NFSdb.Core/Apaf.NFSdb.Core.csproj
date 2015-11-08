@@ -167,6 +167,7 @@
     <Compile Include="Exceptions\NFSdbLockException.cs" />
     <Compile Include="Exceptions\NFSdbLockTimeoutException.cs" />
     <Compile Include="Exceptions\NFSdbSyntaxException.cs" />
+    <Compile Include="Ql\Gramma\QlParserListener.cs" />
     <Compile Include="Queries\IColumnFilter.cs" />
     <Compile Include="Queries\ILatestBySymbolFilter.cs" />
     <Compile Include="Queries\JournalQueriableExtensions.cs" />
@@ -174,7 +175,10 @@
     <Compile Include="Queries\Queryable\ColumnCompareExtensions.cs" />
     <Compile Include="Queries\Queryable\ColumnValueComparer.cs" />
     <Compile Include="Queries\Queryable\ERowIDSortDirection.cs" />
+    <Compile Include="Queries\Queryable\Expressions\ColumnNameExpression.cs" />
+    <Compile Include="Queries\Queryable\Expressions\ComparisonExpression.cs" />
     <Compile Include="Queries\Queryable\Expressions\FilterExpression.cs" />
+    <Compile Include="Queries\Queryable\Expressions\JournalNameExpression.cs" />
     <Compile Include="Queries\Queryable\Expressions\UnionExpression.cs" />
     <Compile Include="Queries\Queryable\Expressions\LatestBySymbolExpression.cs" />
     <Compile Include="Queries\Queryable\Expressions\OrderExpression.cs" />
