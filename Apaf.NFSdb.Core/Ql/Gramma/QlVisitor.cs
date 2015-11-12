@@ -1,6 +1,11 @@
-﻿using System.Linq.Expressions;
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Linq.Expressions;
+using Antlr4.Runtime;
 using Apaf.NFSdb.Core.Exceptions;
 using Apaf.NFSdb.Core.Queries.Queryable.Expressions;
+using IQToolkit.Data.Common;
 
 namespace Apaf.NFSdb.Core.Ql.Gramma
 {
@@ -48,6 +53,34 @@ namespace Apaf.NFSdb.Core.Ql.Gramma
             }
         }
 
+        public override Expression VisitInListExpr(QlParser.InListExprContext context)
+        {
+            var columnName = context.GetRuleContext<QlParser.ColumnNameExprContext>(0);
+            if (columnName != null)
+            {
+                var columnExpr = Visit(columnName);
+                var literals = context.GetRuleContexts<QlParser.LiteralExprContext>();
+                if (literals != null)
+                {
+                    var values = literals.Select(l => ((ConstantExpression) Visit(l)).Value).ToList();
+                    return new SymbolContainsExpression(columnExpr, values);
+                }
+            }
+            throw new NFSdbSyntaxException("Invalid in expression '{0}' at ({1}:{2})", context.GetText(),
+                context.start.Line, context.start.StartIndex);
+
+        }
+
+        public override Expression VisitLogicalAndExpr(QlParser.LogicalAndExprContext context)
+        {
+            return new ComparisonExpression(GetLeft(context), ExpressionType.And, GetRight(context));
+        }
+        
+        public override Expression VisitLogicalOrExpr(QlParser.LogicalOrExprContext context)
+        {
+            return new ComparisonExpression(GetLeft(context), ExpressionType.Or, GetRight(context));
+        }
+
         public override Expression VisitColumnNameExpr(QlParser.ColumnNameExprContext context)
         {
             return new ColumnNameExpression(context.GetText());
@@ -76,12 +109,12 @@ namespace Apaf.NFSdb.Core.Ql.Gramma
             return Expression.Constant(value);
         }
 
-        private Expression GetRight(QlParser.ComparisonExprContext context)
+        private Expression GetRight(ParserRuleContext context)
         {
             return Visit(context.GetRuleContext<QlParser.ExprContext>(1));
         }
 
-        private Expression GetLeft(QlParser.ComparisonExprContext context)
+        private Expression GetLeft(ParserRuleContext context)
         {
             return Visit(context.GetRuleContext<QlParser.ExprContext>(0));
         }

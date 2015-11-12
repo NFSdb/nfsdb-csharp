@@ -18,6 +18,7 @@
 
 using System;
 using System.Collections;
+using System.Linq;
 using System.Linq.Expressions;
 
 namespace Apaf.NFSdb.Core.Queries.Queryable.Expressions
@@ -51,6 +52,12 @@ namespace Apaf.NFSdb.Core.Queries.Queryable.Expressions
         public IEnumerable Values
         {
             get { return _values; }
+        }
+
+        public override string ToString()
+        {
+            return string.Format("{0} IN ({1})", Match,
+                string.Join(", ", Values.Cast<object>().Select(v => v.ToString())));
         }
     }
 }

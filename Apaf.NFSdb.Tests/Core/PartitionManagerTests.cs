@@ -112,36 +112,6 @@ namespace Apaf.NFSdb.Tests.Core
             }
         }
 
-
-#if !OPTIMIZE
-        [TestCase("s.symd-13|s.symi-8|s.symr.r-8|s.symr.k-20|s.d-4|s.r-4|s.k-4|_nulls.d-8|_tx-0", 25)]
-        public void Should_read_symbol_key_block_size_tx_context
-            (string fileNameOffset, int blockSize)
-        {
-            using (var tempDir = new DisposableTempDir())
-            {
-                var stubFileF = new CompositeFileFactoryStub(fileNameOffset);
-
-                var partMan = CreatePartitionManager<OneSym>(tempDir,
-                    stubFileF.Stub.Object, EFileAccess.Read, "s");
-
-                var kData = StorageUtils.AllOpenedFiles(partMan.SymbolFileStorage)
-                    .First(f => f.Filename.EndsWith("s.symr.k"));
-
-                // Act.
-                var keyBlockOffset = 0;
-                kData.WriteInt64(keyBlockOffset
-                            + MetadataConstants.K_FILE_ROW_BLOCK_LEN_OFFSET, blockSize);
-                var txLog = partMan.ReadTxLog();
-
-                // Verify.
-                var keyBlockSize =
-                    txLog.GetPartitionTx(MetadataConstants.SYMBOL_PARTITION_ID).SymbolData[kData.FileID].KeyBlockSize;
-                Assert.That(keyBlockSize, Is.EqualTo(blockSize));
-            }
-        }
-#endif
-
         private PartitionManager<T> CreatePartitionManager<T>(EPartitionType pariPartitionType,
             DisposableTempDir dir,
             ICompositeFileFactory compositeFileFactory, 

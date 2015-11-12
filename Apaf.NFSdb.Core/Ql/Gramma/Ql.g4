@@ -49,7 +49,7 @@ expr
  | expr op=K_AND expr                                            #LogicalAndExpr
  | expr op=K_OR expr                                             #LogicalOrExpr
  | '(' expr ')'                                               #ParensExpr
- | expr K_NOT? op=K_IN ( '(' expr ( ',' expr )*                
+ | expr op=K_IN ( '(' expr ( ',' expr )*                
                       ')')                                    #InListExpr
  ;
 

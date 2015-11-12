@@ -12,6 +12,11 @@ namespace Apaf.NFSdb.Tests.Ql
         [TestCase("SELECT FROM Journal Where Id = 1", Result = "From Journal Where (Id Equal 1)")]
         [TestCase("SELECT FROM Journal Where Timestamp > 1", Result = "From Journal Where (Timestamp GreaterThan 1)")]
         [TestCase("SELECT FROM Journal Where Id = '09a'", Result = "From Journal Where (Id Equal \"09a\")")]
+        [TestCase("SELECT FROM Journal Where Id = '09a'", Result = "From Journal Where (Id Equal \"09a\")")]
+        [TestCase("SELECT FROM Journal Where Id = '09a' or Timestamp > 1", Result = "From Journal Where ((Id Equal \"09a\") Or (Timestamp GreaterThan 1))")]
+        [TestCase("SELECT FROM Journal Where Id = '09a' and Timestamp > 1", Result = "From Journal Where ((Id Equal \"09a\") And (Timestamp GreaterThan 1))")]
+        [TestCase("SELECT FROM Journal Where Timestamp IN (1, 2, 3)", Result = "From Journal Where Timestamp IN (1, 2, 3)")]
+        [TestCase("SELECT FROM Journal Where Timestamp IN ('1a', '2b')", Result = "From Journal Where Timestamp IN (1a, 2b)")]
         public string Should_parse(string query)
         {
             var input = new AntlrInputStream(query);
