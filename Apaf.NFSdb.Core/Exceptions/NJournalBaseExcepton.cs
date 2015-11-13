@@ -19,6 +19,7 @@ using System;
 
 namespace Apaf.NFSdb.Core.Exceptions
 {
+    [Serializable]
     public abstract class NFSdbBaseExcepton : Exception
     {
         protected NFSdbBaseExcepton()
@@ -32,6 +33,11 @@ namespace Apaf.NFSdb.Core.Exceptions
 
         protected NFSdbBaseExcepton(string message, Exception inException, params object[] args)
             : base(string.Format(message, args), inException)
+        {
+        }
+
+        protected NFSdbBaseExcepton(string message, Exception inException)
+            : base(message, inException)
         {
         }
     }

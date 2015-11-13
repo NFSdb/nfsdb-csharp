@@ -2,6 +2,7 @@
 
 namespace Apaf.NFSdb.Core.Exceptions
 {
+    [Serializable]
     public class NFSdbEmptyFileException : NFSdbBaseExcepton
     {
         public NFSdbEmptyFileException()

@@ -2,7 +2,8 @@
 
 namespace Apaf.NFSdb.Core.Exceptions
 {
-    public class NFSdbLockException: NFSdbBaseExcepton
+    [Serializable]
+    public class NFSdbLockException : NFSdbBaseExcepton
     {
         public NFSdbLockException()
         {

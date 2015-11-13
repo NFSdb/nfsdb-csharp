@@ -66,7 +66,7 @@ common_table_expression
  ;
 
 table_or_subquery
- : ( database_name '.' )? table_name ( K_AS? table_alias )?   
+ : ( database_name '.' )? table_name ( K_LATEST K_BY column_name )? ( K_AS? table_alias )?      
  ;
 
 compound_operator
@@ -143,6 +143,7 @@ keyword
  | K_LEFT
  | K_LIKE
  | K_LIMIT
+ | K_LATEST
  | K_MATCH
  | K_NATURAL
  | K_NOT
@@ -262,6 +263,7 @@ K_JOIN : J O I N;
 K_LEFT : L E F T;
 K_LIKE : L I K E;
 K_LIMIT : L I M I T;
+K_LATEST : L A T E S T;
 K_MATCH : M A T C H;
 K_NATURAL : N A T U R A L;
 K_NOT : N O T;

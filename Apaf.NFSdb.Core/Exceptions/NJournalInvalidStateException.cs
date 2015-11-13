@@ -19,7 +19,8 @@ using System;
 
 namespace Apaf.NFSdb.Core.Exceptions
 {
-    public class NFSdbInvalidStateException: NFSdbBaseExcepton
+    [Serializable]
+    public class NFSdbInvalidStateException : NFSdbBaseExcepton
     {
         public NFSdbInvalidStateException()
         {

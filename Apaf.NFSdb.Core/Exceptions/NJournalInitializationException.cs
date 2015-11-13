@@ -19,6 +19,7 @@ using System;
 
 namespace Apaf.NFSdb.Core.Exceptions
 {
+    [Serializable]
     public class NFSdbInitializationException : NFSdbBaseExcepton
     {
         public NFSdbInitializationException()

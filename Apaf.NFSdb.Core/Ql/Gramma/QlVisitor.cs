@@ -1,11 +1,8 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
+﻿using System.Linq;
 using System.Linq.Expressions;
 using Antlr4.Runtime;
 using Apaf.NFSdb.Core.Exceptions;
 using Apaf.NFSdb.Core.Queries.Queryable.Expressions;
-using IQToolkit.Data.Common;
 
 namespace Apaf.NFSdb.Core.Ql.Gramma
 {
@@ -21,6 +18,17 @@ namespace Apaf.NFSdb.Core.Ql.Gramma
             var expFrom = context.GetRuleContext<QlParser.Table_or_subqueryContext>(0);
             var expWhere = context.GetRuleContext<QlParser.Where_exprContext>(0);
             return new FilterExpression(Visit(expWhere), Visit(expFrom));
+        }
+
+        public override Expression VisitTable_or_subquery(QlParser.Table_or_subqueryContext context)
+        {
+            var table = Visit(context.GetRuleContext<QlParser.Table_nameContext>(0));
+            var latestBy = context.GetRuleContext<QlParser.Column_nameContext>(0);
+            if (latestBy == null)
+            {
+                return table;
+            }
+            return new LatestBySymbolExpression(latestBy.GetText(), table);
         }
 
         public override Expression VisitTable_name(QlParser.Table_nameContext context)
@@ -48,8 +56,8 @@ namespace Apaf.NFSdb.Core.Ql.Gramma
                     return new ComparisonExpression(GetLeft(context), ExpressionType.NotEqual, GetRight(context));
                 default:
                     context.AddErrorNode(context.op);
-                    throw new NFSdbSyntaxException("Invalid comparison '{0}' at ({1}:{2})",
-                        context.op.Text, context.start.Line, context.start.Column);
+                    throw new NFSdbSyntaxException(string.Format("invalid comparison '{0}'", context.op.Text), 
+                        context.start.Line, context.start.Column);
             }
         }
 
@@ -66,7 +74,7 @@ namespace Apaf.NFSdb.Core.Ql.Gramma
                     return new SymbolContainsExpression(columnExpr, values);
                 }
             }
-            throw new NFSdbSyntaxException("Invalid in expression '{0}' at ({1}:{2})", context.GetText(),
+            throw new NFSdbSyntaxException(string.Format("invalid expression '{0}'", context.GetText()),
                 context.start.Line, context.start.StartIndex);
 
         }
@@ -91,8 +99,8 @@ namespace Apaf.NFSdb.Core.Ql.Gramma
             string text = context.GetText();
             if (text.Length < 2 || text[0] != '\'' || text[text.Length - 1] != '\'')
             {
-                throw new NFSdbSyntaxException("Invalid string literal '{0}' at ({1}:{2})",
-                    text, context.start.Line, context.start.Column);
+                throw new NFSdbSyntaxException(string.Format("invalid string literal '{0}'", text), 
+                    context.start.Line, context.start.Column);
             }
             return Expression.Constant(text.Substring(1, text.Length - 2));
         }
@@ -103,8 +111,8 @@ namespace Apaf.NFSdb.Core.Ql.Gramma
             string text = context.GetText();
             if (!int.TryParse(text, out value))
             {
-                throw new NFSdbSyntaxException("Invalid numeric literal '{0}' at ({1}:{2})",
-                    text, context.start.Line, context.start.Column);
+                throw new NFSdbSyntaxException(string.Format("invalid numeric literal '{0}'",text),
+                    context.start.Line, context.start.Column);
             }
             return Expression.Constant(value);
         }
