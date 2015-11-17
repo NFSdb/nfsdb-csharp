@@ -32,7 +32,7 @@ using Apaf.NFSdb.Core.Writes;
 
 namespace Apaf.NFSdb.Core.Storage
 {
-    public class Partition<T> : IPartition<T>
+    public class Partition : IPartition
     {
         private readonly ICompositeFileFactory _memeorymMappedFileFactory;
         private readonly EFileAccess _access;
@@ -41,13 +41,13 @@ namespace Apaf.NFSdb.Core.Storage
         private ColumnStorage _columnStorage;
         private FileTxSupport _txSupport;
         private IFixedWidthColumn _timestampColumn;
-        private readonly IJournalMetadata<T> _metadata;
+        private readonly IJournalMetadataCore _metadata;
         private bool _isStorageInitialized;
         private readonly object _syncRoot = new object();
         private int _refCount;
         private ColumnSource[] _columns;
 
-        public Partition(IJournalMetadata<T> metadata,
+        public Partition(IJournalMetadataCore metadata,
             ICompositeFileFactory memeorymMappedFileFactory,
             EFileAccess access,
             DateTime startDate, int partitionID,
@@ -109,14 +109,14 @@ namespace Apaf.NFSdb.Core.Storage
         public int PartitionID { get; private set; }
         public string DirectoryPath { get; private set; }
 
-        public T Read(long rowID, IReadContext readContext)
+        public TT Read<TT>(long rowID, IReadContext readContext)
         {
             if (!_isStorageInitialized) InitializeStorage();
 
-            return (T)_fieldSerializer.Read(rowID, readContext);
+            return (TT)_fieldSerializer.Read(rowID, readContext);
         }
 
-        public void Append(T item, ITransactionContext tx)
+        public void Append(object item, ITransactionContext tx)
         {
             if (!_isStorageInitialized) InitializeStorage();
 
@@ -197,11 +197,6 @@ namespace Apaf.NFSdb.Core.Storage
             return _txSupport.ReadTxLogFromPartition(txRec);
         }
 
-        object IPartitionReader.Read(long toLocalRowID, IReadContext readContext)
-        {
-            return Read(toLocalRowID, readContext);
-        }  
-
         public IRollback Commit(ITransactionContext tx)
         {
             if (!_isStorageInitialized) return null;
@@ -276,10 +271,10 @@ namespace Apaf.NFSdb.Core.Storage
             return symb.GetValues(valueKey, tx);
         }
 
-        public IColumn ReadColumn(int fieldID)
+        public IColumn ReadColumn(int columnID)
         {
             if (!_isStorageInitialized) InitializeStorage();
-            return _columns[fieldID].Column;
+            return _columns[columnID].Column;
         }
 
         public long GetSymbolRowCount<TT>(int fieldID, TT value, IReadTransactionContext tx)

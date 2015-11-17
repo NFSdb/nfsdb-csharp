@@ -23,7 +23,7 @@ namespace Apaf.NFSdb.TestShared
 {
     public class PartitionData<T>
     {
-        public PartitionData(Partition<T> partition,
+        public PartitionData(Partition partition,
             JournalMetadata<T> metadata, ColumnStorage journalStorage,
             string journalPath)
         {
@@ -37,7 +37,7 @@ namespace Apaf.NFSdb.TestShared
 
         public ColumnStorage JournalStorage { get; set; }
 
-        public Partition<T> Partition { get; set; }
+        public Partition Partition { get; set; }
 
         public JournalMetadata<T> Metadata { get; set; }
     }

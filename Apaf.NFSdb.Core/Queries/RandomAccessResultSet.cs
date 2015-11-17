@@ -16,6 +16,7 @@
  */
 #endregion
 using System.Collections.Generic;
+using Apaf.NFSdb.Core.Collections;
 using Apaf.NFSdb.Core.Storage;
 using Apaf.NFSdb.Core.Tx;
 
@@ -41,6 +42,15 @@ namespace Apaf.NFSdb.Core.Queries
             public byte[] AllocateByteArray3(int size)
             {
                 return new byte[size];
+            }
+
+            public IObjIntHashMap ColumnNames
+            {
+                get
+                {
+                    // This should not be practically used in multithreaded result set.
+                    return new ObjIntHashMap();
+                }
             }
         }
     }
@@ -74,7 +84,7 @@ namespace Apaf.NFSdb.Core.Queries
             long rowID = _idArray[rsIndex];
             int partitionID = RowIDUtil.ToPartitionIndex(rowID);
             long localRowID = RowIDUtil.ToLocalRowID(rowID);
-            return (T)_tx.Read(partitionID).Read(localRowID, RandomAccessResultSetInternal.NON_SHARED_READ_CONTEXT);
+            return _tx.Read(partitionID).Read<T>(localRowID, RandomAccessResultSetInternal.NON_SHARED_READ_CONTEXT);
         }
 
         public long GetRowID(int index)

@@ -24,17 +24,17 @@ namespace Apaf.NFSdb.Core.Queries.Queryable
 {
     public class JournalQueryProvider<T> : QueryProvider
     {
-        private readonly IJournal<T> _journal;
+        private readonly IJournalCore _journal;
         private readonly IReadTransactionContext _tx;
         private QueryCache _cache;
 
-        public JournalQueryProvider(IJournal<T> journal, IReadTransactionContext tx)
+        public JournalQueryProvider(IJournalCore journal, IReadTransactionContext tx)
         {
             _journal = journal;
             _tx = tx;
         }
 
-        public static JournalQueryProvider<T> LatestBy(string symbolName, IJournal<T> journal,
+        public static JournalQueryProvider<T> LatestBy(string symbolName, IJournalCore journal,
             IReadTransactionContext tx)
         {
             var provider = new JournalQueryProvider<T>(journal, tx);
@@ -68,7 +68,7 @@ namespace Apaf.NFSdb.Core.Queries.Queryable
             {
                 result.TakeLatestBy(LatestBySymbol);
             }
-            return result.Build();
+            return result.Build<T>();
         }
 
         protected virtual QueryPlanBinder<T> CreateTranslator()
@@ -76,7 +76,7 @@ namespace Apaf.NFSdb.Core.Queries.Queryable
             return new QueryPlanBinder<T>(_journal, _tx);
         }
 
-        private ResultSetBuilder<T> GetExecutionPlan(Expression expression)
+        private ResultSetBuilder GetExecutionPlan(Expression expression)
         {
             // strip off lambda for now
             var lambda = expression as LambdaExpression;

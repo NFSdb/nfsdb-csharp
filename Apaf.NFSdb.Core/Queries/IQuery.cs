@@ -31,5 +31,6 @@ namespace Apaf.NFSdb.Core.Queries
         int PartitionCount { get; }
 
         IQueryable<T> Items { get; }
+        IRecordQuery RecordQuery { get; }
     }
 }

@@ -17,6 +17,7 @@
 #endregion
 
 using Apaf.NFSdb.Core.Configuration;
+using Apaf.NFSdb.Core.Queries;
 using Apaf.NFSdb.Core.Storage;
 
 namespace Apaf.NFSdb.Core
@@ -26,5 +27,6 @@ namespace Apaf.NFSdb.Core
         IJournalMetadataCore MetadataCore { get; }
         IQueryStatistics QueryStatistics { get; }
         IJournalDiagnostics Diagnostics { get; }
+        IRecordQuery OpenRecordReadTx();
     }
 }

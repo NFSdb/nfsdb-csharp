@@ -138,6 +138,7 @@
     <Compile Include="Collections\ArraySlice.cs" />
     <Compile Include="Collections\DescendingLongComparer.cs" />
     <Compile Include="Collections\ExpandableList.cs" />
+    <Compile Include="Collections\IObjIntHashMap.cs" />
     <Compile Include="Collections\ListExtensions.cs" />
     <Compile Include="Collections\PriorityQueue.cs" />
     <Compile Include="Collections\Primes.cs" />
@@ -166,10 +167,14 @@
     <Compile Include="Exceptions\NFSdbLockException.cs" />
     <Compile Include="Exceptions\NFSdbLockTimeoutException.cs" />
     <Compile Include="Exceptions\NFSdbSyntaxException.cs" />
+    <Compile Include="JournalCore.cs" />
     <Compile Include="Ql\Gramma\QlErrorListener.cs" />
     <Compile Include="Ql\Gramma\QlVisitor.cs" />
     <Compile Include="Queries\IColumnFilter.cs" />
     <Compile Include="Queries\ILatestBySymbolFilter.cs" />
+    <Compile Include="Queries\Records\IRecord.cs" />
+    <Compile Include="Queries\IRecordQuery.cs" />
+    <Compile Include="Queries\Records\IRecordSet.cs" />
     <Compile Include="Queries\JournalQueriableExtensions.cs" />
     <Compile Include="Queries\Queryable\BinaryColumnValueComparer.cs" />
     <Compile Include="Queries\Queryable\ColumnCompareExtensions.cs" />
@@ -186,6 +191,10 @@
     <Compile Include="Queries\Queryable\Expressions\PostResultExpression.cs" />
     <Compile Include="Queries\Queryable\Expressions\SliceExpression.cs" />
     <Compile Include="Queries\Queryable\PlanItem\ColumnScanPlanItemCore.cs" />
+    <Compile Include="Queries\Records\Record.cs" />
+    <Compile Include="Queries\Records\RecordQuery.cs" />
+    <Compile Include="Queries\Records\RecordSet.cs" />
+    <Compile Include="Queries\Records\TransactionParition.cs" />
     <Compile Include="Queries\ResultSetFactory.cs" />
     <Compile Include="Server\IJournalServer.cs" />
     <Compile Include="Server\AsyncJournalServer.cs" />
@@ -242,7 +251,7 @@
     <Compile Include="Queries\Queryable\PlanItem\IntersectPlanItem.cs" />
     <Compile Include="Queries\Queryable\Expressions\EJournalExpressionType.cs" />
     <Compile Include="Queries\Queryable\NJournalQuaryableNotSupportedException.cs" />
-    <Compile Include="Storage\IJournalMetadataCore.cs" />
+    <Compile Include="Configuration\IJournalMetadataCore.cs" />
     <Compile Include="Storage\IPartitionCore.cs" />
     <Compile Include="Storage\IPartitionManager.cs" />
     <Compile Include="Storage\IPartitionManagerFactory.cs" />

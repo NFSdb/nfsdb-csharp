@@ -30,16 +30,16 @@ namespace Apaf.NFSdb.Core.Queries.Queryable
 {
     public class QueryPlanBinder<T> : DbExpressionVisitor
     {
-        private readonly IJournal<T> _journal;
+        private readonly IJournalCore _journal;
         private readonly IReadTransactionContext _tx;
 
-        public QueryPlanBinder(IJournal<T> journal, IReadTransactionContext tx)
+        public QueryPlanBinder(IJournalCore journal, IReadTransactionContext tx)
         {
             _journal = journal;
             _tx = tx;
         }
 
-        public ResultSetBuilder<T> Build(Expression ex)
+        public ResultSetBuilder Build(Expression ex)
         {
             var translatedTree = Visit(ex);
             var evalVis = new ExpressionEvaluatorVisitor<T>(_journal, _tx);

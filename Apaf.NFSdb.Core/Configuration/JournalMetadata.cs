@@ -186,12 +186,17 @@ namespace Apaf.NFSdb.Core.Configuration
             return col;
         }
 
+        public int ColumnCount
+        {
+            get { return _columns.Count; }
+        }
+
         public Func<T, DateTime> GetTimestampReader()
         {
             return _timestampDelegate;
         }
 
-        public int GetFieldID(string filename)
+        public int GetColumnID(string filename)
         {
             int i = 0;
             foreach (var col in _columns)

@@ -20,8 +20,7 @@ using Apaf.NFSdb.Core.Tx;
 
 namespace Apaf.NFSdb.Core.Storage
 {
-    public interface IPartition<T> : IPartitionCore
+    public interface IPartition : IPartitionCore
     {
-        void Append(T item, ITransactionContext tx);
     }
 }

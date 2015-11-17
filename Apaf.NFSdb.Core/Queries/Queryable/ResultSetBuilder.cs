@@ -27,7 +27,7 @@ using Apaf.NFSdb.Core.Tx;
 
 namespace Apaf.NFSdb.Core.Queries.Queryable
 {
-    public class ResultSetBuilder<T>
+    public class ResultSetBuilder
     {
         private class DirectExpression
         {
@@ -53,12 +53,12 @@ namespace Apaf.NFSdb.Core.Queries.Queryable
             }
         }
 
-        private readonly IJournal<T> _journal;
+        private readonly IJournalCore _journal;
         private readonly IReadTransactionContext _tx;
         private IPlanItem _planHead;
         private readonly List<DirectExpression> _directExpressions = new List<DirectExpression>();
 
-        public ResultSetBuilder(IJournal<T> journal, IReadTransactionContext tx)
+        public ResultSetBuilder(IJournalCore journal, IReadTransactionContext tx)
         {
             _journal = journal;
             _tx = tx;
@@ -67,7 +67,7 @@ namespace Apaf.NFSdb.Core.Queries.Queryable
 
         public IPlanItem PlanItem { get { return _planHead; }}
 
-        public object Build()
+        public object Build<T>()
         {
             if (_planHead != null)
             {
@@ -78,16 +78,16 @@ namespace Apaf.NFSdb.Core.Queries.Queryable
                 _planHead = new TimestampRangePlanItem(DateInterval.Any);
             }
             IEnumerable<long> rowIDs = _planHead.Execute(_journal, _tx, GetTimestampOrder());
-            return BindPostResult(rowIDs);
+            return BindPostResult<T>(rowIDs);
         }
 
         private ERowIDSortDirection GetTimestampOrder()
         {
             var order = ERowIDSortDirection.Desc;
             string timestampProperty = null;
-            if (_journal.Metadata.TimestampFieldID != null)
+            if (_journal.MetadataCore.TimestampFieldID != null)
             {
-                timestampProperty = _journal.Metadata.GetColumnById(_journal.Metadata.TimestampFieldID.Value).PropertyName;
+                timestampProperty = _journal.MetadataCore.GetColumnById(_journal.MetadataCore.TimestampFieldID.Value).PropertyName;
             }
 
             bool hadNonTimestampOrder = false;
@@ -131,12 +131,12 @@ namespace Apaf.NFSdb.Core.Queries.Queryable
             return order;
         }
 
-        private object BindPostResult(IEnumerable<long> rowIds)
+        private object BindPostResult<T>(IEnumerable<long> rowIds)
         {
             string timestampProperty = null;
-            if (_journal.Metadata.TimestampFieldID != null)
+            if (_journal.MetadataCore.TimestampFieldID != null)
             {
-                timestampProperty = _journal.Metadata.GetColumnById(_journal.Metadata.TimestampFieldID.Value).PropertyName;
+                timestampProperty = _journal.MetadataCore.GetColumnById(_journal.MetadataCore.TimestampFieldID.Value).PropertyName;
             }
 
             bool hadNonTimestampOrder = false;
@@ -205,7 +205,7 @@ namespace Apaf.NFSdb.Core.Queries.Queryable
 
         public void ColumnScan(string memberName, object literal)
         {
-            var column = _journal.Metadata.GetColumnByPropertyName(memberName);
+            var column = _journal.MetadataCore.GetColumnByPropertyName(memberName);
             var planItem = new RowScanPlanItem(_journal, _tx);
             _planHead = planItem;
             switch (column.FieldType)
@@ -265,7 +265,7 @@ namespace Apaf.NFSdb.Core.Queries.Queryable
             _directExpressions.Add(new DirectExpression(expression, member));
         }
 
-        public void Logical(ResultSetBuilder<T> left, ResultSetBuilder<T> right, ExpressionType op)
+        public void Logical(ResultSetBuilder left, ResultSetBuilder right, ExpressionType op)
         {
             if (op == ExpressionType.And)
             {
@@ -326,7 +326,7 @@ namespace Apaf.NFSdb.Core.Queries.Queryable
         public void IndexCollectionScan(string memberName, IEnumerable values)
         {
             var p = new RowScanPlanItem(_journal, _tx);
-            var column = _journal.Metadata.GetColumnByPropertyName(memberName);
+            var column = _journal.MetadataCore.GetColumnByPropertyName(memberName);
             switch (column.FieldType)
             {
                 case EFieldType.Byte:
@@ -371,7 +371,7 @@ namespace Apaf.NFSdb.Core.Queries.Queryable
         public void IndexCollectionScan<TT>(string memberName, TT[] values)
         {
             var p = new RowScanPlanItem(_journal, _tx);
-            p.AddContainsScan(_journal.Metadata.GetColumnByPropertyName(memberName), values);
+            p.AddContainsScan(_journal.MetadataCore.GetColumnByPropertyName(memberName), values);
             _planHead = p;
         }
 
@@ -382,7 +382,7 @@ namespace Apaf.NFSdb.Core.Queries.Queryable
 
         public void TakeLatestBy(string latestBySymbol)
         {
-            var column = _journal.Metadata.GetColumnByPropertyName(latestBySymbol);
+            var column = _journal.MetadataCore.GetColumnByPropertyName(latestBySymbol);
 
             if (_planHead == null)
             {
@@ -417,7 +417,7 @@ namespace Apaf.NFSdb.Core.Queries.Queryable
 
         private IPlanItem RebuildWithLatest(IPlanItem planHead, ColumnMetadata latestByColumn)
         {
-            var column = _journal.Metadata.GetColumnByPropertyName(latestByColumn.PropertyName);
+            var column = _journal.MetadataCore.GetColumnByPropertyName(latestByColumn.PropertyName);
             var intersc = planHead as IntersectPlanItem;
             if (intersc != null)
             {
@@ -484,7 +484,7 @@ namespace Apaf.NFSdb.Core.Queries.Queryable
             var scan = planHead as IColumnScanPlanItemCore;
             if (scan != null)
             {
-                var col = _journal.Metadata.GetColumnByPropertyName(latestBySymbol);
+                var col = _journal.MetadataCore.GetColumnByPropertyName(latestBySymbol);
                 if (scan.CanTranformLastestByIdPlanItem(col))
                 {
                     return true;
@@ -512,7 +512,7 @@ namespace Apaf.NFSdb.Core.Queries.Queryable
                                                || e.Expression == EJournalExpressionType.Take);
         }
 
-        public void ApplyFilter(ResultSetBuilder<T> filter)
+        public void ApplyFilter(ResultSetBuilder filter)
         {
             _planHead = OptimizeIntersect(_planHead, filter._planHead);
         }

@@ -22,6 +22,6 @@ namespace Apaf.NFSdb.Core.Storage
 {
     public interface IPartitionManager<T> : IPartitionManagerCore
     {
-        IPartition<T> GetAppendPartition(DateTime dateTime, ITransactionContext tx);
+        IPartitionCore GetAppendPartition(DateTime dateTime, ITransactionContext tx);
     }
 }

@@ -19,20 +19,26 @@
 using System;
 using System.Collections.Generic;
 using Apaf.NFSdb.Core.Column;
+using Apaf.NFSdb.Core.Storage;
 
 namespace Apaf.NFSdb.Core.Configuration
 {
     public interface IJournalMetadataCore
     {
         IFieldSerializer GetSerializer(IEnumerable<ColumnSource> columns);
-        IEnumerable<ColumnMetadata> Columns { get; }
         JournalSettings Settings { get; }
         int? TimestampFieldID { get; }
-        ColumnMetadata GetColumnById(int columndID);
-        ColumnMetadata GetColumnByPropertyName(string symbolName);
-        int GetFieldID(string filename);
+        int GetColumnID(string filename);
         string KeySymbol { get; }
         int FileCount { get; }
         TimeSpan PartitionTtl { get; }
+
+        IEnumerable<ColumnMetadata> Columns { get; }
+        ColumnMetadata GetColumnById(int columndID);
+        ColumnMetadata GetColumnByPropertyName(string symbolName);
+        int ColumnCount { get; }
+
+        void InitializeSymbols(IColumnStorage symbolStorage);
+        IEnumerable<ColumnSource> GetPartitionColums(IColumnStorage partitionStorage);
     }
 }

@@ -28,16 +28,16 @@ namespace Apaf.NFSdb.Core.Queries.Queryable
 {
     public class ExpressionEvaluatorVisitor<T> 
     {
-        private readonly IJournal<T> _journal;
+        private readonly IJournalCore _journal;
         private readonly IReadTransactionContext _tx;
 
-        internal ExpressionEvaluatorVisitor(IJournal<T> journal, IReadTransactionContext tx)
+        internal ExpressionEvaluatorVisitor(IJournalCore journal, IReadTransactionContext tx)
         {
             _journal = journal;
             _tx = tx;
         }
 
-        public ResultSetBuilder<T> Visit(Expression exp)
+        public ResultSetBuilder Visit(Expression exp)
         {
             if (exp == null)
                 return null;
@@ -118,7 +118,7 @@ namespace Apaf.NFSdb.Core.Queries.Queryable
             }
         }
 
-        private ResultSetBuilder<T> VisitFilter(FilterExpression exp)
+        private ResultSetBuilder VisitFilter(FilterExpression exp)
         {
             var source = Visit(exp.Source);
             if (!source.CanApplyFilter())
@@ -131,21 +131,21 @@ namespace Apaf.NFSdb.Core.Queries.Queryable
             return source;
         }
 
-        private ResultSetBuilder<T> VisitSet(Expression left, Expression right, ExpressionType operation)
+        private ResultSetBuilder VisitSet(Expression left, Expression right, ExpressionType operation)
         {
-            var res = new ResultSetBuilder<T>(_journal, _tx);
+            var res = new ResultSetBuilder(_journal, _tx);
             res.Logical(Visit(left), Visit(right), operation);
             return res;
         }
 
-        private ResultSetBuilder<T> VisitLatestBy(LatestBySymbolExpression exp)
+        private ResultSetBuilder VisitLatestBy(LatestBySymbolExpression exp)
         {
-            var result = exp.Body != null ? Visit(exp.Body) : new ResultSetBuilder<T>(_journal, _tx);
+            var result = exp.Body != null ? Visit(exp.Body) : new ResultSetBuilder(_journal, _tx);
             result.TakeLatestBy(exp.LatestBy);
             return result;
         }
 
-        private ResultSetBuilder<T> VisitOrderBy(OrderExpression exp)
+        private ResultSetBuilder VisitOrderBy(OrderExpression exp)
         {
             var result = Visit(exp.Body);
             var ex = exp.Predicate.Body as MemberExpression;
@@ -158,36 +158,36 @@ namespace Apaf.NFSdb.Core.Queries.Queryable
             throw new NFSdbQueryableNotSupportedException("Order by is not supported on predicate {0}", exp.Predicate);
         }
 
-        private ResultSetBuilder<T> VisitCall(PostResultExpression m)
+        private ResultSetBuilder VisitCall(PostResultExpression m)
         {
             var result = Visit(m.Body);
             result.ApplyLinq(m.Operation);
             return result;
         }
 
-        private ResultSetBuilder<T> VisitCall(SliceExpression m)
+        private ResultSetBuilder VisitCall(SliceExpression m)
         {
             var result = Visit(m.Body);
             result.ApplyLinq(m.Operation, m.Count);
             return result;
         }
 
-        private ResultSetBuilder<T> VisitConstant(ConstantExpression exp)
+        private ResultSetBuilder VisitConstant(ConstantExpression exp)
         {
             if (exp.Value is IQueryable<T>)
             {
-                return new ResultSetBuilder<T>(_journal, _tx);
+                return new ResultSetBuilder(_journal, _tx);
             }
             throw new NFSdbQueryableNotSupportedException(
                 "Expression {0} cannot be bound to Journal operation.", exp);
         }
 
-        private ResultSetBuilder<T> VisitContains(SymbolContainsExpression exp)
+        private ResultSetBuilder VisitContains(SymbolContainsExpression exp)
         {
             if (exp.Match.NodeType == ExpressionType.MemberAccess)
             {
                 var memberName = ExHelper.GetMemberName((MemberExpression)exp.Match, typeof(T));
-                var result = new ResultSetBuilder<T>(_journal, _tx);
+                var result = new ResultSetBuilder(_journal, _tx);
                 result.IndexCollectionScan(memberName, exp.Values);
 
                 return result;
@@ -198,7 +198,7 @@ namespace Apaf.NFSdb.Core.Queries.Queryable
                 exp);
         }
 
-        private ResultSetBuilder<T> VisitBinary(BinaryExpression expression)
+        private ResultSetBuilder VisitBinary(BinaryExpression expression)
         {
             switch (expression.NodeType)
             {
@@ -224,12 +224,12 @@ namespace Apaf.NFSdb.Core.Queries.Queryable
             }
         }
 
-        private ResultSetBuilder<T> EvaluateCompare(BinaryExpression expression)
+        private ResultSetBuilder EvaluateCompare(BinaryExpression expression)
         {
             var memberName = ExHelper.GetMemberName(expression, typeof(T));
             var literal = ExHelper.LiteralName(expression, typeof(T));
-            if (GetTimestamp(_journal.Metadata)  != null &&
-                GetTimestamp(_journal.Metadata).PropertyName == memberName)
+            if (GetTimestamp(_journal.MetadataCore)  != null &&
+                GetTimestamp(_journal.MetadataCore).PropertyName == memberName)
             {
                 if (literal is long || literal is DateTime)
                 {
@@ -269,7 +269,7 @@ namespace Apaf.NFSdb.Core.Queries.Queryable
                                 expression.NodeType);
                     }
 
-                    var result = new ResultSetBuilder<T>(_journal, _tx);
+                    var result = new ResultSetBuilder(_journal, _tx);
                     result.TimestampInterval(filterInterval);
                     return result;
                 }
@@ -278,7 +278,7 @@ namespace Apaf.NFSdb.Core.Queries.Queryable
                       "Comparison is supported for timestamp column only. Unable to bind {0} to journal query operation", expression);
         }
 
-        private static ColumnMetadata GetTimestamp(IJournalMetadata<T> metadata)
+        private static ColumnMetadata GetTimestamp(IJournalMetadataCore metadata)
         {
             if (!metadata.TimestampFieldID.HasValue)
             {
@@ -287,12 +287,12 @@ namespace Apaf.NFSdb.Core.Queries.Queryable
             return metadata.GetColumnById(metadata.TimestampFieldID.Value);
         }
 
-        private ResultSetBuilder<T> EvaluateLogical(BinaryExpression expression)
+        private ResultSetBuilder EvaluateLogical(BinaryExpression expression)
         {
             var left = Visit(expression.Left);
             var right = Visit(expression.Right);
 
-            var result = new ResultSetBuilder<T>(_journal, _tx);
+            var result = new ResultSetBuilder(_journal, _tx);
             var operation = expression.NodeType;
             if (operation == ExpressionType.AndAlso)
             {
@@ -309,7 +309,7 @@ namespace Apaf.NFSdb.Core.Queries.Queryable
             return result;
         }
 
-        private ResultSetBuilder<T> EvaluateEquals(BinaryExpression expression)
+        private ResultSetBuilder EvaluateEquals(BinaryExpression expression)
         {
             if (expression.NodeType == ExpressionType.Equal
                 && (
@@ -326,8 +326,8 @@ namespace Apaf.NFSdb.Core.Queries.Queryable
                 if (literal is long || literal is DateTime)
                 {
 
-                    if (GetTimestamp(_journal.Metadata) != null &&
-                        GetTimestamp(_journal.Metadata).PropertyName == memberName)
+                    if (GetTimestamp(_journal.MetadataCore) != null &&
+                        GetTimestamp(_journal.MetadataCore).PropertyName == memberName)
                     {
                         DateInterval filterInterval;
                         if (literal is long)
@@ -343,14 +343,14 @@ namespace Apaf.NFSdb.Core.Queries.Queryable
                                 new DateTime(timestamp.Ticks + 1, timestamp.Kind));
                         }
 
-                        var result = new ResultSetBuilder<T>(_journal, _tx);
+                        var result = new ResultSetBuilder(_journal, _tx);
                         result.TimestampInterval(filterInterval);
                         return result;
                     }
                 }
                 else
                 {
-                    var result = new ResultSetBuilder<T>(_journal, _tx);
+                    var result = new ResultSetBuilder(_journal, _tx);
                     result.ColumnScan(memberName, literal);
                     return result;
                 }
@@ -359,7 +359,7 @@ namespace Apaf.NFSdb.Core.Queries.Queryable
                 string.Format("Unable to translate expression {0} to journal operation", expression));
         }
 
-        private ResultSetBuilder<T> VisitUnary(UnaryExpression exp)
+        private ResultSetBuilder VisitUnary(UnaryExpression exp)
         {
             throw new NotSupportedException();
         }

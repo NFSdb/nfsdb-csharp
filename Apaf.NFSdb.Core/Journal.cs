@@ -28,11 +28,9 @@ namespace Apaf.NFSdb.Core
     {
         private readonly IJournalMetadata<T> _metadata;
         private readonly IPartitionManager<T> _partitionManager;
-        private readonly IUnsafePartitionManager _unsafePartitionManager;
 
         private readonly object _writeLock = new object();
         private readonly WriterState<T> _writerState;
-        private readonly IQueryStatistics _stats;
 
         internal Journal(IJournalMetadata<T> metadata,
             IPartitionManager<T> partitionManager)
@@ -40,9 +38,7 @@ namespace Apaf.NFSdb.Core
             _metadata = metadata;
             _partitionManager = partitionManager;
             _writerState = new WriterState<T>(metadata);
-            _unsafePartitionManager = (IUnsafePartitionManager)_partitionManager;
-            _stats = new JournalStatistics(_metadata, _unsafePartitionManager);
-            Diagnostics = new JournalDiagnostics(_unsafePartitionManager);
+            Core = new JournalCore(metadata, partitionManager);
         }
 
         public void Truncate()
@@ -55,10 +51,7 @@ namespace Apaf.NFSdb.Core
             get { return _metadata; }
         }
 
-        public IJournalDiagnostics Diagnostics { get; private set; }
-
-        public IJournalMetadataCore MetadataCore { get { return _metadata; } }
-        public IQueryStatistics QueryStatistics { get { return _stats; } }
+        public IJournalCore Core { get; private set; }
 
         public IQuery<T> OpenReadTx()
         {

@@ -17,6 +17,7 @@
 #endregion
 
 using System;
+using Apaf.NFSdb.Core.Tx;
 
 namespace Apaf.NFSdb.Core.Storage
 {
@@ -29,5 +30,7 @@ namespace Apaf.NFSdb.Core.Storage
 
         DateTime StartDate { get; }
         DateTime EndDate { get; }
+
+        void Append(object item, ITransactionContext tx);
     }
 }

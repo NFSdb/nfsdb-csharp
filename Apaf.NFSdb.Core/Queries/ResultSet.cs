@@ -60,7 +60,7 @@ namespace Apaf.NFSdb.Core.Queries
                 long localRowID = RowIDUtil.ToLocalRowID(rowID);
                 
                 // ReSharper disable once PossibleNullReferenceException
-                yield return (T)lastPartitionReader.Read(localRowID, _tx.ReadCache);
+                yield return lastPartitionReader.Read<T>(localRowID, _tx.ReadCache);
             }
         }
 

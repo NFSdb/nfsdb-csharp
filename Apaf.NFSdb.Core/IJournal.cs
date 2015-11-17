@@ -22,7 +22,7 @@ using Apaf.NFSdb.Core.Writes;
 
 namespace Apaf.NFSdb.Core
 {
-    public interface IJournal<T> : IDisposable, IJournalCore
+    public interface IJournal<T> : IDisposable
     {
         IQuery<T> OpenReadTx();
         IWriter<T> OpenWriteTx();
@@ -31,5 +31,7 @@ namespace Apaf.NFSdb.Core
         void Truncate();
 
         IJournalMetadata<T> Metadata { get; }
+
+        IJournalCore Core { get; }
     }
 }

@@ -18,8 +18,8 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using Apaf.NFSdb.Core.Exceptions;
 using Apaf.NFSdb.Core.Queries.Queryable;
+using Apaf.NFSdb.Core.Queries.Records;
 using Apaf.NFSdb.Core.Tx;
 
 namespace Apaf.NFSdb.Core.Queries
@@ -29,15 +29,16 @@ namespace Apaf.NFSdb.Core.Queries
         private IReadTransactionContext _transactionContext;
         private readonly IJournal<T> _journal;
         private readonly Lazy<JournalQueryable<T>> _queryable;
-        private readonly Dictionary<string, JournalQueryable<T>> _latestBySymbol = new Dictionary<string, JournalQueryable<T>>();
+        private readonly IRecordQuery _recordQuery;
 
         public Query(IJournal<T> journal, IReadTransactionContext transactionContext)
         {
             _transactionContext = transactionContext;
             _journal = journal;
             _queryable = new Lazy<JournalQueryable<T>>(
-                () => new JournalQueryable<T>(new JournalQueryProvider<T>(_journal, transactionContext)));
+                () => new JournalQueryable<T>(new JournalQueryProvider<T>(_journal.Core, transactionContext)));
             _transactionContext.AddRefsAllPartitions();
+            _recordQuery = new RecordQuery(journal.Core, transactionContext);
         }
 
         public ResultSet<T> AllBySymbolValueOverInterval<TT>(string symbol, TT value, DateInterval interval)
@@ -64,6 +65,11 @@ namespace Apaf.NFSdb.Core.Queries
             get { return _queryable.Value; }
         }
 
+        public IRecordQuery RecordQuery
+        {
+            get { return _recordQuery; }
+        }
+
         public ResultSet<T> AllByKeyOverInterval<TT>(TT value, DateInterval interval)
         {
             return AllBySymbolValueOverInterval(_journal.Metadata.KeySymbol, value, interval);
@@ -77,7 +83,7 @@ namespace Apaf.NFSdb.Core.Queries
         public ResultSet<T> All()
         {
             var paritionsAndMaxVals =
-                _transactionContext.ReadPartitions.Select(p => Tuple.Create(p, 
+                _transactionContext.ReadPartitions.Select(p => Tuple.Create(p,
                     _transactionContext.GetRowCount(p.PartitionID))).ToArray();
 
             long count = paritionsAndMaxVals.Sum(i => i.Item2);
@@ -95,6 +101,11 @@ namespace Apaf.NFSdb.Core.Queries
             return ResultSetFactory.Create<T>(ids, _transactionContext);
         }
 
+        public void Dispose()
+        {
+            _transactionContext.Dispose();
+        }
+
         private IEnumerable<long> CreateRange(int partitionIndex, long itemsCount)
         {
             for (long i = 0; i < itemsCount; i++)
@@ -106,11 +117,6 @@ namespace Apaf.NFSdb.Core.Queries
         internal void RefreshContext(ITransactionContext transactionContext)
         {
             _transactionContext = transactionContext;
-        }
-
-        public void Dispose()
-        {
-            _transactionContext.Dispose();
         }
     }
 }

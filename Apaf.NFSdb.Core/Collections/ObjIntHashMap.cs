@@ -3,7 +3,7 @@ using Apaf.NFSdb.Core.Column;
 
 namespace Apaf.NFSdb.Core.Collections
 {
-    public class ObjIntHashMap
+    public class ObjIntHashMap : IObjIntHashMap
     {
         private static readonly string FREE = new string(new []{'a'});
         private readonly int _noKeyValue = MetadataConstants.SYMBOL_NOT_FOUND_VALUE;

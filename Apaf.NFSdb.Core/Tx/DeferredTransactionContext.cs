@@ -10,7 +10,7 @@ namespace Apaf.NFSdb.Core.Tx
     public class DeferredTransactionContext : ITransactionContext
     {
         private const int RESERVED_PARTITION_COUNT = 10;
-        private readonly IReadContext _readCache = new ReadContext();
+        private readonly IReadContext _readCache;
         private readonly IUnsafePartitionManager _paritionManager;
         private readonly TxState _state;
         private readonly IFileTxSupport _symbolTxSupport;
@@ -35,9 +35,8 @@ namespace Apaf.NFSdb.Core.Tx
 
             _paritions = _state.Partitions;
             _locks = _state.Locks;
-
             _locks.Clear();
-            _locks.Capacity = _paritions.Count;
+            _readCache = _state.ReadContext;
 
             var lastPartition = _paritions.LastNotNull();
             _lastPartitionID = lastPartition != null ? lastPartition.PartitionID : -1;

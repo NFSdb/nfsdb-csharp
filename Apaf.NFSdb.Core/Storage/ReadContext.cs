@@ -15,11 +15,15 @@
  * limitations under the License.
  */
 #endregion
+
+using Apaf.NFSdb.Core.Collections;
+
 namespace Apaf.NFSdb.Core.Storage
 {
     public class ReadContext : IReadContext
     {
         private byte[] _arr1;
+        private readonly ObjIntHashMap _columnNames = new ObjIntHashMap();
 
         public byte[] AllocateByteArray(int size)
         {
@@ -34,6 +38,11 @@ namespace Apaf.NFSdb.Core.Storage
         public byte[] AllocateByteArray3(int size)
         {
             return new byte[size];
+        }
+
+        public IObjIntHashMap ColumnNames
+        {
+            get { return _columnNames; }
         }
     }
 }

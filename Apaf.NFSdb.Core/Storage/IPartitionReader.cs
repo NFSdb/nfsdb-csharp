@@ -8,7 +8,9 @@ namespace Apaf.NFSdb.Core.Storage
     public interface IPartitionReader : IFileTxSupport
     {
         int GetOpenFileCount();
+        
         long GetTotalMemoryMapped();
+
         long BinarySearchTimestamp(DateTime value, IReadTransactionContext tx);
 
         IEnumerable<long> GetSymbolRows<T>(int fieldID, T value, IReadTransactionContext tx);
@@ -19,9 +21,9 @@ namespace Apaf.NFSdb.Core.Storage
 
         long GetSymbolRowCount<T>(int fieldID, T value, IReadTransactionContext tx);
 
-        object Read(long toLocalRowID, IReadContext readContext);
+        T Read<T>(long toLocalRowID, IReadContext readContext);
 
-        IColumn ReadColumn(int fieldID);
+        IColumn ReadColumn(int columnID);
 
         int PartitionID { get; }
     }

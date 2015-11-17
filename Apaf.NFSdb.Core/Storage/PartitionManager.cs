@@ -37,8 +37,8 @@ namespace Apaf.NFSdb.Core.Storage
         private const int SYMBOL_PARTITION_ID = MetadataConstants.SYMBOL_PARTITION_ID;
         private readonly ICompositeFileFactory _fileFactory;
         private readonly IJournalServer _server;
-        private readonly IJournalMetadata<T> _metadata;
-        private readonly List<IPartition<T>> _partitions = new List<IPartition<T>>();
+        private readonly IJournalMetadataCore _metadata;
+        private readonly List<IPartitionCore> _partitions = new List<IPartitionCore>();
         private readonly JournalSettings _settings;
         private readonly ColumnStorage _symbolStorage;
         private readonly FileTxSupport _symbolTxSupport;
@@ -51,7 +51,7 @@ namespace Apaf.NFSdb.Core.Storage
 
         private TxRec _lastTxRec;
 
-        public PartitionManager(IJournalMetadata<T> metadata, EFileAccess access,
+        public PartitionManager(IJournalMetadataCore metadata, EFileAccess access,
             ICompositeFileFactory fileFactory, IJournalServer server, ITxLog txLog = null)
         {
             Access = access;
@@ -105,7 +105,7 @@ namespace Apaf.NFSdb.Core.Storage
             get { return _symbolStorage; }
         }
 
-        private IPartition<T> GetPartitionByID(int partitionID)
+        private IPartitionCore GetPartitionByID(int partitionID)
         {
             // Partition IDs are 1 based. 
             // 0 is reserved for symbols "parition".
@@ -120,7 +120,7 @@ namespace Apaf.NFSdb.Core.Storage
             get { return _partitions.Count; }
         }
 
-        private void SetPartitionByID(int partitionID, Partition<T> partition)
+        private void SetPartitionByID(int partitionID, IPartition partition)
         {
             lock (_partitions)
             {
@@ -224,7 +224,7 @@ namespace Apaf.NFSdb.Core.Storage
             _lastTransactionLog = tx;
         }
 
-        public IPartition<T> GetAppendPartition(DateTime dateTime, ITransactionContext tx)
+        public IPartitionCore GetAppendPartition(DateTime dateTime, ITransactionContext tx)
         {
             var lastUsedPartition = tx.GetPartitionTx();
             if (tx.LastAppendTimestamp <= dateTime && lastUsedPartition != null)
@@ -239,7 +239,7 @@ namespace Apaf.NFSdb.Core.Storage
             return GetAppendPartition0(dateTime, tx);
         }
 
-        private IPartition<T> GetAppendPartition0(DateTime dateTime, ITransactionContext tx)
+        private IPartition GetAppendPartition0(DateTime dateTime, ITransactionContext tx)
         {
             if (tx.LastAppendTimestamp > dateTime)
             {
@@ -263,7 +263,7 @@ namespace Apaf.NFSdb.Core.Storage
                 if (lastPart.IsInsidePartition(dateTime))
                 {
                     SwitchWritePartitionTo(tx, lastPart.PartitionID);
-                    return (IPartition<T>)lastPart;
+                    return (IPartition)lastPart;
                 }
             }
             else
@@ -282,7 +282,7 @@ namespace Apaf.NFSdb.Core.Storage
             var paritionDir = Path.Combine(_metadata.Settings.DefaultPath, dirName);
 
             // 0 reserved for symbols.
-            var partition = new Partition<T>(_metadata, _fileFactory, Access, startDate,
+            var partition = new Partition(_metadata, _fileFactory, Access, startDate,
                 lastPartitionID, paritionDir, _server);
 
             SetPartitionByID(lastPartitionID, partition);
@@ -402,7 +402,7 @@ namespace Apaf.NFSdb.Core.Storage
                             if (txRec.IsCommited(startDate, nextPartitionID))
                             {
                                 lastPartitionStart = startDate;
-                                var partition = new Partition<T>(_metadata, _fileFactory, Access, startDate, nextPartitionID, fullPath, _server);
+                                var partition = new Partition(_metadata, _fileFactory, Access, startDate, nextPartitionID, fullPath, _server);
 
                                 SetPartitionByID(nextPartitionID, partition);
                                 

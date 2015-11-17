@@ -116,7 +116,7 @@ namespace Apaf.NFSdb.TestShared
                     access, 0, mmFactory);
                 metadata.InitializeSymbols(journalStorage);
 
-                var part = new Partition<T>(
+                var part = new Partition(
                     metadata, new CompositeFileFactory(fileFlags),
                     access, startDate, 0,
                     Path.Combine(jconf.DefaultPath, "2013-10"), new AsyncJournalServer(TimeSpan.FromSeconds(1)));
