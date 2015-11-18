@@ -1,7 +1,7 @@
-﻿using System;
-using Antlr4.Runtime;
+﻿using Antlr4.Runtime;
 using Antlr4.Runtime.Tree;
 using Apaf.NFSdb.Core.Ql.Gramma;
+using Apaf.NFSdb.Core.Queries.Queryable;
 using Apaf.NFSdb.Core.Tx;
 
 namespace Apaf.NFSdb.Core.Queries.Records
@@ -35,7 +35,9 @@ namespace Apaf.NFSdb.Core.Queries.Records
             var lis = new QlVisitor();
             var expr = lis.Visit(tree);
 
-            throw new NotImplementedException();
+            var evalVis = new ExpressionEvaluatorVisitor(_journal, _tx);
+            var res = evalVis.Visit(expr);
+            return new RecordSet(res.Build().Rowids, _tx, _journal.MetadataCore);
         }
     }
 }

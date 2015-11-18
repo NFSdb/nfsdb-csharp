@@ -26,10 +26,18 @@ using Apaf.NFSdb.Core.Writes;
 
 namespace Apaf.NFSdb.Core.Queries.Queryable
 {
-    public class ExpressionEvaluatorVisitor<T> 
+    public class ExpressionEvaluatorVisitor
     {
         private readonly IJournalCore _journal;
         private readonly IReadTransactionContext _tx;
+        private readonly Type _itemType;
+
+        internal ExpressionEvaluatorVisitor(IJournalCore journal, IReadTransactionContext tx, Type itemType)
+        {
+            _journal = journal;
+            _tx = tx;
+            _itemType = itemType;
+        }
 
         internal ExpressionEvaluatorVisitor(IJournalCore journal, IReadTransactionContext tx)
         {
@@ -78,7 +86,7 @@ namespace Apaf.NFSdb.Core.Queries.Queryable
                 case ExpressionType.LeftShift:
                 case ExpressionType.ExclusiveOr:
                 case ExpressionType.Power:
-                    return VisitBinary((BinaryExpression) exp);
+                    return VisitBinary(exp);
                 case ExpressionType.Constant:
                     return VisitConstant((ConstantExpression) exp);
             }
@@ -112,11 +120,14 @@ namespace Apaf.NFSdb.Core.Queries.Queryable
                     return VisitSet(union.Left, union.Right, ExpressionType.Or);
                 case EJournalExpressionType.Filter:
                     return VisitFilter((FilterExpression) exp);
+                case EJournalExpressionType.Journal:
+                    return new ResultSetBuilder(_journal, _tx);;
                 default:
                     throw new NFSdbQueryableNotSupportedException(
                         "Expression {0} cannot be bound to Journal operation.", exp);
             }
         }
+
 
         private ResultSetBuilder VisitFilter(FilterExpression exp)
         {
@@ -151,7 +162,7 @@ namespace Apaf.NFSdb.Core.Queries.Queryable
             var ex = exp.Predicate.Body as MemberExpression;
             if (ex != null)
             {
-                var member = ExHelper.GetMemberName(ex, typeof (T));
+                var member = ExHelper.GetMemberName(ex, _itemType);
                 result.ApplyOrderBy(member, (EJournalExpressionType)exp.NodeType);
                 return result;
             }
@@ -174,7 +185,11 @@ namespace Apaf.NFSdb.Core.Queries.Queryable
 
         private ResultSetBuilder VisitConstant(ConstantExpression exp)
         {
-            if (exp.Value is IQueryable<T>)
+            var expType = exp.Value.GetType();
+            if (expType.GetInterfaces().Any(x =>
+                x.IsGenericType
+                && x.GetGenericTypeDefinition() == typeof(IQueryable<>)
+                && x.GetGenericArguments()[0] == _itemType))
             {
                 return new ResultSetBuilder(_journal, _tx);
             }
@@ -186,7 +201,7 @@ namespace Apaf.NFSdb.Core.Queries.Queryable
         {
             if (exp.Match.NodeType == ExpressionType.MemberAccess)
             {
-                var memberName = ExHelper.GetMemberName((MemberExpression)exp.Match, typeof(T));
+                var memberName = ExHelper.GetMemberName((MemberExpression)exp.Match, _itemType);
                 var result = new ResultSetBuilder(_journal, _tx);
                 result.IndexCollectionScan(memberName, exp.Values);
 
@@ -198,7 +213,7 @@ namespace Apaf.NFSdb.Core.Queries.Queryable
                 exp);
         }
 
-        private ResultSetBuilder VisitBinary(BinaryExpression expression)
+        private ResultSetBuilder VisitBinary(Expression expression)
         {
             switch (expression.NodeType)
             {
@@ -223,59 +238,84 @@ namespace Apaf.NFSdb.Core.Queries.Queryable
                         expression.NodeType);
             }
         }
-
-        private ResultSetBuilder EvaluateCompare(BinaryExpression expression)
+        
+        private ResultSetBuilder EvaluateCompare(Expression exp)
         {
-            var memberName = ExHelper.GetMemberName(expression, typeof(T));
-            var literal = ExHelper.LiteralName(expression, typeof(T));
-            if (GetTimestamp(_journal.MetadataCore)  != null &&
-                GetTimestamp(_journal.MetadataCore).PropertyName == memberName)
+            var memberName = ExHelper.GetMemberName(exp, _itemType);
+            var literal = ExHelper.GetLiteralValue(exp);
+
+            if (GetTimestamp(_journal.MetadataCore) != null &&
+                GetTimestamp(_journal.MetadataCore).PropertyName == memberName
+                && (literal is long || literal is DateTime))
             {
-                if (literal is long || literal is DateTime)
+                DateInterval filterInterval;
+                var nodeType = exp.NodeType;
+                if (exp.GetLeft().NodeType == ExpressionType.Constant)
                 {
-                    DateInterval filterInterval;
-                    switch (expression.NodeType)
-                    {
-                        case ExpressionType.GreaterThan:
-                            var timestamp = literal is long
-                                ? DateUtils.UnixTimestampToDateTime((long) literal + 1)
-                                : ((DateTime) literal).AddTicks(1);
-                            filterInterval = DateInterval.From(timestamp);
-                            break;
-
-                        case ExpressionType.GreaterThanOrEqual:
-                            timestamp = literal is long
-                                ? DateUtils.UnixTimestampToDateTime((long) literal)
-                                : (DateTime) literal;
-                            filterInterval = DateInterval.From(timestamp);
-                            break;
-
-                        case ExpressionType.LessThan:
-                            timestamp = literal is long
-                                ? DateUtils.UnixTimestampToDateTime((long) literal)
-                                : (DateTime) literal;
-                            filterInterval = DateInterval.To(timestamp);
-                            break;
-
-                        case ExpressionType.LessThanOrEqual:
-                            timestamp = literal is long
-                                ? DateUtils.UnixTimestampToDateTime((long)literal + 1)
-                                : ((DateTime)literal).AddTicks(1);
-                            filterInterval = DateInterval.To(timestamp);
-                            break;
-                        default:
-                            throw new NFSdbQueryableNotSupportedException(
-                                "Timestamp column operation {0} is not supported. Supported operations are <, >, <=, >=",
-                                expression.NodeType);
-                    }
-
-                    var result = new ResultSetBuilder(_journal, _tx);
-                    result.TimestampInterval(filterInterval);
-                    return result;
+                    nodeType = InvertComarison(nodeType);
                 }
+
+                switch (nodeType)
+                {
+                    case ExpressionType.GreaterThan:
+                        var timestamp = literal is long
+                            ? DateUtils.UnixTimestampToDateTime((long) literal + 1)
+                            : ((DateTime) literal).AddTicks(1);
+                        filterInterval = DateInterval.From(timestamp);
+                        break;
+
+                    case ExpressionType.GreaterThanOrEqual:
+                        timestamp = literal is long
+                            ? DateUtils.UnixTimestampToDateTime((long) literal)
+                            : (DateTime) literal;
+                        filterInterval = DateInterval.From(timestamp);
+                        break;
+
+                    case ExpressionType.LessThan:
+                        timestamp = literal is long
+                            ? DateUtils.UnixTimestampToDateTime((long) literal)
+                            : (DateTime) literal;
+                        filterInterval = DateInterval.To(timestamp);
+                        break;
+
+                    case ExpressionType.LessThanOrEqual:
+                        timestamp = literal is long
+                            ? DateUtils.UnixTimestampToDateTime((long) literal + 1)
+                            : ((DateTime) literal).AddTicks(1);
+                        filterInterval = DateInterval.To(timestamp);
+                        break;
+                    default:
+                        throw new NFSdbQueryableNotSupportedException(
+                            "Timestamp column operation {0} is not supported. Supported operations are <, >, <=, >=",
+                            nodeType);
+                }
+
+                var result = new ResultSetBuilder(_journal, _tx);
+                result.TimestampInterval(filterInterval);
+                return result;
             }
             throw new NFSdbQueryableNotSupportedException(
-                      "Comparison is supported for timestamp column only. Unable to bind {0} to journal query operation", expression);
+                "Comparison is supported for timestamp column only. Unable to bind {0} to journal query operation",
+                exp);
+        }
+
+        private ExpressionType InvertComarison(ExpressionType nodeType)
+        {
+            switch (nodeType)
+            {
+                case ExpressionType.GreaterThan:
+                    return ExpressionType.LessThan;
+
+                case ExpressionType.GreaterThanOrEqual:
+                    return ExpressionType.LessThanOrEqual;
+
+                case ExpressionType.LessThan:
+                    return ExpressionType.GreaterThan;
+
+                case ExpressionType.LessThanOrEqual:
+                    return ExpressionType.GreaterThanOrEqual;
+            }
+            return nodeType;
         }
 
         private static ColumnMetadata GetTimestamp(IJournalMetadataCore metadata)
@@ -287,10 +327,10 @@ namespace Apaf.NFSdb.Core.Queries.Queryable
             return metadata.GetColumnById(metadata.TimestampFieldID.Value);
         }
 
-        private ResultSetBuilder EvaluateLogical(BinaryExpression expression)
+        private ResultSetBuilder EvaluateLogical(Expression expression)
         {
-            var left = Visit(expression.Left);
-            var right = Visit(expression.Right);
+            var left = Visit(expression.GetLeft());
+            var right = Visit(expression.GetRight());
 
             var result = new ResultSetBuilder(_journal, _tx);
             var operation = expression.NodeType;
@@ -309,20 +349,12 @@ namespace Apaf.NFSdb.Core.Queries.Queryable
             return result;
         }
 
-        private ResultSetBuilder EvaluateEquals(BinaryExpression expression)
+        private ResultSetBuilder EvaluateEquals(Expression expression)
         {
-            if (expression.NodeType == ExpressionType.Equal
-                && (
-                    (expression.Left.NodeType == ExpressionType.MemberAccess
-                     && expression.Right.NodeType == ExpressionType.Constant)
-                    || (expression.Left.NodeType == ExpressionType.Constant
-                        && expression.Right.NodeType == ExpressionType.MemberAccess)
-                    )
-                )
+            if (expression.NodeType == ExpressionType.Equal)
             {
-                var memberName = ExHelper.GetMemberName(expression, typeof (T));
-                var literal = ExHelper.LiteralName(expression, typeof (T));
-
+                var literal = ExHelper.GetLiteralValue(expression);
+                var memberName = ExHelper.GetMemberName(expression, _itemType);
                 if (literal is long || literal is DateTime)
                 {
 

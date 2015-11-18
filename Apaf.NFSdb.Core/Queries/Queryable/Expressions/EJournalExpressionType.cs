@@ -19,6 +19,7 @@ namespace Apaf.NFSdb.Core.Queries.Queryable.Expressions
 {
     public enum EJournalExpressionType
     {
+        None = 0,
         Contains = 50000,
         Single = 50001,
         First = 50002,

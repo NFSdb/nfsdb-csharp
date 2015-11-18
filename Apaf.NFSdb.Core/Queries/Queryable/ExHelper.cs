@@ -17,25 +17,31 @@
 #endregion
 using System;
 using System.Linq.Expressions;
+using Apaf.NFSdb.Core.Queries.Queryable.Expressions;
 
 namespace Apaf.NFSdb.Core.Queries.Queryable
 {
     public static class ExHelper
     {
-        public static string GetMemberName(BinaryExpression expression, Type journalType)
+        public static string GetMemberName(Expression expression, Type journalType)
         {
-            var member = expression.Left.NodeType == ExpressionType.MemberAccess
-                ? expression.Left
-                : expression.Right;
+            ExpressionType leftType = expression.GetLeft().NodeType;
+            var member = leftType == ExpressionType.MemberAccess || leftType == (ExpressionType) EJournalExpressionType.Column
+                ? expression.GetLeft()
+                : expression.GetRight();
 
-            if (!(member is MemberExpression))
+            var ex = member as MemberExpression;
+            if (ex != null)
             {
-                throw new NFSdbQueryableNotSupportedException("Expressions of type \"column\" == " +
-                                                                 "value are supported only");
+                var memEx = ex;
+                return GetMemberName(memEx, journalType);
             }
 
-            var memEx = (MemberExpression)member;
-            return GetMemberName(memEx, journalType);
+            if (member is ColumnNameExpression)
+            {
+                return ((ColumnNameExpression)member).Name;
+            }
+            throw new NFSdbQueryableNotSupportedException("Cannot extract column name from expression " + expression);
         }
 
         public static string GetMemberName(MemberExpression memEx, Type journalType)
@@ -50,11 +56,11 @@ namespace Apaf.NFSdb.Core.Queries.Queryable
             return memEx.Member.Name;
         }
 
-        public static object LiteralName(BinaryExpression expression, Type type)
+        public static object GetLiteralValue(Expression expression)
         {
-            var member = expression.Left.NodeType == ExpressionType.Constant
-                ? expression.Left
-                : expression.Right;
+            var member = expression.GetLeft().NodeType == ExpressionType.Constant
+                ? expression.GetLeft()
+                : expression.GetRight();
 
             if (!(member is ConstantExpression))
             {

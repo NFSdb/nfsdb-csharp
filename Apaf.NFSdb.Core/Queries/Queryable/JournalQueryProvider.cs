@@ -16,7 +16,9 @@
  */
 #endregion
 using System;
+using System.Linq;
 using System.Linq.Expressions;
+using Apaf.NFSdb.Core.Queries.Queryable.Expressions;
 using Apaf.NFSdb.Core.Tx;
 using IQToolkit;
 
@@ -34,14 +36,6 @@ namespace Apaf.NFSdb.Core.Queries.Queryable
             _tx = tx;
         }
 
-        public static JournalQueryProvider<T> LatestBy(string symbolName, IJournalCore journal,
-            IReadTransactionContext tx)
-        {
-            var provider = new JournalQueryProvider<T>(journal, tx);
-            provider.LatestBySymbol = symbolName;
-            return provider;
-        }
-
         public override string GetQueryText(Expression expression)
         {
             throw new NotSupportedException();
@@ -53,8 +47,6 @@ namespace Apaf.NFSdb.Core.Queries.Queryable
             set { _cache = value; }
         }
 
-        public string LatestBySymbol { get; private set; }
-
         public override object Execute(Expression expression)
         {
             var lambda = expression as LambdaExpression;
@@ -64,11 +56,34 @@ namespace Apaf.NFSdb.Core.Queries.Queryable
             }
 
             var result = GetExecutionPlan(expression);
-            if (LatestBySymbol != null)
+            var res = result.Build();
+
+            if (res.IsSingle)
             {
-                result.TakeLatestBy(LatestBySymbol);
+                var rowID = res.RowID;
+                
+                // First / Last OrDefault can return null.
+                if (rowID == 0) return null;
+                int partitionID = RowIDUtil.ToPartitionIndex(rowID);
+                var lastPartitionReader = _tx.Read(partitionID);
+                long localRowID = RowIDUtil.ToLocalRowID(rowID);
+
+                // ReSharper disable once PossibleNullReferenceException
+                return lastPartitionReader.Read<T>(localRowID, _tx.ReadCache);
             }
-            return result.Build<T>();
+
+            switch (res.PostExpression)
+            {
+                case EJournalExpressionType.None:
+                    return new ResultSet<T>(res.Rowids, _tx);
+                case EJournalExpressionType.LongCount:
+                    return res.Rowids.LongCount();
+                case EJournalExpressionType.Count:
+                    return res.Rowids.Count();
+                default:
+                    throw new NFSdbQueryableNotSupportedException(
+                        "Post expression {0} is not supported at this level", res.PostExpression);
+            }
         }
 
         protected virtual QueryPlanBinder<T> CreateTranslator()

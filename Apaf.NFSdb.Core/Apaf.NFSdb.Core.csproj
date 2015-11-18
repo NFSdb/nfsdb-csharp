@@ -172,6 +172,8 @@
     <Compile Include="Ql\Gramma\QlVisitor.cs" />
     <Compile Include="Queries\IColumnFilter.cs" />
     <Compile Include="Queries\ILatestBySymbolFilter.cs" />
+    <Compile Include="Queries\Queryable\Expressions\ExpressionExtensions.cs" />
+    <Compile Include="Queries\Queryable\QueryRowsResult.cs" />
     <Compile Include="Queries\Records\IRecord.cs" />
     <Compile Include="Queries\IRecordQuery.cs" />
     <Compile Include="Queries\Records\IRecordSet.cs" />

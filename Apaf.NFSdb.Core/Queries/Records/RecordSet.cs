@@ -24,9 +24,14 @@ namespace Apaf.NFSdb.Core.Queries.Records
             _metadata = metadata;
         }
 
-        public void Map(IList<string> columnNames)
+        public IRecordSet Map(IList<string> columnNames)
         {
-            throw new System.NotImplementedException();
+            _columnMaps = new int[columnNames.Count];
+            for (int i = 0; i < columnNames.Count; i++)
+            {
+                _columnMaps[i] = _metadata.GetColumnID(columnNames[i]);
+            }
+            return this;
         }
 
         public T Get<T>(long rowId, int columnIndex)

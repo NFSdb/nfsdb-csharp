@@ -486,15 +486,16 @@ namespace Apaf.NFSdb.Tests.Query
 
             using (var qj = Utils.CreateJournal<Quote>(config))
             {
-                var rdr = qj.OpenReadTx();
+                using (var rdr = qj.OpenReadTx())
+                {
+                    var qts = lambda(rdr.Items, rdr.Items.LatestBy(q => q.Sym));
 
-                var qts = lambda(rdr.Items, rdr.Items.LatestBy(q => q.Sym));
+                    // Act.
+                    var result = formatLambda(qts);
 
-                // Act.
-                var result = formatLambda(qts);
-
-                // Verify.
-                return string.Join(",", result);
+                    // Verify.
+                    return string.Join(",", result);
+                }
             }
 
         }

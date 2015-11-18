@@ -42,13 +42,14 @@ namespace Apaf.NFSdb.Tests.Query
             using (var qj = Utils.CreateJournal<Quote>(config, EFileAccess.ReadWrite))
             {
                 AppendRecords(qj, 0, 1);
-                var rdr = qj.OpenReadTx();
+                using (var rdr = qj.OpenReadTx())
+                {
+                    // Act.
+                    var result = rdr.AllBySymbol("Sym", sym).Select(q => q.Ask);
 
-                // Act.
-                var result = rdr.AllBySymbol("Sym", sym).Select(q => q.Ask);
-
-                // Verify.
-                return string.Join(",", result);
+                    // Verify.
+                    return string.Join(",", result);
+                }
             }
         }
 
@@ -69,14 +70,16 @@ namespace Apaf.NFSdb.Tests.Query
             using (var qj = Utils.CreateJournal<Quote>(config, EFileAccess.ReadWrite))
             {
                 AppendRecords(qj, startDate, increment);
-                var rdr = qj.OpenReadTx();
-                // Assert.That(rdr.PartitionCount, Is.GreaterThan(1));
-                
-                // Act.
-                var result = rdr.AllBySymbol("Sym", sym).Select(q => q.Ask);
+                using (var rdr = qj.OpenReadTx())
+                {
+                    // Assert.That(rdr.PartitionCount, Is.GreaterThan(1));
 
-                // Verify.
-                return string.Join(",", result);
+                    // Act.
+                    var result = rdr.AllBySymbol("Sym", sym).Select(q => q.Ask);
+
+                    // Verify.
+                    return string.Join(",", result);
+                }
             }
         }
 
@@ -100,18 +103,20 @@ namespace Apaf.NFSdb.Tests.Query
             using (var qj = Utils.CreateJournal<Quote>(config, EFileAccess.ReadWrite))
             {
                 AppendRecords(qj, startDate, increment);
-                var rdr = qj.OpenReadTx();
-                // Assert.That(rdr.PartitionCount, Is.GreaterThan(1));
+                using (var rdr = qj.OpenReadTx())
+                {
+                    // Assert.That(rdr.PartitionCount, Is.GreaterThan(1));
 
-                var fromDate = DateUtils.UnixTimestampToDateTime(startDate + fromDay * millisecsPerday);
-                var toDate = DateUtils.UnixTimestampToDateTime(startDate + toDay * millisecsPerday);
+                    var fromDate = DateUtils.UnixTimestampToDateTime(startDate + fromDay*millisecsPerday);
+                    var toDate = DateUtils.UnixTimestampToDateTime(startDate + toDay*millisecsPerday);
 
-                // Act.
-                var result = rdr.AllBySymbolValueOverInterval("Sym", 
-                    sym, new DateInterval(fromDate, toDate)).Select(q => q.Ask);
+                    // Act.
+                    var result = rdr.AllBySymbolValueOverInterval("Sym",
+                        sym, new DateInterval(fromDate, toDate)).Select(q => q.Ask);
 
-                // Verify.
-                return string.Join(",", result);
+                    // Verify.
+                    return string.Join(",", result);
+                }
             }
         }
 

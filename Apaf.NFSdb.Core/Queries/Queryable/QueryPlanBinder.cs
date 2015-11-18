@@ -42,7 +42,7 @@ namespace Apaf.NFSdb.Core.Queries.Queryable
         public ResultSetBuilder Build(Expression ex)
         {
             var translatedTree = Visit(ex);
-            var evalVis = new ExpressionEvaluatorVisitor<T>(_journal, _tx);
+            var evalVis = new ExpressionEvaluatorVisitor(_journal, _tx, typeof(T));
             return evalVis.Visit(translatedTree);
         }
 

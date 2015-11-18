@@ -67,7 +67,7 @@ namespace Apaf.NFSdb.Core.Queries.Queryable
 
         public IPlanItem PlanItem { get { return _planHead; }}
 
-        public object Build<T>()
+        public QueryRowsResult Build()
         {
             if (_planHead != null)
             {
@@ -78,7 +78,7 @@ namespace Apaf.NFSdb.Core.Queries.Queryable
                 _planHead = new TimestampRangePlanItem(DateInterval.Any);
             }
             IEnumerable<long> rowIDs = _planHead.Execute(_journal, _tx, GetTimestampOrder());
-            return BindPostResult<T>(rowIDs);
+            return BindPostResult(rowIDs);
         }
 
         private ERowIDSortDirection GetTimestampOrder()
@@ -131,7 +131,7 @@ namespace Apaf.NFSdb.Core.Queries.Queryable
             return order;
         }
 
-        private object BindPostResult<T>(IEnumerable<long> rowIds)
+        private QueryRowsResult BindPostResult(IEnumerable<long> rowIds)
         {
             string timestampProperty = null;
             if (_journal.MetadataCore.TimestampFieldID != null)
@@ -146,11 +146,11 @@ namespace Apaf.NFSdb.Core.Queries.Queryable
                 switch (tranform.Expression)
                 {
                     case EJournalExpressionType.Single:
-                        return new ResultSet<T>(rowIds, _tx).Single();
+                        return new QueryRowsResult(rowIds.Single());
                     case EJournalExpressionType.First:
-                        return new ResultSet<T>(rowIds, _tx).First();
+                        return new QueryRowsResult(rowIds.First());
                     case EJournalExpressionType.Last:
-                        return new ResultSet<T>(rowIds, _tx).Last();
+                        return new QueryRowsResult(rowIds.Last());
                     case EJournalExpressionType.Reverse:
                         if (hadNonTimestampOrder)
                         {
@@ -158,9 +158,8 @@ namespace Apaf.NFSdb.Core.Queries.Queryable
                         }
                         break;
                     case EJournalExpressionType.LongCount:
-                        return rowIds.LongCount();
                     case EJournalExpressionType.Count:
-                        return rowIds.Count();
+                        return new QueryRowsResult(rowIds, tranform.Expression);
 
                     case EJournalExpressionType.OrderByDescending:
                     case EJournalExpressionType.OrderBy:
@@ -178,16 +177,16 @@ namespace Apaf.NFSdb.Core.Queries.Queryable
                         rowIds = rowIds.Skip(tranform.Count);
                         break;
                     case EJournalExpressionType.FirstOrDefault:
-                        return new ResultSet<T>(rowIds, _tx).FirstOrDefault();
+                        return new QueryRowsResult(rowIds.FirstOrDefault());
                     case EJournalExpressionType.LastOrDefault:
-                        return new ResultSet<T>(rowIds, _tx).LastOrDefault();
+                        return new QueryRowsResult(rowIds.LastOrDefault());
 
                     default:
                         throw new NFSdbQueryableNotSupportedException(
                             "Expression {0} is not expected to be post operation", tranform.Expression);
                 }
             }
-            return new ResultSet<T>(rowIds, _tx);
+            return new QueryRowsResult(rowIds);
         }
 
         private IEnumerable<long> BindOrderBy(IEnumerable<long> rowIds, DirectExpression tranform)
