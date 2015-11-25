@@ -41,14 +41,14 @@ namespace Apaf.NFSdb.Core.Queries.Queryable
             {
                 return ((ColumnNameExpression)member).Name;
             }
-            throw new NFSdbQueryableNotSupportedException("Cannot extract column name from expression " + expression);
+            throw QueryExceptionExtensions.ExpressionNotSupported("Cannot extract column name from expression ", expression);
         }
 
         public static string GetMemberName(MemberExpression memEx, Type journalType)
         {
             if (memEx.Member.DeclaringType == null || !memEx.Member.DeclaringType.IsAssignableFrom(journalType))
             {
-                throw new NFSdbQueryableNotSupportedException("Expressions of type \"column\" == value "
+                throw QueryExceptionExtensions.NotSupported("Expressions of type \"column\" == value "
                                                                  + "where column is an NFSdb property "
                                                                  + "name are supported only");
             }
@@ -58,14 +58,20 @@ namespace Apaf.NFSdb.Core.Queries.Queryable
 
         public static object GetLiteralValue(Expression expression)
         {
-            var member = expression.GetLeft().NodeType == ExpressionType.Constant
+            var member = expression.GetLeft().NodeType == ExpressionType.Constant || expression.GetLeft().NodeType == (ExpressionType) EJournalExpressionType.Literal
                 ? expression.GetLeft()
                 : expression.GetRight();
 
+            
+            if (member is LiteralExpression)
+            {
+                member = ((LiteralExpression) member).Constant;
+            }
+
             if (!(member is ConstantExpression))
             {
-                throw new NFSdbQueryableNotSupportedException("Expressions of type \"column\" == " +
-                                                                 "value are supported only");
+                throw QueryExceptionExtensions.ExpressionNotSupported("Unable to evaluate <{0}> Expressions of type column = " +
+                                                                 "'literal' are supported only.", expression);
             }
 
             var memEx = (ConstantExpression)member;

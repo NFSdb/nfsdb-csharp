@@ -2,9 +2,9 @@
 
 namespace Apaf.NFSdb.Core.Queries.Queryable.Expressions
 {
-    public class JournalNameExpression: QlExpression
+    public class ParameterNameExpression: QlExpression
     {
-        public JournalNameExpression(string name, QlToken token)
+        public ParameterNameExpression(string name, QlToken token)
             : base(token)
         {
             Name = name;
@@ -14,7 +14,7 @@ namespace Apaf.NFSdb.Core.Queries.Queryable.Expressions
 
         public EJournalExpressionType Operation
         {
-            get { return EJournalExpressionType.Journal; }
+            get { return EJournalExpressionType.Parameter; }
         }
 
         public override ExpressionType NodeType
@@ -24,7 +24,7 @@ namespace Apaf.NFSdb.Core.Queries.Queryable.Expressions
 
         public override string ToString()
         {
-            return Name;
+            return "@" + Name;
         }
     }
 }

@@ -162,7 +162,7 @@ namespace Apaf.NFSdb.Core.Queries.Queryable
             {
                 return new LatestBySymbolExpression(prop.Member.Name, Visit(ex1));
             }
-            throw new NFSdbQueryableNotSupportedException("LatestBy is only supported with property" +
+            throw QueryExceptionExtensions.NotSupported("LatestBy is only supported with property" +
                                                           " expression, but instead had '{0}'",
                 lambda);
         }
@@ -181,7 +181,7 @@ namespace Apaf.NFSdb.Core.Queries.Queryable
                     }
                 }
             }
-            throw new NFSdbQueryableNotSupportedException("Union of 2 journal queriables supported. " +
+            throw QueryExceptionExtensions.NotSupported("Union of 2 journal queriables supported. " +
                                                           "Attempted to join '{0}' with '{1}' instead.",
                 expression1, expression2);
         }
@@ -196,7 +196,7 @@ namespace Apaf.NFSdb.Core.Queries.Queryable
                     return (TT)c.Value;
                 }
             }
-            throw new NFSdbQueryableNotSupportedException("Expected constant expression of type {0} but got {1}",
+            throw QueryExceptionExtensions.NotSupported("Expected constant expression of type {0} but got {1}",
                 typeof(T).Name, expression);
         }
 
@@ -223,7 +223,7 @@ namespace Apaf.NFSdb.Core.Queries.Queryable
                 }
             }
 
-            throw new NFSdbQueryableNotSupportedException(
+            throw QueryExceptionExtensions.NotSupported(
                 "List.Contains, Array.Contains allowed only. Unable to execute Contains on {0}.",
                 constSource);
         }
@@ -239,9 +239,9 @@ namespace Apaf.NFSdb.Core.Queries.Queryable
         {
             if (resultType != typeof (IQueryable<T>))
             {
-                throw new NFSdbQueryableNotSupportedException(
+                throw QueryExceptionExtensions.ExpressionNotSupported(
                     "Usage of expressions in select statment is not allowed."
-                    + " Please convert to IEnumerable and perform select statement.");
+                    + " Please convert to IEnumerable and perform select statement.", source);
             }
             var where = Visit(predicate.Body);
             if (source is ConstantExpression)
@@ -262,7 +262,7 @@ namespace Apaf.NFSdb.Core.Queries.Queryable
         {
             if (resultType != typeof(T))
             {
-                throw new NFSdbQueryableNotSupportedException("{0} operation canonly be bound to JournalQueryable of {1} but used on {2}",
+                throw QueryExceptionExtensions.NotSupported("{0} operation canonly be bound to JournalQueryable of {1} but used on {2}",
                     expressionType, typeof(T).Name, resultType);
             }
             var source = arguments[0];

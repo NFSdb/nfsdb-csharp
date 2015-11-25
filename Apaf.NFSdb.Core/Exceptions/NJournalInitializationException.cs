@@ -22,16 +22,16 @@ namespace Apaf.NFSdb.Core.Exceptions
     [Serializable]
     public class NFSdbInitializationException : NFSdbBaseExcepton
     {
-        public NFSdbInitializationException()
+        internal NFSdbInitializationException()
         {
         }
 
-        public NFSdbInitializationException(string message, params object[] args)
+        internal NFSdbInitializationException(string message, params object[] args)
             : base(message, args)
         {
         }
 
-        public NFSdbInitializationException(string message, Exception ex, params object[] args)
+        internal NFSdbInitializationException(string message, Exception ex, params object[] args)
             : base(message, ex, args)
         {
         }

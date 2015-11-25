@@ -22,16 +22,16 @@ namespace Apaf.NFSdb.Core.Exceptions
     [Serializable]
     public class NFSdbLowAddressSpaceException : NFSdbBaseExcepton
     {
-        public NFSdbLowAddressSpaceException()
+        internal NFSdbLowAddressSpaceException()
         {
         }
 
-        public NFSdbLowAddressSpaceException(string message, params object[] args)
+        internal NFSdbLowAddressSpaceException(string message, params object[] args)
             :base(message, args)
         {
         }
 
-        public NFSdbLowAddressSpaceException(string message, Exception innerException, params object[] args)
+        internal NFSdbLowAddressSpaceException(string message, Exception innerException, params object[] args)
             : base(message, innerException, args)
         {
         }

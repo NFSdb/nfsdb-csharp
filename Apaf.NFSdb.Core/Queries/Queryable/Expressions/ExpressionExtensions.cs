@@ -17,7 +17,7 @@ namespace Apaf.NFSdb.Core.Queries.Queryable.Expressions
                 return compEx.Left;
             }
 
-            throw new NFSdbQueryableNotSupportedException("Expressions {0} does not have left expression.", expression);
+            throw QueryExceptionExtensions.ExpressionNotSupported("Expressions does not have left expression.", expression);
         }
 
         public static Expression GetRight(this Expression expression)
@@ -33,7 +33,7 @@ namespace Apaf.NFSdb.Core.Queries.Queryable.Expressions
                 return compEx.Right;
             }
 
-            throw new NFSdbQueryableNotSupportedException("Expressions {0} does not have left expression.", expression);
+            throw QueryExceptionExtensions.ExpressionNotSupported("Expressions {0} does not have left expression.", expression);
         }
     }
 }

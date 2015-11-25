@@ -2,9 +2,10 @@
 
 namespace Apaf.NFSdb.Core.Queries.Queryable.Expressions
 {
-    public class ComparisonExpression: Expression
+    public class ComparisonExpression: QlExpression
     {
-        public ComparisonExpression(Expression left, ExpressionType operation, Expression right)
+        public ComparisonExpression(Expression left, ExpressionType operation, Expression right, QlToken token)
+            : base(token)
         {
             Left = left;
             Operation = operation;

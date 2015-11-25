@@ -24,6 +24,11 @@ namespace Apaf.NFSdb.Core.Queries.Records
 
         public IRecordSet Execute(string query)
         {
+            return Execute(query, null);
+        }
+
+        public IRecordSet Execute(string query, QlParameter[] parameters)
+        {
             var input = new AntlrInputStream(query);
             var lexer = new QlLexer(input);
             var commonTokenStream = new CommonTokenStream(lexer);

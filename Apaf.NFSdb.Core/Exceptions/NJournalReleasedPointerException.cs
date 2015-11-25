@@ -22,16 +22,16 @@ namespace Apaf.NFSdb.Core.Exceptions
     [Serializable]
     public class NFSdbReleasedPointerException : NFSdbBaseExcepton
     {
-        public NFSdbReleasedPointerException()
+        internal NFSdbReleasedPointerException()
         {
         }
 
-        public NFSdbReleasedPointerException(string message, params object[] args)
+        internal NFSdbReleasedPointerException(string message, params object[] args)
             : base(message, args)
         {
         }
 
-        public NFSdbReleasedPointerException(string message, Exception innerException, params object[] args)
+        internal NFSdbReleasedPointerException(string message, Exception innerException, params object[] args)
             : base(message, innerException, args)
         {
         }

@@ -123,7 +123,7 @@ namespace Apaf.NFSdb.Core.Queries.Queryable
                 case EJournalExpressionType.Journal:
                     return new ResultSetBuilder(_journal, _tx);;
                 default:
-                    throw new NFSdbQueryableNotSupportedException(
+                    throw QueryExceptionExtensions.ExpressionNotSupported(
                         "Expression {0} cannot be bound to Journal operation.", exp);
             }
         }
@@ -134,7 +134,7 @@ namespace Apaf.NFSdb.Core.Queries.Queryable
             var source = Visit(exp.Source);
             if (!source.CanApplyFilter())
             {
-                throw new NFSdbQueryableNotSupportedException(
+                throw QueryExceptionExtensions.ExpressionNotSupported(
                         "Where cannot be applied after Take, Skip, Single, First or Count expressions.", exp);
             }
             var filter = Visit(exp.Filter);
@@ -151,9 +151,16 @@ namespace Apaf.NFSdb.Core.Queries.Queryable
 
         private ResultSetBuilder VisitLatestBy(LatestBySymbolExpression exp)
         {
-            var result = exp.Body != null ? Visit(exp.Body) : new ResultSetBuilder(_journal, _tx);
-            result.TakeLatestBy(exp.LatestBy);
-            return result;
+            try
+            {
+                var result = exp.Body != null ? Visit(exp.Body) : new ResultSetBuilder(_journal, _tx);
+                result.TakeLatestBy(exp.LatestBy);
+                return result;
+            }
+            catch (NFSdbQueryableNotSupportedException ex)
+            {
+                throw QueryExceptionExtensions.ExpressionNotSupported(ex.Message, exp);
+            }
         }
 
         private ResultSetBuilder VisitOrderBy(OrderExpression exp)
@@ -166,7 +173,8 @@ namespace Apaf.NFSdb.Core.Queries.Queryable
                 result.ApplyOrderBy(member, (EJournalExpressionType)exp.NodeType);
                 return result;
             }
-            throw new NFSdbQueryableNotSupportedException("Order by is not supported on predicate {0}", exp.Predicate);
+            throw QueryExceptionExtensions.ExpressionNotSupported(
+                string.Format("Order by is not supported on predicate {0}", exp.Predicate), exp);
         }
 
         private ResultSetBuilder VisitCall(PostResultExpression m)
@@ -193,7 +201,7 @@ namespace Apaf.NFSdb.Core.Queries.Queryable
             {
                 return new ResultSetBuilder(_journal, _tx);
             }
-            throw new NFSdbQueryableNotSupportedException(
+            throw QueryExceptionExtensions.ExpressionNotSupported(
                 "Expression {0} cannot be bound to Journal operation.", exp);
         }
 
@@ -203,11 +211,11 @@ namespace Apaf.NFSdb.Core.Queries.Queryable
             {
                 var memberName = ExHelper.GetMemberName((MemberExpression)exp.Match, _itemType);
                 var result = new ResultSetBuilder(_journal, _tx);
-                result.IndexCollectionScan(memberName, exp.Values);
+                result.IndexCollectionScan(memberName, exp.Values, exp);
 
                 return result;
             }
-            throw new NFSdbQueryableNotSupportedException(
+            throw QueryExceptionExtensions.ExpressionNotSupported(
                 "Contains can only be bound for expression like List<string>.Contains(symbol_column))." +
                 " Unable to bind {0}",
                 exp);
@@ -233,7 +241,7 @@ namespace Apaf.NFSdb.Core.Queries.Queryable
                     return EvaluateCompare(expression);
 
                 default:
-                    throw new NFSdbQueryableNotSupportedException(
+                    throw QueryExceptionExtensions.NotSupported(
                         "Binary operation {0} cannot be bound to Journal operation", 
                         expression.NodeType);
             }
@@ -285,17 +293,17 @@ namespace Apaf.NFSdb.Core.Queries.Queryable
                         filterInterval = DateInterval.To(timestamp);
                         break;
                     default:
-                        throw new NFSdbQueryableNotSupportedException(
+                        throw QueryExceptionExtensions.ExpressionNotSupported(string.Format(
                             "Timestamp column operation {0} is not supported. Supported operations are <, >, <=, >=",
-                            nodeType);
+                            nodeType), exp);
                 }
 
                 var result = new ResultSetBuilder(_journal, _tx);
                 result.TimestampInterval(filterInterval);
                 return result;
             }
-            throw new NFSdbQueryableNotSupportedException(
-                "Comparison is supported for timestamp column only. Unable to bind {0} to journal query operation",
+            throw QueryExceptionExtensions.ExpressionNotSupported(
+                "Comparison is supported for timestamp column only. Unable to bind '{0} to journal query operation",
                 exp);
         }
 
@@ -383,7 +391,14 @@ namespace Apaf.NFSdb.Core.Queries.Queryable
                 else
                 {
                     var result = new ResultSetBuilder(_journal, _tx);
-                    result.ColumnScan(memberName, literal);
+                    try
+                    {
+                        result.ColumnScan(memberName, literal);
+                    }
+                    catch (NFSdbQueryableNotSupportedException ex)
+                    {
+                        throw QueryExceptionExtensions.ExpressionNotSupported(ex.Message, expression);
+                    }
                     return result;
                 }
             }

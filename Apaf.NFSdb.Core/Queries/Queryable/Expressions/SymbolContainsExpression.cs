@@ -23,12 +23,20 @@ using System.Linq.Expressions;
 
 namespace Apaf.NFSdb.Core.Queries.Queryable.Expressions
 {
-    public class SymbolContainsExpression : Expression
+    public class SymbolContainsExpression : QlExpression
     {
         private readonly Expression _match;
         private readonly IEnumerable _values;
 
         public SymbolContainsExpression(Expression match, IEnumerable values)
+            : base(QlToken.QUERIABLE_TOKEN)
+        {
+            _match = match;
+            _values = values;
+        }
+
+        public SymbolContainsExpression(Expression match, IEnumerable values, QlToken token)
+            : base(token)
         {
             _match = match;
             _values = values;

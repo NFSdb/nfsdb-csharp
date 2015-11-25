@@ -2,12 +2,20 @@
 
 namespace Apaf.NFSdb.Core.Queries.Queryable.Expressions
 {
-    public class FilterExpression : Expression
+    public class FilterExpression : QlExpression
     {
         private readonly Expression _filter;
         private readonly Expression _source;
 
         public FilterExpression(Expression filter, Expression source)
+            : base(QlToken.QUERIABLE_TOKEN)
+        {
+            _filter = filter;
+            _source = source;
+        }
+
+        public FilterExpression(Expression filter, Expression source, QlToken token)
+            : base(token)
         {
             _filter = filter;
             _source = source;

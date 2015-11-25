@@ -2,11 +2,19 @@
 
 namespace Apaf.NFSdb.Core.Queries.Queryable.Expressions
 {
-    public class LatestBySymbolExpression : Expression
+    public class LatestBySymbolExpression : QlExpression
     {
         private readonly Expression _body;
 
         public LatestBySymbolExpression(string latestBy, Expression body)
+            : base(QlToken.QUERIABLE_TOKEN)
+        {
+            LatestBy = latestBy;
+            _body = body;
+        }
+
+        public LatestBySymbolExpression(string latestBy, Expression body, QlToken token)
+            : base(token)
         {
             LatestBy = latestBy;
             _body = body;

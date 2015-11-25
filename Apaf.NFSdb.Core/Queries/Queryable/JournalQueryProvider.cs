@@ -81,8 +81,8 @@ namespace Apaf.NFSdb.Core.Queries.Queryable
                 case EJournalExpressionType.Count:
                     return res.Rowids.Count();
                 default:
-                    throw new NFSdbQueryableNotSupportedException(
-                        "Post expression {0} is not supported at this level", res.PostExpression);
+                    throw QueryExceptionExtensions.ExpressionNotSupported(
+                        string.Format("Post expression {0} is not supported at this level", res.PostExpression), expression);
             }
         }
 

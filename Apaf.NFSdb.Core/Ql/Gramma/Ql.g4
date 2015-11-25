@@ -43,6 +43,7 @@ where_expr
 */
 expr
  : literal_value                                              #LiteralExpr
+ | BIND_PARAMETER  										      #ParamExpr
  | ( ( database_name '.' )? table_name '.' )? column_name     #ColumnNameExpr
  | unary_operator expr                                        #UnaryExpr
  | expr op=( '<' | '<=' | '>' | '>=' | '=' | '==' | '!=' | '<>' ) expr       #ComparisonExpr
@@ -296,8 +297,7 @@ NUMERIC_LITERAL
  ;
 
 BIND_PARAMETER
- : '?' DIGIT*
- | [:@$] IDENTIFIER
+ : [@] IDENTIFIER
  ;
 
 STRING_LITERAL

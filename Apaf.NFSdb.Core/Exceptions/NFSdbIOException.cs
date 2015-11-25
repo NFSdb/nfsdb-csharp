@@ -23,17 +23,16 @@ namespace Apaf.NFSdb.Core.Exceptions
     [Serializable]
     public class NFSdbIOException : NFSdbBaseExcepton
     {
-         
-        public NFSdbIOException()
+        internal NFSdbIOException()
         {
         }
 
-        public NFSdbIOException(string message, params object[] args)
+        internal NFSdbIOException(string message, params object[] args)
             :base(message, args)
         {
         }
 
-        public NFSdbIOException(string message, Exception innerException, params object[] args)
+        internal NFSdbIOException(string message, Exception innerException, params object[] args)
             : base(message, innerException, args)
         {
         }

@@ -22,16 +22,16 @@ namespace Apaf.NFSdb.Core.Exceptions
     [Serializable]
     public class NFSdbPartitionException : NFSdbBaseExcepton
     {
-        public NFSdbPartitionException()
+        internal NFSdbPartitionException()
         {
         }
 
-        public NFSdbPartitionException(string message, params object[] args)
+        internal NFSdbPartitionException(string message, params object[] args)
             : base(message, args)
         {
         }
 
-        public NFSdbPartitionException(string message, Exception innException, params object[] args) :
+        internal NFSdbPartitionException(string message, Exception innException, params object[] args) :
             base(message, innException, args)
         {
         }

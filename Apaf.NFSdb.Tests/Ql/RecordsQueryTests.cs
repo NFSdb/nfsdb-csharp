@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Linq;
 using Apaf.NFSdb.Core;
+using Apaf.NFSdb.Core.Queries.Queryable;
 using Apaf.NFSdb.Core.Queries.Records;
 using Apaf.NFSdb.Core.Storage;
 using Apaf.NFSdb.Tests.Columns.ThriftModel;
@@ -19,28 +20,36 @@ namespace Apaf.NFSdb.Tests.Ql
             return ExecuteQuery("SELECT FROM Quote WHERE Sym = '" + value + "'");
         }
 
-        private string ExecuteQuery(string query, int increment = 1)
+        [Explicit]
+        [TestCase("Symbol_0", ExpectedResult = "280,260,240,220,200,180,160,140,120,100,80,60,40,20,0")]
+        [TestCase("Symbol_14", ExpectedResult = "294,274,254,234,214,194,174,154,134,114,94,74,54,34,14")]
+        public string Equal_symbol_filter_as_param(string value)
+        {
+            return ExecuteQuery("SELECT FROM Quote WHERE Sym = @s", new QlParameter("s", value));
+        }
+
+        private string ExecuteQuery(string query, params QlParameter[] parameters)
         {
             return ExecuteQuery(query,
                 tt => string.Join(",", tt.Map(new[] {"Timestamp"}).RecordIDs().Select(rowid => tt.Get<long>(rowid, 0)))
-                , increment);
+                , parameters);
         }
 
-        private string ExecuteQuery(string query, Func<IRecordSet, string> formatLambda, int increment = 1)
+        private string ExecuteQuery(string query, Func<IRecordSet, string> formatLambda, params QlParameter[] parameters)
         {
             Utils.ClearJournal<Quote>();
             var config = Utils.ReadConfig<Quote>();
 
             using (var qj = Utils.CreateJournal<Quote>(config, EFileAccess.ReadWrite))
             {
-                AppendRecords(qj, 0, increment);
+                AppendRecords(qj, 0, 1);
             }
 
             using (var qj = Utils.CreateJournal<Quote>(config))
             {
                 using (var rdr = qj.Core.OpenRecordReadTx())
                 {
-                    var qts = rdr.Execute(query);
+                    var qts = rdr.Execute(query, parameters);
 
                     // Act.
                     var result = formatLambda(qts);

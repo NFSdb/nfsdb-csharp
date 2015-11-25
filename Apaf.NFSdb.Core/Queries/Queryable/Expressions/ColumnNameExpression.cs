@@ -2,9 +2,9 @@
 
 namespace Apaf.NFSdb.Core.Queries.Queryable.Expressions
 {
-    public class ColumnNameExpression: Expression
+    public class ColumnNameExpression : QlExpression
     {
-        public ColumnNameExpression(string name)
+        public ColumnNameExpression(string name, QlToken token) : base(token)
         {
             Name = name;
         }

@@ -41,6 +41,8 @@ namespace Apaf.NFSdb.Core.Queries.Queryable.Expressions
         LastOrDefault = 50018,
         Journal = 50019,
         Column = 50020,
-        Comparison = 50021
+        Comparison = 50021,
+        Parameter = 50022,
+        Literal = 50023
     }
 }

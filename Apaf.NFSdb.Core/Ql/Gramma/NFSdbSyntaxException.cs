@@ -1,6 +1,7 @@
 ﻿using System;
+using Apaf.NFSdb.Core.Exceptions;
 
-namespace Apaf.NFSdb.Core.Exceptions
+namespace Apaf.NFSdb.Core.Ql.Gramma
 {
     public class NFSdbSyntaxException: NFSdbBaseExcepton
     {

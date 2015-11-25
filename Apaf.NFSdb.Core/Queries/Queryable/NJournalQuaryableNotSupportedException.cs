@@ -22,18 +22,38 @@ namespace Apaf.NFSdb.Core.Queries.Queryable
 {
     public class NFSdbQueryableNotSupportedException : NFSdbBaseExcepton
     {
-        public NFSdbQueryableNotSupportedException()
+        public static NFSdbQueryableNotSupportedException Create(string message, Exception ex)
+        {
+            return new NFSdbQueryableNotSupportedException(message, ex);
+        }
+
+        public static NFSdbQueryableNotSupportedException Create(string message)
+        {
+            return new NFSdbQueryableNotSupportedException(message);
+        }
+
+        public static NFSdbQueryableNotSupportedException Create(string message, QlToken queryToken)
+        {
+            return new NFSdbQueryableNotSupportedException(message, queryToken);
+        }
+
+        private NFSdbQueryableNotSupportedException(string message)
+            : base(message)
         {
         }
 
-        public NFSdbQueryableNotSupportedException(string message, params object[] args)
-            : base(message, args)
+        private NFSdbQueryableNotSupportedException(string message, Exception ex)
+            : base(message, ex)
         {
         }
 
-        public NFSdbQueryableNotSupportedException(string message, Exception ex, params object[] args)
-            : base(message, ex, args)
+
+        private NFSdbQueryableNotSupportedException(string message, QlToken queryToken)
+            : base(message)
         {
+            QueryToken = queryToken;
         }
+
+        public QlToken QueryToken { get; private set; }
     }
 }

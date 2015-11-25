@@ -33,7 +33,7 @@ namespace Apaf.NFSdb.Core.Queries.Queryable
                     return new BinaryColumnValueComparer(column.FieldID, tx, ascending);
 
                 default:
-                    throw new NFSdbQueryableNotSupportedException("Column {0} of type {1} is not sortable.", column.PropertyName, column.FieldType);
+                    throw QueryExceptionExtensions.NotSupported("Column {0} of type {1} is not sortable.", column.PropertyName, column.FieldType);
             }
         }
     }

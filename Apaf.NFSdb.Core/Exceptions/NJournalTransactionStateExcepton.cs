@@ -22,16 +22,16 @@ namespace Apaf.NFSdb.Core.Exceptions
     [Serializable]
     public class NFSdbTransactionStateExcepton : NFSdbBaseExcepton
     {
-        public NFSdbTransactionStateExcepton()
+        internal NFSdbTransactionStateExcepton()
         {
         }
 
-        public NFSdbTransactionStateExcepton(string message, params object[] args)
+        internal NFSdbTransactionStateExcepton(string message, params object[] args)
             : base(message, args)
         {
         }
 
-        public NFSdbTransactionStateExcepton(string message, Exception innerException, params object[] args)
+        internal NFSdbTransactionStateExcepton(string message, Exception innerException, params object[] args)
             : base(message, innerException, args)
         {
         }

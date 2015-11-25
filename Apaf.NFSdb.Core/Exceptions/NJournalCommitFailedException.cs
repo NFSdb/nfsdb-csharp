@@ -22,16 +22,16 @@ namespace Apaf.NFSdb.Core.Exceptions
     [Serializable]
     public class NFSdbCommitFailedException : NFSdbBaseExcepton
     {
-        public NFSdbCommitFailedException()
+        internal NFSdbCommitFailedException()
         {
         }
 
-        public NFSdbCommitFailedException(string message, params object[] args)
+        internal NFSdbCommitFailedException(string message, params object[] args)
             :base(message, args)
         {
         }
 
-        public NFSdbCommitFailedException(string message, Exception innerException, params object[] args)
+        internal NFSdbCommitFailedException(string message, Exception innerException, params object[] args)
             : base(message, innerException, args)
         {
         }

@@ -262,7 +262,7 @@ namespace Apaf.NFSdb.Core.Queries.Queryable.PlanItem
                     _partitionFilter = new LatestByFilter<DateTime>(_journal, column, ExtractColumnContains<DateTime>(column));
                     break;
                 default:
-                    throw new NFSdbQueryableNotSupportedException("Latest by {0} column is not supported.", column.FieldType);
+                    throw QueryExceptionExtensions.NotSupported("Latest by {0} column is not supported.", column.FieldType);
             }
         }
 

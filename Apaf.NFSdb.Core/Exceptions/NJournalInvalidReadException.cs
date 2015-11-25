@@ -22,16 +22,16 @@ namespace Apaf.NFSdb.Core.Exceptions
     [Serializable]
     public class NFSdbInvalidReadException : NFSdbBaseExcepton
     {
-        public NFSdbInvalidReadException()
+        internal NFSdbInvalidReadException()
         {
         }
 
-        public NFSdbInvalidReadException(string message, params object[] args)
+        internal NFSdbInvalidReadException(string message, params object[] args)
             : base(message, args)
         {
         }
 
-        public NFSdbInvalidReadException(string message, Exception ex, params object[] args)
+        internal NFSdbInvalidReadException(string message, Exception ex, params object[] args)
             : base(message, ex, args)
         {
         }

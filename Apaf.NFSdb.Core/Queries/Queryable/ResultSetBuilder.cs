@@ -182,7 +182,7 @@ namespace Apaf.NFSdb.Core.Queries.Queryable
                         return new QueryRowsResult(rowIds.LastOrDefault());
 
                     default:
-                        throw new NFSdbQueryableNotSupportedException(
+                        throw QueryExceptionExtensions.NotSupported(
                             "Expression {0} is not expected to be post operation", tranform.Expression);
                 }
             }
@@ -236,7 +236,9 @@ namespace Apaf.NFSdb.Core.Queries.Queryable
                     planItem.AddContainsScan(column, (DateTime)literal);
                     break;
                 default:
-                    throw new NFSdbQueryableNotSupportedException();
+                    throw QueryExceptionExtensions.NotSupported(
+                        "Filtering by column of type '{0}' is not supported." +
+                                      " Column name '{1}'", column.FieldType, memberName);
             }
         }
 
@@ -322,7 +324,7 @@ namespace Apaf.NFSdb.Core.Queries.Queryable
             return new IntersectPlanItem(left, right);
         }
 
-        public void IndexCollectionScan(string memberName, IEnumerable values)
+        public void IndexCollectionScan(string memberName, IEnumerable values, Expression exp)
         {
             var p = new RowScanPlanItem(_journal, _tx);
             var column = _journal.MetadataCore.GetColumnByPropertyName(memberName);
@@ -355,7 +357,8 @@ namespace Apaf.NFSdb.Core.Queries.Queryable
                     p.AddContainsScan(column, ToIList<DateTime>(values));
                     break;
                 default:
-                    throw new NFSdbQueryableNotSupportedException("Column of type {1} cannot be bound to Contains expressions", column.FieldType);
+                    throw QueryExceptionExtensions.ExpressionNotSupported(
+                        string.Format("Column of type {0} cannot be bound to Contains expressions", column.FieldType), exp);
             }
             _planHead = p;
         }
