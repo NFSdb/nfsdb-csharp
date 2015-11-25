@@ -20,7 +20,6 @@ namespace Apaf.NFSdb.Tests.Ql
             return ExecuteQuery("SELECT FROM Quote WHERE Sym = '" + value + "'");
         }
 
-        [Explicit]
         [TestCase("Symbol_0", ExpectedResult = "280,260,240,220,200,180,160,140,120,100,80,60,40,20,0")]
         [TestCase("Symbol_14", ExpectedResult = "294,274,254,234,214,194,174,154,134,114,94,74,54,34,14")]
         public string Equal_symbol_filter_as_param(string value)

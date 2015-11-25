@@ -16,6 +16,8 @@
  */
 #endregion
 using System;
+using System.Collections.Generic;
+using System.Linq;
 using System.Linq.Expressions;
 using Apaf.NFSdb.Core.Queries.Queryable.Expressions;
 
@@ -56,10 +58,13 @@ namespace Apaf.NFSdb.Core.Queries.Queryable
             return memEx.Member.Name;
         }
 
-        public static object GetLiteralValue(Expression expression)
+        public static object GetLiteralValue(Expression expression, IList<QlParameter> parameters)
         {
-            var member = expression.GetLeft().NodeType == ExpressionType.Constant || expression.GetLeft().NodeType == (ExpressionType) EJournalExpressionType.Literal
-                ? expression.GetLeft()
+            Expression left = expression.GetLeft();
+            var member = left.NodeType == ExpressionType.Constant 
+                || left.NodeType == (ExpressionType) EJournalExpressionType.Literal
+                || left.NodeType == (ExpressionType)EJournalExpressionType.Parameter
+                ? left
                 : expression.GetRight();
 
             
@@ -67,10 +72,27 @@ namespace Apaf.NFSdb.Core.Queries.Queryable
             {
                 member = ((LiteralExpression) member).Constant;
             }
+            else
+            {
+                var exp = member as ParameterNameExpression;
+                if (exp != null)
+                {
+                    var paramExp = exp;
+                    QlParameter p;
+                    if (parameters == null ||
+                        (p =
+                            parameters.FirstOrDefault(
+                                pp => string.Equals(pp.Name, paramExp.Name, StringComparison.OrdinalIgnoreCase))) == null)
+                    {
+                        throw QueryExceptionExtensions.ExpressionNotSupported("Unable to evaluate <{0}>. Parameter value not passed.", expression);
+                    }
+                    return p.Value;
+                }
+            }
 
             if (!(member is ConstantExpression))
             {
-                throw QueryExceptionExtensions.ExpressionNotSupported("Unable to evaluate <{0}> Expressions of type column = " +
+                throw QueryExceptionExtensions.ExpressionNotSupported("Unable to evaluate <{0}>. Expressions of type column = " +
                                                                  "'literal' are supported only.", expression);
             }
 

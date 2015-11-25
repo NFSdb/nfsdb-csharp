@@ -30,6 +30,7 @@ namespace Apaf.NFSdb.Core.Queries.Queryable
     {
         private readonly IJournalCore _journal;
         private readonly IReadTransactionContext _tx;
+        private readonly QlParameter[] _parameters;
         private readonly Type _itemType;
 
         internal ExpressionEvaluatorVisitor(IJournalCore journal, IReadTransactionContext tx, Type itemType)
@@ -39,10 +40,11 @@ namespace Apaf.NFSdb.Core.Queries.Queryable
             _itemType = itemType;
         }
 
-        internal ExpressionEvaluatorVisitor(IJournalCore journal, IReadTransactionContext tx)
+        internal ExpressionEvaluatorVisitor(IJournalCore journal, IReadTransactionContext tx, QlParameter[] parameters)
         {
             _journal = journal;
             _tx = tx;
+            _parameters = parameters;
         }
 
         public ResultSetBuilder Visit(Expression exp)
@@ -250,7 +252,7 @@ namespace Apaf.NFSdb.Core.Queries.Queryable
         private ResultSetBuilder EvaluateCompare(Expression exp)
         {
             var memberName = ExHelper.GetMemberName(exp, _itemType);
-            var literal = ExHelper.GetLiteralValue(exp);
+            var literal = ExHelper.GetLiteralValue(exp, _parameters);
 
             if (GetTimestamp(_journal.MetadataCore) != null &&
                 GetTimestamp(_journal.MetadataCore).PropertyName == memberName
@@ -361,7 +363,7 @@ namespace Apaf.NFSdb.Core.Queries.Queryable
         {
             if (expression.NodeType == ExpressionType.Equal)
             {
-                var literal = ExHelper.GetLiteralValue(expression);
+                var literal = ExHelper.GetLiteralValue(expression, _parameters);
                 var memberName = ExHelper.GetMemberName(expression, _itemType);
                 if (literal is long || literal is DateTime)
                 {
@@ -396,6 +398,10 @@ namespace Apaf.NFSdb.Core.Queries.Queryable
                         result.ColumnScan(memberName, literal);
                     }
                     catch (NFSdbQueryableNotSupportedException ex)
+                    {
+                        throw QueryExceptionExtensions.ExpressionNotSupported(ex.Message, expression);
+                    }
+                    catch (InvalidCastException ex)
                     {
                         throw QueryExceptionExtensions.ExpressionNotSupported(ex.Message, expression);
                     }

@@ -40,7 +40,7 @@ namespace Apaf.NFSdb.Core.Queries.Records
             var lis = new QlVisitor();
             var expr = lis.Visit(tree);
 
-            var evalVis = new ExpressionEvaluatorVisitor(_journal, _tx);
+            var evalVis = new ExpressionEvaluatorVisitor(_journal, _tx, parameters);
             var res = evalVis.Visit(expr);
             return new RecordSet(res.Build().Rowids, _tx, _journal.MetadataCore);
         }

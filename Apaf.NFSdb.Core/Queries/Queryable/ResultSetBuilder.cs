@@ -210,22 +210,22 @@ namespace Apaf.NFSdb.Core.Queries.Queryable
             switch (column.FieldType)
             {
                 case EFieldType.Byte:
-                    planItem.AddContainsScan(column, (byte)literal);
+                    planItem.AddContainsScan(column, Convert.ToByte(literal));
                     break;
                 case EFieldType.Bool:
                     planItem.AddContainsScan(column, (bool)literal);
                     break;
                 case EFieldType.Int16:
-                    planItem.AddContainsScan(column, (Int16)literal);
+                    planItem.AddContainsScan(column, Convert.ToInt16(literal));
                     break;
                 case EFieldType.Int32:
-                    planItem.AddContainsScan(column, (int)literal);
+                    planItem.AddContainsScan(column, Convert.ToInt32(literal));
                     break;
                 case EFieldType.Int64:
-                    planItem.AddContainsScan(column, (long)literal);
+                    planItem.AddContainsScan(column, Convert.ToInt64(literal));
                     break;
                 case EFieldType.Double:
-                    planItem.AddContainsScan(column, (double)literal);
+                    planItem.AddContainsScan(column, Convert.ToDouble(literal));
                     break;
                 case EFieldType.Symbol:
                 case EFieldType.String:
