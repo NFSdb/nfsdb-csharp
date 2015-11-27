@@ -27,6 +27,39 @@ namespace Apaf.NFSdb.Tests.Ql
             return ExecuteQuery("SELECT FROM Quote WHERE Sym = @s", new QlParameter("s", value));
         }
 
+        [TestCase("Symbol_0", 260, ExpectedResult = "280,260")]
+        [TestCase("Symbol_14", 225, ExpectedResult = "294,274,254,234")]
+        public string Equal_symbol_filter_as_param_with_timestamp_restriction(string value, long fromTimestamp)
+        {
+            return ExecuteQuery("SELECT FROM Quote WHERE Sym = @s and Timestamp >= @fromTimestamp",
+                new QlParameter("s", value), new QlParameter("fromTimestamp", fromTimestamp));
+        }
+
+        [TestCase("Symbol_0,Symbol_14", 260, ExpectedResult = "294,280,274,260")]
+        public string In_symbol_filter_as_param_with_timestamp_restriction(string values, long fromTimestamp)
+        {
+            return ExecuteQuery("SELECT FROM Quote WHERE Sym in @vals and Timestamp >= @fromTimestamp",
+                new QlParameter("vals", values.Split(new[] {','})),
+                new QlParameter("fromTimestamp", fromTimestamp));
+        }
+
+        [TestCase("Symbol_0,Symbol_14", 260, ExpectedResult = "294,280,274,260")]
+        public string In_symbol_filter_as_param_with_timestamp_restriction_with_brackets(string values, long fromTimestamp)
+        {
+            return ExecuteQuery("SELECT FROM Quote WHERE Sym in ( @val1, @val2 ) and Timestamp >= @fromTimestamp",
+                new QlParameter("val1", values.Split(new[] { ',' })[0]),
+                new QlParameter("val2", values.Split(new[] { ',' })[1]),
+                new QlParameter("fromTimestamp", fromTimestamp));
+        }
+
+        [TestCase("Symbol_0", "Symbol_14", 260, ExpectedResult = "294,280,274,260")]
+        public string In_symbol_filter(string value1, string value2, long fromTimestamp)
+        {
+            return ExecuteQuery(
+                string.Format("SELECT FROM Quote WHERE Sym in ('{0}', '{1}') and Timestamp >= @fromTimestamp", value1, value2),
+                new QlParameter("fromTimestamp", fromTimestamp));
+        }
+
         private string ExecuteQuery(string query, params QlParameter[] parameters)
         {
             return ExecuteQuery(query,

@@ -5,9 +5,9 @@ namespace Apaf.NFSdb.Core.Ql.Gramma
 {
     public static class TokenExtension 
     {
-        public static QlToken ToQlToken(this IToken token)
+        public static QlToken ToQlToken(this ParserRuleContext context)
         {
-            return new QlToken(token.Text, token.Line, token.StartIndex);
+            return new QlToken(context.GetText(), context.Start.Line, context.Start.StartIndex);
         }
     }
 }

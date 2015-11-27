@@ -26,16 +26,16 @@ namespace Apaf.NFSdb.Core.Queries.Queryable.Expressions
     public class SymbolContainsExpression : QlExpression
     {
         private readonly Expression _match;
-        private readonly IEnumerable _values;
+        private readonly Expression _values;
 
-        public SymbolContainsExpression(Expression match, IEnumerable values)
+        public SymbolContainsExpression(Expression match, Expression values)
             : base(QlToken.QUERIABLE_TOKEN)
         {
             _match = match;
             _values = values;
         }
 
-        public SymbolContainsExpression(Expression match, IEnumerable values, QlToken token)
+        public SymbolContainsExpression(Expression match, Expression values, QlToken token)
             : base(token)
         {
             _match = match;
@@ -57,15 +57,23 @@ namespace Apaf.NFSdb.Core.Queries.Queryable.Expressions
             get { return _match; }
         }
 
-        public IEnumerable Values
+        public Expression Values
         {
             get { return _values; }
         }
 
         public override string ToString()
         {
-            return string.Format("{0} IN ({1})", Match,
-                string.Join(", ", Values.Cast<object>().Select(v => v.ToString())));
+            var constt = Values as ConstantExpression;
+            if (constt != null)
+            {
+                var enumm = constt.Value as IEnumerable;
+                if (enumm != null)
+                {
+                    return string.Format("{0} IN ({1})", Match, string.Join(", ", enumm.Cast<object>().Select(o => o.ToString())));
+                }
+            }
+            return string.Format("{0} IN ({1})", Match, Values);
         }
     }
 }

@@ -43,6 +43,7 @@ namespace Apaf.NFSdb.Core.Queries.Queryable.Expressions
         Column = 50020,
         Comparison = 50021,
         Parameter = 50022,
-        Literal = 50023
+        Literal = 50023,
+        ValueList = 50024
     }
 }

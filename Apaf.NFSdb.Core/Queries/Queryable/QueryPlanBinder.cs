@@ -219,7 +219,7 @@ namespace Apaf.NFSdb.Core.Queries.Queryable
                 if (stringEnum != null)
                 {
                     match = Visit(match);
-                    return new SymbolContainsExpression(match, stringEnum);
+                    return new SymbolContainsExpression(match, Expression.Constant(stringEnum));
                 }
             }
 

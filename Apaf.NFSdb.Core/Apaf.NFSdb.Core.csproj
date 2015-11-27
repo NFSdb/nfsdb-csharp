@@ -177,6 +177,7 @@
     <Compile Include="Queries\Queryable\Expressions\LiteralExpression.cs" />
     <Compile Include="Queries\Queryable\Expressions\ParameterNameExpression.cs" />
     <Compile Include="Queries\Queryable\Expressions\QlExpression.cs" />
+    <Compile Include="Queries\Queryable\Expressions\ValueListExpression.cs" />
     <Compile Include="Queries\Queryable\QlParameter.cs" />
     <Compile Include="Queries\Queryable\QlToken.cs" />
     <Compile Include="Queries\Queryable\QueryExceptionExtensions.cs" />

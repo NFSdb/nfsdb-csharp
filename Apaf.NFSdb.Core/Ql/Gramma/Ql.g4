@@ -7,7 +7,7 @@ parse
 error
  : UNEXPECTED_CHAR 
    { 
-     throw new Apaf.NFSdb.Core.Exceptions.NFSdbSyntaxException("UNEXPECTED_CHAR=" + $UNEXPECTED_CHAR.text); 
+     throw new Apaf.NFSdb.Core.Ql.Gramma.NFSdbSyntaxException("UNEXPECTED_CHAR=" + $UNEXPECTED_CHAR.text); 
    }
  ;
 
@@ -50,6 +50,7 @@ expr
  | expr op=K_AND expr                                            #LogicalAndExpr
  | expr op=K_OR expr                                             #LogicalOrExpr
  | '(' expr ')'                                               #ParensExpr
+ | expr op=K_IN BIND_PARAMETER                                #InParamExpr
  | expr op=K_IN ( '(' expr ( ',' expr )*                
                       ')')                                    #InListExpr
  ;

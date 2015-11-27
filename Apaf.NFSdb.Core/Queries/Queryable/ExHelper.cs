@@ -39,9 +39,27 @@ namespace Apaf.NFSdb.Core.Queries.Queryable
                 return GetMemberName(memEx, journalType);
             }
 
-            if (member is ColumnNameExpression)
+            var match = member as ColumnNameExpression;
+            if (match != null)
             {
-                return ((ColumnNameExpression)member).Name;
+                return match.Name;
+            }
+            throw QueryExceptionExtensions.ExpressionNotSupported("Cannot extract column name from expression ", expression);
+        }
+
+        public static string GetMemberName(SymbolContainsExpression expression, Type journalType)
+        {
+            var ex = expression.Match as MemberExpression;
+            if (ex != null)
+            {
+                var memEx = ex;
+                return GetMemberName(memEx, journalType);
+            }
+
+            var match = expression.Match as ColumnNameExpression;
+            if (match != null)
+            {
+                return match.Name;
             }
             throw QueryExceptionExtensions.ExpressionNotSupported("Cannot extract column name from expression ", expression);
         }
@@ -58,23 +76,34 @@ namespace Apaf.NFSdb.Core.Queries.Queryable
             return memEx.Member.Name;
         }
 
-        public static object GetLiteralValue(Expression expression, IList<QlParameter> parameters)
+        public static object GetLiteralValue(Expression parentExpression, IList<QlParameter> parameters)
         {
-            Expression left = expression.GetLeft();
-            var member = left.NodeType == ExpressionType.Constant 
+            Expression left = parentExpression.GetLeft();
+            var literal = left.NodeType == ExpressionType.Constant 
                 || left.NodeType == (ExpressionType) EJournalExpressionType.Literal
                 || left.NodeType == (ExpressionType)EJournalExpressionType.Parameter
                 ? left
-                : expression.GetRight();
+                : parentExpression.GetRight();
 
             
-            if (member is LiteralExpression)
+            return GetLiteralValue(literal, parameters, parentExpression);
+        }
+
+        public static object GetLiteralValue(Expression literalExpression, IEnumerable<QlParameter> parameters, Expression parentExpression)
+        {
+            var valExp = literalExpression as ValueListExpression;
+            if (valExp != null)
             {
-                member = ((LiteralExpression) member).Constant;
+                return valExp.Values.Select(v => GetLiteralValue(v, parameters, parentExpression)).ToList();
+            }
+
+            if (literalExpression is LiteralExpression)
+            {
+                literalExpression = ((LiteralExpression) literalExpression).Constant;
             }
             else
             {
-                var exp = member as ParameterNameExpression;
+                var exp = literalExpression as ParameterNameExpression;
                 if (exp != null)
                 {
                     var paramExp = exp;
@@ -84,19 +113,21 @@ namespace Apaf.NFSdb.Core.Queries.Queryable
                             parameters.FirstOrDefault(
                                 pp => string.Equals(pp.Name, paramExp.Name, StringComparison.OrdinalIgnoreCase))) == null)
                     {
-                        throw QueryExceptionExtensions.ExpressionNotSupported("Unable to evaluate <{0}>. Parameter value not passed.", expression);
+                        throw QueryExceptionExtensions.ExpressionNotSupported(
+                            "Unable to evaluate <{0}>. Parameter value not passed.", parentExpression);
                     }
                     return p.Value;
                 }
             }
 
-            if (!(member is ConstantExpression))
+            if (!(literalExpression is ConstantExpression))
             {
-                throw QueryExceptionExtensions.ExpressionNotSupported("Unable to evaluate <{0}>. Expressions of type column = " +
-                                                                 "'literal' are supported only.", expression);
+                throw QueryExceptionExtensions.ExpressionNotSupported(
+                    "Unable to evaluate <{0}>. Expressions of type column = " +
+                    "'literal' are supported only.", parentExpression);
             }
 
-            var memEx = (ConstantExpression)member;
+            var memEx = (ConstantExpression) literalExpression;
             return memEx.Value;
         }
     }

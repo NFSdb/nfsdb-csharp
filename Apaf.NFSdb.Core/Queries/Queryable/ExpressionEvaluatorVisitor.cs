@@ -16,6 +16,7 @@
  */
 #endregion
 using System;
+using System.Collections;
 using System.Linq;
 using System.Linq.Expressions;
 using Apaf.NFSdb.Core.Column;
@@ -209,18 +210,27 @@ namespace Apaf.NFSdb.Core.Queries.Queryable
 
         private ResultSetBuilder VisitContains(SymbolContainsExpression exp)
         {
-            if (exp.Match.NodeType == ExpressionType.MemberAccess)
+            var memberName = ExHelper.GetMemberName(exp, _itemType);
+            var result = new ResultSetBuilder(_journal, _tx);
+            var vals = ExHelper.GetLiteralValue(exp.Values, _parameters, exp);
+            if (!(vals is IEnumerable))
             {
-                var memberName = ExHelper.GetMemberName((MemberExpression)exp.Match, _itemType);
-                var result = new ResultSetBuilder(_journal, _tx);
-                result.IndexCollectionScan(memberName, exp.Values, exp);
-
-                return result;
+                throw QueryExceptionExtensions.ExpressionNotSupported(
+                    string.Format("Parameter {0} does not implement IEnumerable.", exp.Values), exp);
             }
-            throw QueryExceptionExtensions.ExpressionNotSupported(
-                "Contains can only be bound for expression like List<string>.Contains(symbol_column))." +
-                " Unable to bind {0}",
-                exp);
+
+            try
+            {
+                result.IndexCollectionScan(memberName, (IEnumerable)vals, exp);
+            }
+            catch (InvalidCastException ex)
+            {
+                throw QueryExceptionExtensions.ExpressionNotSupported(
+                    string.Format("Parameter {0} value of type '{1}' cannot be used in " +
+                                  "IN statement with column '{2}'. {3}", exp.Values, vals.GetType(), memberName, ex.Message), exp);
+            }
+
+            return result;
         }
 
         private ResultSetBuilder VisitBinary(Expression expression)
