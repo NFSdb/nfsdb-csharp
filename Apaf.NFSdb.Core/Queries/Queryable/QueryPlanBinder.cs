@@ -126,10 +126,10 @@ namespace Apaf.NFSdb.Core.Queries.Queryable
                         return new PostResultExpression(Visit(m.Arguments[0]), EJournalExpressionType.LongCount);
 
                     case "Take":
-                        return new SliceExpression(Visit(m.Arguments[0]), EJournalExpressionType.Take, GetConstant<int>(m.Arguments[1]));
+                        return new SliceExpression(Visit(m.Arguments[0]), EJournalExpressionType.Take, m.Arguments[1]);
 
                     case "Skip":
-                        return new SliceExpression(Visit(m.Arguments[0]), EJournalExpressionType.Skip, GetConstant<int>(m.Arguments[1]));
+                        return new SliceExpression(Visit(m.Arguments[0]), EJournalExpressionType.Skip, m.Arguments[1]);
 
                     case "Contains":
                         if (m.Arguments.Count == 2)

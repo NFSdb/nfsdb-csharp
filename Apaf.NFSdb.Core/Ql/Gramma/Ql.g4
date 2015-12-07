@@ -17,7 +17,7 @@ select_stmt
  ;
 
 select_core
- : K_SELECT ( K_LIMIT expr ( ( K_OFFSET | ',' ) expr )? )?
+ : K_SELECT ( K_TOP expr ( ( K_OFFSET | ',' ) expr )? )?
    ( K_FROM table_or_subquery )?
    ( K_WHERE where_expr )?
    ( K_GROUP K_BY expr ( ',' expr )* ( K_HAVING expr )? )?
@@ -144,7 +144,7 @@ keyword
  | K_JOIN
  | K_LEFT
  | K_LIKE
- | K_LIMIT
+ | K_TOP
  | K_LATEST
  | K_MATCH
  | K_NATURAL
@@ -264,7 +264,7 @@ K_ISNULL : I S N U L L;
 K_JOIN : J O I N;
 K_LEFT : L E F T;
 K_LIKE : L I K E;
-K_LIMIT : L I M I T;
+K_TOP : T O P;
 K_LATEST : L A T E S T;
 K_MATCH : M A T C H;
 K_NATURAL : N A T U R A L;

@@ -60,6 +60,17 @@ namespace Apaf.NFSdb.Tests.Ql
                 new QlParameter("fromTimestamp", fromTimestamp));
         }
 
+        [TestCase("Symbol_0", 0, 10, ExpectedResult = "280,260,240,220,200,180,160,140,120,100")]
+        [TestCase("Symbol_0", 10, 10, ExpectedResult = "80,60,40,20,0")]
+        [TestCase("Symbol_0", 1, 1, ExpectedResult = "260")]
+        public string Skip_take(string value1, int skip, int take)
+        {
+            return ExecuteQuery(string.Format("SELECT ToP @top OFFSET @skip FROM Quote WHERE Sym ='{0}'", value1),
+                new QlParameter("top", take),
+                new QlParameter("skip", skip)
+                );
+        }
+
         private string ExecuteQuery(string query, params QlParameter[] parameters)
         {
             return ExecuteQuery(query,

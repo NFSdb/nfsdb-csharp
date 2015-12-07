@@ -1,12 +1,18 @@
-﻿using System.Linq;
+﻿using System;
+using System.Linq;
 using System.Linq.Expressions;
 using Antlr4.Runtime;
+using Antlr4.Runtime.Tree;
+using Apaf.NFSdb.Core.Queries.Queryable;
 using Apaf.NFSdb.Core.Queries.Queryable.Expressions;
 
 namespace Apaf.NFSdb.Core.Ql.Gramma
 {
     public class QlVisitor : QlBaseVisitor<QlExpression>
     {
+        private const string KEYWORD_TOP = "TOP";
+        private const string KEYWORD_SKIP = "OFFSET";
+
         public override QlExpression VisitSelect_stmt(QlParser.Select_stmtContext context)
         {
             return Visit(context.GetChild(0));
@@ -14,9 +20,48 @@ namespace Apaf.NFSdb.Core.Ql.Gramma
 
         public override QlExpression VisitSelect_core(QlParser.Select_coreContext context)
         {
+            QlExpression take = null;
+            QlToken takeToken = null;
+            QlExpression skip = null;
+            QlToken skipToken = null;
+            for (int i = 0; i < context.ChildCount; i++)
+            {
+                var child = context.GetChild(i);
+                var terminal = child as TerminalNodeImpl;
+                if (terminal != null)
+                {
+                    if (string.Equals(terminal.GetText(), KEYWORD_TOP, StringComparison.OrdinalIgnoreCase))
+                    {
+                        if (i < context.ChildCount - 1)
+                        {
+                            takeToken = context.ToQlToken();
+                            take = Visit(context.GetChild(++i));
+                        }
+                    }
+                    if (string.Equals(terminal.GetText(), KEYWORD_SKIP, StringComparison.OrdinalIgnoreCase))
+                    {
+                        if (i < context.ChildCount - 1)
+                        {
+                            skipToken = context.ToQlToken();
+                            skip = Visit(context.GetChild(++i));
+                        }
+                    }
+                }
+            }
+
             var expFrom = context.GetRuleContext<QlParser.Table_or_subqueryContext>(0);
             var expWhere = context.GetRuleContext<QlParser.Where_exprContext>(0);
-            return new FilterExpression(Visit(expWhere), Visit(expFrom), context.ToQlToken());
+            var filter = new FilterExpression(Visit(expWhere), Visit(expFrom), context.ToQlToken());
+            QlExpression result = filter;
+            if (skip != null)
+            {
+                result = new SliceExpression(result, EJournalExpressionType.Skip, skip, skipToken);
+            }
+            if (take != null)
+            {
+                result = new SliceExpression(result, EJournalExpressionType.Take, take, takeToken);
+            }
+            return result;
         }
 
         public override QlExpression VisitTable_or_subquery(QlParser.Table_or_subqueryContext context)

@@ -4,9 +4,16 @@ namespace Apaf.NFSdb.Core.Queries.Queryable.Expressions
 {
     public class SliceExpression : PostResultExpression
     {
-        public int Count { get; private set; }
+        public Expression Count { get; private set; }
 
-        public SliceExpression(Expression body, EJournalExpressionType operation, int count) : base(body, operation)
+        public SliceExpression(Expression body, EJournalExpressionType operation, Expression count) 
+            : base(body, operation)
+        {
+            Count = count;
+        }
+
+        public SliceExpression(Expression body, EJournalExpressionType operation, Expression count, QlToken token)
+            : base(body, operation, token)
         {
             Count = count;
         }

@@ -124,7 +124,7 @@ namespace Apaf.NFSdb.Core.Queries.Queryable
                 case EJournalExpressionType.Filter:
                     return VisitFilter((FilterExpression) exp);
                 case EJournalExpressionType.Journal:
-                    return new ResultSetBuilder(_journal, _tx);;
+                    return new ResultSetBuilder(_journal, _tx);
                 default:
                     throw QueryExceptionExtensions.ExpressionNotSupported(
                         "Expression {0} cannot be bound to Journal operation.", exp);
@@ -190,7 +190,7 @@ namespace Apaf.NFSdb.Core.Queries.Queryable
         private ResultSetBuilder VisitCall(SliceExpression m)
         {
             var result = Visit(m.Body);
-            result.ApplyLinq(m.Operation, m.Count);
+            result.ApplyLinq(m.Operation, Convert.ToInt32(ExHelper.GetLiteralValue(m.Count, _parameters, m)));
             return result;
         }
 
