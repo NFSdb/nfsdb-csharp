@@ -71,16 +71,31 @@ namespace Apaf.NFSdb.Tests.Ql
                 );
         }
 
-        [TestCase("Timestamp", true, 0, 3, ExpectedResult = "0,20,40")]
-        [TestCase("Timestamp", false, 0, 4, ExpectedResult = "280,260,240,220")]
-        [TestCase("BidSize", true, 0, 4, ExpectedResult = "280,260,240,220")]
-        [TestCase("BidSize", false, 10, 4, ExpectedResult = "20,40,60,80")]
-        public string Order_by(string column, bool ascending, int skip, int take)
+        [TestCase("Timestamp", "asc", 0, 3, ExpectedResult = "0,20,40")]
+        [TestCase("Timestamp", "desc", 0, 4, ExpectedResult = "280,260,240,220")]
+        [TestCase("BidSize", "", 0, 4, ExpectedResult = "280,260,240,220")]
+        [TestCase("BidSize", "desc", 10, 4, ExpectedResult = "200,220,240,260")]
+        public string Order_by(string column, string direction, int skip, int take)
         {
             return
                 ExecuteQuery(
                     string.Format("SELECT ToP @top OFFSET @skip FROM Quote WHERE Sym ='Symbol_0' Order by {0} {1}",
-                        column, ascending ? "" : "desc"),
+                        column, direction),
+                    new QlParameter("top", take),
+                    new QlParameter("skip", skip)
+                    );
+        }
+
+        [TestCase("Timestamp", "asc", 0, 3, ExpectedResult = "280,281,282")]
+        [TestCase("Timestamp", "desc", 0, 4, ExpectedResult = "299,298,297,296")]
+        [TestCase("BidSize", "", 0, 4, ExpectedResult = "299,298,297,296")]
+        [TestCase("BidSize", "desc", 0, 4, ExpectedResult = "280,281,282,283")]
+        public string Latest_by_sym(string column, string direction, int skip, int take)
+        {
+            return
+                ExecuteQuery(
+                    string.Format("SELECT ToP @top OFFSET @skip FROM Quote Latest By Sym Order by {0} {1}",
+                        column, direction),
                     new QlParameter("top", take),
                     new QlParameter("skip", skip)
                     );

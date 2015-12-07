@@ -71,10 +71,13 @@ namespace Apaf.NFSdb.Core.Ql.Gramma
                 }
             }
 
-            var expFrom = context.GetRuleContext<QlParser.Table_or_subqueryContext>(0);
+            var result = Visit(context.GetRuleContext<QlParser.Table_or_subqueryContext>(0));
+
             var expWhere = context.GetRuleContext<QlParser.Where_exprContext>(0);
-            var filter = new FilterExpression(Visit(expWhere), Visit(expFrom), context.ToQlToken());
-            QlExpression result = filter;
+            if (expWhere != null)
+            {
+                result = new FilterExpression(Visit(expWhere), result, context.ToQlToken());
+            }
             if (skip != null)
             {
                 result = new SliceExpression(result, EJournalExpressionType.Skip, skip, skipToken);
@@ -236,13 +239,29 @@ namespace Apaf.NFSdb.Core.Ql.Gramma
 
         private QlExpression VisitOrderBy(QlExpression result, QlParser.Ordering_termContext orderByExpr)
         {
-            var column = orderByExpr.GetChild<QlParser.ExprContext>(0);
+            var column = Visit(orderByExpr.GetChild<QlParser.ExprContext>(0));
             var direction = orderByExpr.GetChild<TerminalNodeImpl>(0);
-            if (direction != null && string.Equals(direction.GetText(), KEYWORD_DESC, StringComparison.OrdinalIgnoreCase))
+            var expr = EJournalExpressionType.OrderBy;
+
+            if (direction != null &&
+                string.Equals(direction.GetText(), KEYWORD_DESC, StringComparison.OrdinalIgnoreCase))
             {
-                return new OrderExpression(result, EJournalExpressionType.OrderByDescending, Visit(column), orderByExpr.ToQlToken());
+                expr = EJournalExpressionType.OrderByDescending;
             }
-            return new OrderExpression(result, EJournalExpressionType.OrderBy, Visit(column), orderByExpr.ToQlToken());
+
+            // Take and skip should be applied after Order By
+            return PushOrderByIn(result, expr, column, orderByExpr.ToQlToken());
+        }
+
+        private QlExpression PushOrderByIn(Expression result, EJournalExpressionType expr, QlExpression column,
+            QlToken toQlToken)
+        {
+            var take = result as SliceExpression;
+            if (take == null)
+            {
+                return new OrderExpression(result, expr, column, toQlToken);
+            }
+            return new SliceExpression(PushOrderByIn(take.Body, expr, column, toQlToken), take.Operation, take.Count);
         }
     }
 }
