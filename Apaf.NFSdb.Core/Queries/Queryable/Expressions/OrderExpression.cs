@@ -22,11 +22,17 @@ namespace Apaf.NFSdb.Core.Queries.Queryable.Expressions
 {
     public class OrderExpression : PostResultExpression
     {
-        private readonly LambdaExpression _predicate;
+        private readonly Expression _predicate;
 
         public OrderExpression(Expression body, EJournalExpressionType operation)
             : base(body, operation)
         {
+        }
+
+        public OrderExpression(Expression body, EJournalExpressionType operation, Expression predicate, QlToken token)
+            : base(body, operation, token)
+        {
+            _predicate = predicate;
         }
 
         public OrderExpression(Expression body, EJournalExpressionType operation, LambdaExpression predicate)
@@ -35,9 +41,15 @@ namespace Apaf.NFSdb.Core.Queries.Queryable.Expressions
             _predicate = predicate;
         }
 
-        public LambdaExpression Predicate
+        public Expression Predicate
         {
             get { return _predicate; }
+        }
+
+        public override string ToString()
+        {
+            return string.Format("{0} ORDER BY {1}{2}", Body, _predicate,
+                Operation == EJournalExpressionType.OrderBy ? "" : " DESC");
         }
     }
 }

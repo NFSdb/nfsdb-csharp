@@ -71,6 +71,21 @@ namespace Apaf.NFSdb.Tests.Ql
                 );
         }
 
+        [TestCase("Timestamp", true, 0, 3, ExpectedResult = "0,20,40")]
+        [TestCase("Timestamp", false, 0, 4, ExpectedResult = "280,260,240,220")]
+        [TestCase("BidSize", true, 0, 4, ExpectedResult = "280,260,240,220")]
+        [TestCase("BidSize", false, 10, 4, ExpectedResult = "20,40,60,80")]
+        public string Order_by(string column, bool ascending, int skip, int take)
+        {
+            return
+                ExecuteQuery(
+                    string.Format("SELECT ToP @top OFFSET @skip FROM Quote WHERE Sym ='Symbol_0' Order by {0} {1}",
+                        column, ascending ? "" : "desc"),
+                    new QlParameter("top", take),
+                    new QlParameter("skip", skip)
+                    );
+        }
+
         private string ExecuteQuery(string query, params QlParameter[] parameters)
         {
             return ExecuteQuery(query,
@@ -116,6 +131,7 @@ namespace Apaf.NFSdb.Tests.Ql
                         Ex = "Ex_" + i % 20,
                         Sym = "Symbol_" + i % 20,
                         Bid = i % 5,
+                        BidSize = -i,
                         Timestamp = startDate + i * increment
                     });
                 }

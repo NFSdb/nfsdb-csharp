@@ -13,7 +13,7 @@ error
 
 select_stmt
  : select_core ( compound_operator select_core )*
-   ( K_ORDER K_BY ordering_term ( ',' ordering_term )* )?
+   ( K_ORDER K_BY ordering_term /*( ',' ordering_term )* */ )?
  ;
 
 select_core

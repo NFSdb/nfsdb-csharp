@@ -19,6 +19,9 @@ namespace Apaf.NFSdb.Tests.Ql
         [TestCase("SELECT FROM Journal Where Timestamp IN ('1a', '2b')", Result = "From Journal Where Timestamp IN (1a, 2b)")]
         [TestCase("SELECT FROM Journal Latest By Id Where Timestamp = 1", Result = "From Journal Latest By Id Where (Timestamp Equal 1)")]
         [TestCase("SELECT FROM Journal Where Id =  @id", Result = "From Journal Where (Id Equal @id)")]
+        [TestCase("SELECT FROM Journal Where Id =  @id Order by Timestamp", Result = "From Journal Where (Id Equal @id) ORDER BY Timestamp")]
+        [TestCase("SELECT FROM Journal Where Id =  @id Order by Timestamp asc", Result = "From Journal Where (Id Equal @id) ORDER BY Timestamp")]
+        [TestCase("SELECT FROM Journal Where Id =  @id Order by Timestamp desc", Result = "From Journal Where (Id Equal @id) ORDER BY Timestamp DESC")]
         public string Should_parse(string query)
         {
             var input = new AntlrInputStream(query);

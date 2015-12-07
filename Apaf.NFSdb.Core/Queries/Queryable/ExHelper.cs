@@ -47,21 +47,21 @@ namespace Apaf.NFSdb.Core.Queries.Queryable
             throw QueryExceptionExtensions.ExpressionNotSupported("Cannot extract column name from expression ", expression);
         }
 
-        public static string GetMemberName(SymbolContainsExpression expression, Type journalType)
+        public static string GetMemberName(Expression expression, Type journalType, Expression parentExpression)
         {
-            var ex = expression.Match as MemberExpression;
+            var ex = expression as MemberExpression;
             if (ex != null)
             {
                 var memEx = ex;
                 return GetMemberName(memEx, journalType);
             }
 
-            var match = expression.Match as ColumnNameExpression;
+            var match = expression as ColumnNameExpression;
             if (match != null)
             {
                 return match.Name;
             }
-            throw QueryExceptionExtensions.ExpressionNotSupported("Cannot extract column name from expression ", expression);
+            throw QueryExceptionExtensions.ExpressionNotSupported("Cannot extract column name from expression ", parentExpression);
         }
 
         public static string GetMemberName(MemberExpression memEx, Type journalType)

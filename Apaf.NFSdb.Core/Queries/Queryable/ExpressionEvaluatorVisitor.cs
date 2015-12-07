@@ -169,15 +169,17 @@ namespace Apaf.NFSdb.Core.Queries.Queryable
         private ResultSetBuilder VisitOrderBy(OrderExpression exp)
         {
             var result = Visit(exp.Body);
-            var ex = exp.Predicate.Body as MemberExpression;
-            if (ex != null)
+            var predicate = exp.Predicate;
+
+            var lambda = predicate as LambdaExpression;
+            if (lambda != null)
             {
-                var member = ExHelper.GetMemberName(ex, _itemType);
-                result.ApplyOrderBy(member, (EJournalExpressionType)exp.NodeType);
-                return result;
+                predicate = lambda.Body;
             }
-            throw QueryExceptionExtensions.ExpressionNotSupported(
-                string.Format("Order by is not supported on predicate {0}", exp.Predicate), exp);
+
+            var member = ExHelper.GetMemberName(predicate, _itemType, exp);
+            result.ApplyOrderBy(member, (EJournalExpressionType) exp.NodeType);
+            return result;
         }
 
         private ResultSetBuilder VisitCall(PostResultExpression m)
@@ -210,7 +212,7 @@ namespace Apaf.NFSdb.Core.Queries.Queryable
 
         private ResultSetBuilder VisitContains(SymbolContainsExpression exp)
         {
-            var memberName = ExHelper.GetMemberName(exp, _itemType);
+            var memberName = ExHelper.GetMemberName(exp.Match, _itemType, exp);
             var result = new ResultSetBuilder(_journal, _tx);
             var vals = ExHelper.GetLiteralValue(exp.Values, _parameters, exp);
             if (!(vals is IEnumerable))

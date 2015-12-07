@@ -12,10 +12,32 @@ namespace Apaf.NFSdb.Core.Ql.Gramma
     {
         private const string KEYWORD_TOP = "TOP";
         private const string KEYWORD_SKIP = "OFFSET";
+        private const string KEYWORD_ORDER_BY = "ORDER";
+        private const string KEYWORD_DESC = "DESC";
 
         public override QlExpression VisitSelect_stmt(QlParser.Select_stmtContext context)
         {
-            return Visit(context.GetChild(0));
+            QlExpression result = null;
+            int orderByIter = 0;
+            for (int i = 0; i < context.ChildCount; i++)
+            {
+                var child = context.GetChild(i);
+                var selectContext = child as QlParser.Select_coreContext;
+                if (selectContext != null)
+                {
+                    result = Visit(selectContext);
+                }
+                var terminal = child as TerminalNodeImpl;
+                if (terminal != null && terminal.GetText().StartsWith(KEYWORD_ORDER_BY, StringComparison.OrdinalIgnoreCase))
+                {
+                    if (i < context.ChildCount - 1)
+                    {
+                        var orderByExpr = context.GetChild<QlParser.Ordering_termContext>(orderByIter++);
+                        result = VisitOrderBy(result, orderByExpr);
+                    }
+                }
+            }
+            return result;
         }
 
         public override QlExpression VisitSelect_core(QlParser.Select_coreContext context)
@@ -210,6 +232,17 @@ namespace Apaf.NFSdb.Core.Ql.Gramma
         private Expression GetLeft(ParserRuleContext context)
         {
             return Visit(context.GetRuleContext<QlParser.ExprContext>(0));
+        }
+
+        private QlExpression VisitOrderBy(QlExpression result, QlParser.Ordering_termContext orderByExpr)
+        {
+            var column = orderByExpr.GetChild<QlParser.ExprContext>(0);
+            var direction = orderByExpr.GetChild<TerminalNodeImpl>(0);
+            if (direction != null && string.Equals(direction.GetText(), KEYWORD_DESC, StringComparison.OrdinalIgnoreCase))
+            {
+                return new OrderExpression(result, EJournalExpressionType.OrderByDescending, Visit(column), orderByExpr.ToQlToken());
+            }
+            return new OrderExpression(result, EJournalExpressionType.OrderBy, Visit(column), orderByExpr.ToQlToken());
         }
     }
 }
