@@ -17,28 +17,28 @@ namespace Apaf.NFSdb.Tests.Ql
         [TestCase("Symbol_14", ExpectedResult = "294,274,254,234,214,194,174,154,134,114,94,74,54,34,14")]
         public string Equal_symbol_filter(string value)
         {
-            return ExecuteQuery("SELECT FROM Quote WHERE Sym = '" + value + "'");
+            return ExecuteQuery("SELECT * FROM Quote WHERE Sym = '" + value + "'");
         }
 
         [TestCase("Symbol_0", ExpectedResult = "280,260,240,220,200,180,160,140,120,100,80,60,40,20,0")]
         [TestCase("Symbol_14", ExpectedResult = "294,274,254,234,214,194,174,154,134,114,94,74,54,34,14")]
         public string Equal_symbol_filter_as_param(string value)
         {
-            return ExecuteQuery("SELECT FROM Quote WHERE Sym = @s", new QlParameter("s", value));
+            return ExecuteQuery("SELECT * FROM Quote WHERE Sym = @s", new QlParameter("s", value));
         }
 
         [TestCase("Symbol_0", 260, ExpectedResult = "280,260")]
         [TestCase("Symbol_14", 225, ExpectedResult = "294,274,254,234")]
         public string Equal_symbol_filter_as_param_with_timestamp_restriction(string value, long fromTimestamp)
         {
-            return ExecuteQuery("SELECT FROM Quote WHERE Sym = @s and Timestamp >= @fromTimestamp",
+            return ExecuteQuery("SELECT * FROM Quote WHERE Sym = @s and Timestamp >= @fromTimestamp",
                 new QlParameter("s", value), new QlParameter("fromTimestamp", fromTimestamp));
         }
 
         [TestCase("Symbol_0,Symbol_14", 260, ExpectedResult = "294,280,274,260")]
         public string In_symbol_filter_as_param_with_timestamp_restriction(string values, long fromTimestamp)
         {
-            return ExecuteQuery("SELECT FROM Quote WHERE Sym in @vals and Timestamp >= @fromTimestamp",
+            return ExecuteQuery("SELECT * FROM Quote WHERE Sym in @vals and Timestamp >= @fromTimestamp",
                 new QlParameter("vals", values.Split(new[] {','})),
                 new QlParameter("fromTimestamp", fromTimestamp));
         }
@@ -46,7 +46,7 @@ namespace Apaf.NFSdb.Tests.Ql
         [TestCase("Symbol_0,Symbol_14", 260, ExpectedResult = "294,280,274,260")]
         public string In_symbol_filter_as_param_with_timestamp_restriction_with_brackets(string values, long fromTimestamp)
         {
-            return ExecuteQuery("SELECT FROM Quote WHERE Sym in ( @val1, @val2 ) and Timestamp >= @fromTimestamp",
+            return ExecuteQuery("SELECT * FROM Quote WHERE Sym in ( @val1, @val2 ) and Timestamp >= @fromTimestamp",
                 new QlParameter("val1", values.Split(new[] { ',' })[0]),
                 new QlParameter("val2", values.Split(new[] { ',' })[1]),
                 new QlParameter("fromTimestamp", fromTimestamp));
@@ -56,7 +56,7 @@ namespace Apaf.NFSdb.Tests.Ql
         public string In_symbol_filter(string value1, string value2, long fromTimestamp)
         {
             return ExecuteQuery(
-                string.Format("SELECT FROM Quote WHERE Sym in ('{0}', '{1}') and Timestamp >= @fromTimestamp", value1, value2),
+                string.Format("SELECT * FROM Quote WHERE Sym in ('{0}', '{1}') and Timestamp >= @fromTimestamp", value1, value2),
                 new QlParameter("fromTimestamp", fromTimestamp));
         }
 
@@ -65,7 +65,7 @@ namespace Apaf.NFSdb.Tests.Ql
         [TestCase("Symbol_0", 1, 1, ExpectedResult = "260")]
         public string Skip_take(string value1, int skip, int take)
         {
-            return ExecuteQuery(string.Format("SELECT ToP @top OFFSET @skip FROM Quote WHERE Sym ='{0}'", value1),
+            return ExecuteQuery(string.Format("SELECT ToP @top OFFSET @skip * FROM Quote WHERE Sym ='{0}'", value1),
                 new QlParameter("top", take),
                 new QlParameter("skip", skip)
                 );
@@ -79,7 +79,7 @@ namespace Apaf.NFSdb.Tests.Ql
         {
             return
                 ExecuteQuery(
-                    string.Format("SELECT ToP @top OFFSET @skip FROM Quote WHERE Sym ='Symbol_0' Order by {0} {1}",
+                    string.Format("SELECT ToP @top OFFSET @skip * FROM Quote WHERE Sym ='Symbol_0' Order by {0} {1}",
                         column, direction),
                     new QlParameter("top", take),
                     new QlParameter("skip", skip)
@@ -94,10 +94,41 @@ namespace Apaf.NFSdb.Tests.Ql
         {
             return
                 ExecuteQuery(
-                    string.Format("SELECT ToP @top OFFSET @skip FROM Quote Latest By Sym Order by {0} {1}",
+                    string.Format("SELECT ToP @top OFFSET @skip * FROM Quote Latest By Sym Order by {0} {1}",
                         column, direction),
                     new QlParameter("top", take),
                     new QlParameter("skip", skip)
+                    );
+        }
+
+        [TestCase("Timestamp", 4, ExpectedResult = "299,298,297,296")]
+        [TestCase("Abracadabra", 4, ExpectedException = typeof(NFSdbQueryableNotSupportedException),
+            ExpectedMessage = "line 1:16 Column [Abracadabra] does not exists in journal Apaf.NFSdb.TestModel.Model.Quote")]
+        public string SelectedLongColumns(string column, int take)
+        {
+            return SelectedColumns<long>(column, take);
+        }
+
+        [TestCase("Sym", 5, ExpectedResult = "Symbol_19,Symbol_18,Symbol_17,Symbol_16,Symbol_15")]
+        public string SelectedStringColumns(string column, int take)
+        {
+            return SelectedColumns<string>(column, take);
+        }
+
+        [TestCase("Bid", 6, ExpectedResult = "4,3,2,1,0,4")]
+        public string SelectedDoubleColumns(string column, int take)
+        {
+            return SelectedColumns<double>(column, take);
+        }
+
+        private string SelectedColumns<T>(string column, int take)
+        {
+            return
+                ExecuteQuery(
+                    string.Format("SELECT ToP @top {0} FROM Quote",
+                        column),
+                    r => string.Join(",", r.RecordIDs().Select(rowId => r.Get<T>(rowId, 0))),
+                    new QlParameter("top", take)
                     );
         }
 

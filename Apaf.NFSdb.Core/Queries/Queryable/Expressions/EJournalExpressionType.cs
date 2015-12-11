@@ -44,6 +44,7 @@ namespace Apaf.NFSdb.Core.Queries.Queryable.Expressions
         Comparison = 50021,
         Parameter = 50022,
         Literal = 50023,
-        ValueList = 50024
+        ValueList = 50024,
+        Map = 50025
     }
 }

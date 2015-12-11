@@ -94,6 +94,8 @@ namespace Apaf.NFSdb.Core.Configuration
             KeySymbol = config.Key != null ? GetPropertyName(config.Key) : null;
 
             PartitionTtl = TimeSpan.FromMilliseconds(config.OpenPartitionTtl);
+
+            Name = config.Class;
         }
 
         private int CalcFilesCount(IList<ColumnMetadata> columns)
@@ -124,6 +126,8 @@ namespace Apaf.NFSdb.Core.Configuration
             }
             return fileID;
         }
+
+        public string Name { get; private set; }
 
         public void InitializeSymbols(IColumnStorage symbolStorage)
         {

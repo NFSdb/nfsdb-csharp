@@ -57,6 +57,7 @@ namespace Apaf.NFSdb.Core.Queries.Queryable
         private readonly IReadTransactionContext _tx;
         private IPlanItem _planHead;
         private readonly List<DirectExpression> _directExpressions = new List<DirectExpression>();
+        private List<string> _columns;
 
         public ResultSetBuilder(IJournalCore journal, IReadTransactionContext tx)
         {
@@ -66,6 +67,11 @@ namespace Apaf.NFSdb.Core.Queries.Queryable
         }
 
         public IPlanItem PlanItem { get { return _planHead; }}
+
+        public IList<string> Columns
+        {
+            get { return _columns; }
+        }
 
         public QueryRowsResult Build()
         {
@@ -259,6 +265,21 @@ namespace Apaf.NFSdb.Core.Queries.Queryable
             }
 
             _directExpressions.Add(new DirectExpression(operation, count));
+        }
+
+        public void ApplyMap(List<ColumnNameExpression> columns)
+        {
+            _columns = new List<string>(columns.Count);
+            foreach (var columnExp in columns)
+            {
+                var col = _journal.MetadataCore.Columns.FirstOrDefault(c => string.Equals(c.PropertyName, columnExp.Name, StringComparison.OrdinalIgnoreCase));
+                if (col == null)
+                {
+                    throw QueryExceptionExtensions.ExpressionNotSupported(
+                        "Column [{0}] does not exists in journal " + _journal.MetadataCore.Name, columnExp);
+                }
+                _columns.Add(col.PropertyName);
+            }
         }
 
         public void ApplyOrderBy(string member, EJournalExpressionType expression)

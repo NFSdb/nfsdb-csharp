@@ -17,7 +17,7 @@ select_stmt
  ;
 
 select_core
- : K_SELECT ( K_TOP expr ( ( K_OFFSET | ',' ) expr )? )?
+ : K_SELECT ( K_TOP expr ( ( K_OFFSET | ',' ) expr )? )? result_column ( ',' result_column )*
    ( K_FROM table_or_subquery )?
    ( K_WHERE where_expr )?
    ( K_GROUP K_BY expr ( ',' expr )* ( K_HAVING expr )? )?
@@ -70,7 +70,13 @@ common_table_expression
 table_or_subquery
  : ( database_name '.' )? table_name ( K_LATEST K_BY column_name )? ( K_AS? table_alias )?      
  ;
-
+ 
+result_column
+ : '*'
+ | table_name '.' '*'
+ | expr ( K_AS? column_alias )?
+ ;
+ 
 compound_operator
  : K_UNION
  | K_UNION K_ALL

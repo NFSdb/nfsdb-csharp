@@ -112,7 +112,9 @@ namespace Apaf.NFSdb.Core.Queries.Queryable
                     return VisitOrderBy((OrderExpression) exp);
                 case EJournalExpressionType.Take:
                 case EJournalExpressionType.Skip:
-                    return VisitCall((SliceExpression) exp);
+                    return VisitCall((SliceExpression)exp);
+                case EJournalExpressionType.Map:
+                    return VisitCall((MapExpression)exp);
                 case EJournalExpressionType.LatestBy:
                     return VisitLatestBy((LatestBySymbolExpression)exp);
                 case EJournalExpressionType.Intersect:
@@ -193,6 +195,13 @@ namespace Apaf.NFSdb.Core.Queries.Queryable
         {
             var result = Visit(m.Body);
             result.ApplyLinq(m.Operation, Convert.ToInt32(ExHelper.GetLiteralValue(m.Count, _parameters, m)));
+            return result;
+        }
+
+        private ResultSetBuilder VisitCall(MapExpression m)
+        {
+            var result = Visit(m.Body);
+            result.ApplyMap(m.Columns);
             return result;
         }
 

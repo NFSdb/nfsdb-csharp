@@ -38,6 +38,8 @@ namespace Apaf.NFSdb.Core.Queries.Records
         {
             int partitionID = RowIDUtil.ToPartitionIndex(rowId);
             long localRowID = RowIDUtil.ToLocalRowID(rowId);
+            if (_columnMaps != null) columnIndex = _columnMaps[columnIndex];
+
             if (partitionID == _lastPartitionID)
             {
                 return ((ITypedColumn<T>)_lastPartitionReader.ReadColumn(columnIndex)).Get(localRowID, _tx.ReadCache);

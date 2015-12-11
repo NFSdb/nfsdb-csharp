@@ -30,6 +30,5 @@ namespace Apaf.NFSdb.Core.Queries.Queryable
         {
             get { return Rowids == null; }
         }
-
     }
 }

@@ -37,6 +37,7 @@ namespace Apaf.NFSdb.Core.Configuration
         ColumnMetadata GetColumnById(int columndID);
         ColumnMetadata GetColumnByPropertyName(string symbolName);
         int ColumnCount { get; }
+        string Name { get; }
 
         void InitializeSymbols(IColumnStorage symbolStorage);
         IEnumerable<ColumnSource> GetPartitionColums(IColumnStorage partitionStorage);

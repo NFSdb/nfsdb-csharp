@@ -175,6 +175,7 @@
     <Compile Include="Queries\ILatestBySymbolFilter.cs" />
     <Compile Include="Queries\Queryable\Expressions\ExpressionExtensions.cs" />
     <Compile Include="Queries\Queryable\Expressions\LiteralExpression.cs" />
+    <Compile Include="Queries\Queryable\Expressions\MapExpression.cs" />
     <Compile Include="Queries\Queryable\Expressions\ParameterNameExpression.cs" />
     <Compile Include="Queries\Queryable\Expressions\QlExpression.cs" />
     <Compile Include="Queries\Queryable\Expressions\ValueListExpression.cs" />

@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
 using Antlr4.Runtime;
@@ -46,6 +47,8 @@ namespace Apaf.NFSdb.Core.Ql.Gramma
             QlToken takeToken = null;
             QlExpression skip = null;
             QlToken skipToken = null;
+            List<ColumnNameExpression> columns = null;
+
             for (int i = 0; i < context.ChildCount; i++)
             {
                 var child = context.GetChild(i);
@@ -69,6 +72,16 @@ namespace Apaf.NFSdb.Core.Ql.Gramma
                         }
                     }
                 }
+                var col = child as QlParser.Result_columnContext;
+                if (col != null)
+                {
+                    var column = (ColumnNameExpression)Visit(col);
+                    if (column != null)
+                    {
+                        if (columns == null) columns = new List<ColumnNameExpression>();
+                        columns.Add(column);
+                    }
+                }
             }
 
             var result = Visit(context.GetRuleContext<QlParser.Table_or_subqueryContext>(0));
@@ -77,6 +90,12 @@ namespace Apaf.NFSdb.Core.Ql.Gramma
             if (expWhere != null)
             {
                 result = new FilterExpression(Visit(expWhere), result, context.ToQlToken());
+            }
+            if (columns != null)
+            {
+                result = new MapExpression(result, columns, 
+                    new QlToken(string.Join(",", columns.Select(c => c.ParseToken.Text)), 
+                        columns.Min(c => c.ParseToken.Line), columns.Min(c => c.ParseToken.Position)));
             }
             if (skip != null)
             {
@@ -161,11 +180,8 @@ namespace Apaf.NFSdb.Core.Ql.Gramma
                         context.ToQlToken());
                     return new SymbolContainsExpression(columnExpr, listExpr, context.ToQlToken());
                 }
-                else
-                {
-                    var values = litrals.Select(l => l.Constant.Value).ToList();
-                    return new SymbolContainsExpression(columnExpr, Expression.Constant(values), context.ToQlToken());
-                }
+                var values = litrals.Select(l => l.Constant.Value).ToList();
+                return new SymbolContainsExpression(columnExpr, Expression.Constant(values), context.ToQlToken());
             }
             throw new NFSdbSyntaxException(string.Format("invalid expression '{0}'", context.GetText()),
                 context.start.Line, context.start.StartIndex);
