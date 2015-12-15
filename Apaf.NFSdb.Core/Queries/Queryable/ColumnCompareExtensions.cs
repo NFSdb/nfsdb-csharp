@@ -27,7 +27,7 @@ namespace Apaf.NFSdb.Core.Queries.Queryable
                 case EFieldType.String:
                     return new ColumnValueComparer<string>(column.FieldID, tx, ascending);
                 case EFieldType.DateTime:
-                case EFieldType.DateTimeEpochMilliseconds:
+                case EFieldType.DateTimeEpochMs:
                     return new ColumnValueComparer<DateTime>(column.FieldID, tx, ascending);
                 case EFieldType.Binary:
                     return new BinaryColumnValueComparer(column.FieldID, tx, ascending);

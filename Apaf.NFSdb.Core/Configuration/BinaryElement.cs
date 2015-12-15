@@ -1,11 +1,9 @@
 ﻿using System.Runtime.Serialization;
-using System.Xml.Serialization;
 using Apaf.NFSdb.Core.Column;
 
 namespace Apaf.NFSdb.Core.Configuration
 {
-    [XmlRoot("binary")]
-    public class BinaryElement : ColumnElement
+    public class BinaryElement : VarLenColumnElement
     {
         public BinaryElement()
         {
@@ -17,11 +15,7 @@ namespace Apaf.NFSdb.Core.Configuration
         {
             AvgSize = MetadataConstants.DEFAULT_BINARY_AVG_SIZE;
             MaxSize = MetadataConstants.DEFAULT_BINARY_MAX_SIZE;
-        }
-
-        public override EFieldType ColumnType
-        {
-            get { return EFieldType.String; }
+            ColumnType = EFieldType.Binary;
         }
     }
 }

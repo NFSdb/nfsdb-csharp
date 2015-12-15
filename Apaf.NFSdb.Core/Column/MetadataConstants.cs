@@ -84,5 +84,6 @@ namespace Apaf.NFSdb.Core.Column
         public const int MIN_FILE_BIT_HINT = 16;
         // 128MB max
         public const int MAX_FILE_BIT_HINT = 27;
+        public const string JOURNAL_SETTINGS_FILE_NAME = "settings.xml";
     }
 }

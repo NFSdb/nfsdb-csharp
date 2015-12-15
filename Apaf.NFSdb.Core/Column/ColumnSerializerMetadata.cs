@@ -19,10 +19,11 @@
 #endregion
 using System;
 using System.Reflection;
+using Apaf.NFSdb.Core.Configuration;
 
 namespace Apaf.NFSdb.Core.Column
 {
-    public class ColumnSerializerMetadata : IColumnSerializerMetadata
+    public class ColumnSerializerMetadata : IPocoClassSerializerMetadata
     {
         public ColumnSerializerMetadata(EFieldType type, string propertyName, 
             string fieldName, bool nullable = false, int size = 0)
@@ -34,7 +35,7 @@ namespace Apaf.NFSdb.Core.Column
             FieldName = fieldName;
         }
 
-        public EFieldType DataType { get; private set; }
+        public EFieldType DataType { get; set; }
         public string PropertyName { get; private set; }
         public int Size { get; private set; }
         public bool Nulllable { get; private set; }

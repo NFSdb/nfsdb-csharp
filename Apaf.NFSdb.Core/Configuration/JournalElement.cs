@@ -40,10 +40,7 @@ namespace Apaf.NFSdb.Core.Configuration
             OpenPartitionTtl = MetadataConstants.DEFAULT_OPEN_PARTITION_TTL;
             LagHours = MetadataConstants.DEFAULT_LAG_HOURS;
             MaxOpenPartitions = MetadataConstants.DEFAULT_MAX_OPEN_PARTITIONS;
-            Strings = new List<StringElement>();
-            Symbols = new List<SymbolElement>();
-            Binaries = new List<BinaryElement>();
-            DateTimes = new List<DateTimeElement>();
+            Columns = new List<ColumnElement>();
             SerializerName = MetadataConstants.THRIFT_SERIALIZER_NAME;
             OpenPartitionTtl = MetadataConstants.DEFAULT_OPEN_PARTITION_TTL;
         }
@@ -75,25 +72,29 @@ namespace Apaf.NFSdb.Core.Configuration
         [XmlAttribute("key")]
         public string Key { get; set; }
 
-        [XmlElement("sym")]
-        public List<SymbolElement> Symbols { get; set; }
-
-        [XmlElement("string")]
-        public List<StringElement> Strings { get; set; }
-
-        [XmlElement("datetime")]
-        public List<DateTimeElement> DateTimes { get; set; }
-
-        [XmlElement("binary")]
-        public List<BinaryElement> Binaries { get; set; }
+        [XmlElement("col")]
+        [XmlElement("string", typeof(StringElement))]
+        [XmlElement("sym", typeof(SymbolElement))]
+        [XmlElement("binary", typeof(BinaryElement))]
+        public List<ColumnElement> Columns { get; set; }
 
         [XmlElement("serializerName")]
         public string SerializerName { get; set; }
 
+        public bool ShouldSerilizeSerializerName()
+        {
+            return !string.IsNullOrEmpty(SerializerName);
+        }
+        
         [XmlIgnore]
         public ISerializerFactory SerializerInstace { get; set; }
 
         [XmlElement("fileFlags")]
         public EFileFlags FileFlags { get; set; }
+
+        public bool ShouldSerializeFileFlags()
+        {
+            return FileFlags != EFileFlags.None;
+        }
     }
 }

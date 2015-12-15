@@ -17,11 +17,30 @@
 #endregion
 
 using System;
+using System.Collections.Generic;
+using Apaf.NFSdb.Core.Column;
+using Apaf.NFSdb.Core.Storage;
 
 namespace Apaf.NFSdb.Core.Configuration
 {
-    public interface IJournalMetadata<T> : IJournalMetadataCore
+    public interface IJournalMetadata
     {
-        Func<T, DateTime> GetTimestampReader();
+        IFieldSerializer GetSerializer(IEnumerable<ColumnSource> columns);
+        JournalSettings Settings { get; }
+        int? TimestampFieldID { get; }
+        int GetColumnID(string filename);
+        int FileCount { get; }
+        TimeSpan PartitionTtl { get; }
+
+        IEnumerable<ColumnMetadata> Columns { get; }
+        ColumnMetadata GetColumnById(int columndID);
+        ColumnMetadata GetColumnByPropertyName(string symbolName);
+        int ColumnCount { get; }
+        string Name { get; }
+
+        void InitializeSymbols(IColumnStorage symbolStorage);
+        IEnumerable<ColumnSource> GetPartitionColums(IColumnStorage partitionStorage);
+
+        Func<T, DateTime> GetTimestampReader<T>();
     }
 }

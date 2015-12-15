@@ -88,7 +88,8 @@ namespace Apaf.NFSdb.Tests.Core
             using (var tempDir = new DisposableTempDir())
             {
                 var meta = CreateMetadata<Quote>(configValue, tempDir.DirName);
-                CreatePartitionManager(meta, partitionString);
+                var pm = CreatePartitionManager(meta, partitionString);
+                var jc = new JournalCore(meta, pm);
                 return meta.Settings.PartitionType;
             }
         }
@@ -103,7 +104,8 @@ namespace Apaf.NFSdb.Tests.Core
             using (var tempDir = new DisposableTempDir())
             {
                 var meta = CreateMetadata<Quote>(configValue, tempDir.DirName);
-                CreatePartitionManager(meta, partitionString);
+                var pm = CreatePartitionManager(meta, partitionString);
+                var jc = new JournalCore(meta, pm);
 
                 var defPath = meta.Settings.DefaultPath;
                 var pfile = Path.Combine(defPath, MetadataConstants.PARTITION_TYPE_FILENAME);
@@ -112,7 +114,7 @@ namespace Apaf.NFSdb.Tests.Core
             }
         }
 
-        private PartitionManager<T> CreatePartitionManager<T>(EPartitionType pariPartitionType,
+        private PartitionManager CreatePartitionManager<T>(EPartitionType pariPartitionType,
             DisposableTempDir dir,
             ICompositeFileFactory compositeFileFactory, 
             EFileAccess access,
@@ -120,12 +122,12 @@ namespace Apaf.NFSdb.Tests.Core
             params string[] symbols)
         {
             CreateSubDirs(paritions, dir.DirName);
-            JournalMetadata<T> meta = CreateMetadata<T>(pariPartitionType, dir.DirName,
+            JournalMetadata meta = CreateMetadata<T>(pariPartitionType, dir.DirName,
                 symbols);
             var txLog = new Mock<ITxLog>();
             txLog.Setup(s => s.Get()).Returns(new TxRec() { JournalMaxRowID = RowIDUtil.ToRowID(1, 10)});
 
-            var part = new PartitionManager<T>(meta, access, compositeFileFactory, new AsyncJournalServer(TimeSpan.FromSeconds(1)), txLog.Object);
+            var part = new PartitionManager(meta, access, compositeFileFactory, new AsyncJournalServer(TimeSpan.FromSeconds(1)), txLog.Object);
 
             var tx = part.ReadTxLog(1000);
             var readAllPartitions =
@@ -135,7 +137,7 @@ namespace Apaf.NFSdb.Tests.Core
             return part;
         }
 
-        private PartitionManager<T> CreatePartitionManager<T>(DisposableTempDir dir,
+        private PartitionManager CreatePartitionManager<T>(DisposableTempDir dir,
             ICompositeFileFactory compositeFileFactory, EFileAccess access,
             params string[] symbols)
         {
@@ -143,11 +145,11 @@ namespace Apaf.NFSdb.Tests.Core
                 access, new[] {"default"}, symbols);
         }
 
-        private PartitionManager<FewCols> CreatePartitionManager(JournalMetadata<FewCols> meta,
+        private PartitionManager CreatePartitionManager(JournalMetadata meta,
             ICompositeFileFactory compositeFileFactory,
             EFileAccess access = EFileAccess.ReadWrite)
         {
-            return new PartitionManager<FewCols>(meta, access, compositeFileFactory, new Mock<IJournalServer>().Object);
+            return new PartitionManager(meta, access, compositeFileFactory, new Mock<IJournalServer>().Object);
         }
 
         private void CreateSubDirs(string[] split, string workingDir)
@@ -163,7 +165,7 @@ namespace Apaf.NFSdb.Tests.Core
             }
         }
 
-        private PartitionManager<Quote> CreatePartitionManager(JournalMetadata<Quote> meta, string partitionString)
+        private PartitionManager CreatePartitionManager(JournalMetadata meta, string partitionString)
         {
             string defPath = meta.Settings.DefaultPath;
 
@@ -174,10 +176,10 @@ namespace Apaf.NFSdb.Tests.Core
             string pfile = Path.Combine(defPath, MetadataConstants.PARTITION_TYPE_FILENAME);
             File.WriteAllText(pfile, partitionString);
 
-            return new PartitionManager<Quote>(meta, EFileAccess.Read, new CompositeFileFactory(), new Mock<IJournalServer>().Object);
+            return new PartitionManager(meta, EFileAccess.ReadWrite, new CompositeFileFactory(), new Mock<IJournalServer>().Object);
         }
 
-        private static JournalMetadata<T> CreateMetadata<T>(EPartitionType configValue,
+        private static JournalMetadata CreateMetadata<T>(EPartitionType configValue,
             string workingDir, params string[] symbols)
         {
             var jconf = new JournalElement
@@ -197,10 +199,10 @@ namespace Apaf.NFSdb.Tests.Core
                         MaxSize = 120,
                         Name = sym
                     };
-                    jconf.Symbols.Add(se);
+                    jconf.Columns.Add(se);
                 }
             }
-            var meta = new JournalMetadata<T>(jconf);
+            var meta = JournalBuilder.CreateNewJournalMetadata(jconf, typeof(T));
             return meta;
         }
 

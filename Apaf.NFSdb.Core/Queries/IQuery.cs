@@ -26,11 +26,9 @@ namespace Apaf.NFSdb.Core.Queries
         ResultSet<T> All();
         ResultSet<T> Enumerate();
         ResultSet<T> AllBySymbol<TT>(string symbol, TT value);
-        ResultSet<T> AllByKeyOverInterval<TT>(TT value, DateInterval interval);
         ResultSet<T> AllBySymbolValueOverInterval<TT>(string symbol, TT values, DateInterval interval);
         int PartitionCount { get; }
 
         IQueryable<T> Items { get; }
-        IRecordQuery RecordQuery { get; }
     }
 }

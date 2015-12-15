@@ -60,7 +60,7 @@ namespace Apaf.NFSdb.Tests.Serializer
             PocoSerializerFactory fact = CreatePocoSerializerFactory();
             fact.Initialize(ojbType.GetType());
 
-            IList<IColumnSerializerMetadata> cols = fact.ParseColumns();
+            IList<IColumnSerializerMetadata> cols = fact.ParseColumns().ToList();
             return cols.Single(c => c.DataType == fType).PropertyName;
         }
 
@@ -85,7 +85,7 @@ namespace Apaf.NFSdb.Tests.Serializer
             PocoSerializerFactory fact = CreatePocoSerializerFactory();
             fact.Initialize(ojbType.GetType());
 
-            IList<IColumnSerializerMetadata> cols = fact.ParseColumns();
+            IList<IColumnSerializerMetadata> cols = fact.ParseColumns().ToList();
             return cols.Single(c => c.DataType == fType).PropertyName;
         }
 

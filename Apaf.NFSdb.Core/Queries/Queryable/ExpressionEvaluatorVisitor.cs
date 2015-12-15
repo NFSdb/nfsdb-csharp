@@ -275,8 +275,9 @@ namespace Apaf.NFSdb.Core.Queries.Queryable
             var memberName = ExHelper.GetMemberName(exp, _itemType);
             var literal = ExHelper.GetLiteralValue(exp, _parameters);
 
-            if (GetTimestamp(_journal.MetadataCore) != null &&
-                GetTimestamp(_journal.MetadataCore).PropertyName == memberName
+            var columnMetadata = GetTimestamp(_journal.Metadata);
+            if (columnMetadata != null &&
+                string.Equals(columnMetadata.PropertyName, memberName, StringComparison.OrdinalIgnoreCase)
                 && (literal is long || literal is DateTime))
             {
                 DateInterval filterInterval;
@@ -349,7 +350,7 @@ namespace Apaf.NFSdb.Core.Queries.Queryable
             return nodeType;
         }
 
-        private static ColumnMetadata GetTimestamp(IJournalMetadataCore metadata)
+        private static ColumnMetadata GetTimestamp(IJournalMetadata metadata)
         {
             if (!metadata.TimestampFieldID.HasValue)
             {
@@ -389,8 +390,8 @@ namespace Apaf.NFSdb.Core.Queries.Queryable
                 if (literal is long || literal is DateTime)
                 {
 
-                    if (GetTimestamp(_journal.MetadataCore) != null &&
-                        GetTimestamp(_journal.MetadataCore).PropertyName == memberName)
+                    if (GetTimestamp(_journal.Metadata) != null &&
+                        GetTimestamp(_journal.Metadata).PropertyName == memberName)
                     {
                         DateInterval filterInterval;
                         if (literal is long)

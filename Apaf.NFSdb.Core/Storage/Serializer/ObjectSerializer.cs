@@ -22,6 +22,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using Apaf.NFSdb.Core.Column;
+using Apaf.NFSdb.Core.Configuration;
 using Apaf.NFSdb.Core.Exceptions;
 using Apaf.NFSdb.Core.Tx;
 
@@ -47,12 +48,12 @@ namespace Apaf.NFSdb.Core.Storage.Serializer
         {
             var allColumns = columns.ToArray();
             _fixedColumns = allColumns
-                .Where(c => !c.Metadata.IsRefType() && c.Metadata.DataType != EFieldType.BitSet)
+                .Where(c => !((IClassColumnSerializerMetadata)c.Metadata).IsRefType() && c.Metadata.DataType != EFieldType.BitSet)
                 .Select(c => c.Column)
                 .Cast<IFixedWidthColumn>().ToArray();
 
             _refTypeColumns = allColumns
-                .Where(c => c.Metadata.IsRefType())
+                .Where(c => ((IClassColumnSerializerMetadata)c.Metadata).IsRefType())
                 .Select(c => c.Column)
                 .Cast<IRefTypeColumn>().ToArray();
 

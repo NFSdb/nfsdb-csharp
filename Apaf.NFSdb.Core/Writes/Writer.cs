@@ -24,16 +24,16 @@ using Apaf.NFSdb.Core.Tx;
 
 namespace Apaf.NFSdb.Core.Writes
 {
-    public class Writer<T> : IWriter<T>
+    public class Writer : IWriter
     {
-        private readonly IPartitionManager<T> _partitionManager;
-        private readonly WriterState<T> _writerState;
+        private readonly IPartitionManager _partitionManager;
+        private readonly IWriterState _writerState;
         private object _writeLock;
         private readonly int _partitionTtl;
         private readonly ITransactionContext _transaction;
 
-        internal Writer(WriterState<T> writerState, 
-            IPartitionManager<T> partitionManager, 
+        internal Writer(IWriterState writerState, 
+            IPartitionManager partitionManager, 
             object writeLock,
             int partitionTtl = MetadataConstants.DEFAULT_OPEN_PARTITION_TTL)
         {
@@ -49,7 +49,7 @@ namespace Apaf.NFSdb.Core.Writes
             Dispose(true);
         }
 
-        public void Append(T item)
+        public void Append(object item)
         {
             var dateTime = _writerState.GetTimestampDelegate(item);
             var p = _partitionManager.GetAppendPartition(dateTime, _transaction);

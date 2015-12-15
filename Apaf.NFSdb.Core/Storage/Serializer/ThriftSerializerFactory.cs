@@ -24,7 +24,9 @@ using System.Linq;
 using System.Reflection;
 using System.Reflection.Emit;
 using Apaf.NFSdb.Core.Column;
+using Apaf.NFSdb.Core.Configuration;
 using Apaf.NFSdb.Core.Exceptions;
+using Apaf.NFSdb.Core.Reflection;
 using Apaf.NFSdb.Core.Tx;
 
 namespace Apaf.NFSdb.Core.Storage.Serializer
@@ -38,12 +40,12 @@ namespace Apaf.NFSdb.Core.Storage.Serializer
         private Action<object, ByteArray, IFixedWidthColumn[], long, 
             IRefTypeColumn[], ITransactionContext> _writeMethod;
 
-        private IColumnSerializerMetadata[] _allDataColumns;
-        private IColumnSerializerMetadata[] _fixedColumns;
-        private IColumnSerializerMetadata[] _stringColumns;
-        private IList<IColumnSerializerMetadata> _allColumns;
+        private IClassColumnSerializerMetadata[] _allDataColumns;
+        private IClassColumnSerializerMetadata[] _fixedColumns;
+        private IClassColumnSerializerMetadata[] _stringColumns;
+        private IList<IClassColumnSerializerMetadata> _allColumns;
 
-        public void Initialize(Type objectType)
+        public IEnumerable<IColumnSerializerMetadata> Initialize(Type objectType)
         {
             if (_objectType != null)
             {
@@ -73,14 +75,10 @@ namespace Apaf.NFSdb.Core.Storage.Serializer
 
             _readMethod = GenerateFillMethod();
             _writeMethod = GenerateWriteMethod();
-        }
-
-        public IList<IColumnSerializerMetadata> ParseColumns()
-        {
             return _allColumns;
         }
 
-        private IList<IColumnSerializerMetadata> ParseColumnsImpl()
+        private IList<IClassColumnSerializerMetadata> ParseColumnsImpl()
         {
             // Properties.
             // Public.
@@ -88,7 +86,7 @@ namespace Apaf.NFSdb.Core.Storage.Serializer
                 _objectType.GetProperties(BindingFlags.Instance | BindingFlags.Public);
 
             // Build.
-            var cols = new List<IColumnSerializerMetadata>();
+            var cols = new List<IClassColumnSerializerMetadata>();
             foreach (PropertyInfo property in properties)
             {
                 var propertyName = property.Name;
@@ -150,6 +148,12 @@ namespace Apaf.NFSdb.Core.Storage.Serializer
         public IFieldSerializer CreateFieldSerializer(IEnumerable<ColumnSource> columns)
         {
             return new ObjectSerializer(columns, _readMethod, _writeMethod);
+        }
+
+        public Func<T, TRes> ColumnReader<T, TRes>(IColumnSerializerMetadata column)
+        {
+            var classCol = (IClassColumnSerializerMetadata) column;
+            return ReflectionHelper.CreateFieldsAccessDelegate<T, TRes>(classCol.FieldName);
         }
 
         /*

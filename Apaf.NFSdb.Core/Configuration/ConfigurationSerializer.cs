@@ -15,39 +15,29 @@
  * limitations under the License.
  */
 #endregion
-using System.Runtime.Serialization;
+using System.IO;
 using System.Xml.Serialization;
-using Apaf.NFSdb.Core.Column;
 
 namespace Apaf.NFSdb.Core.Configuration
 {
-    [XmlRoot("datetime")]
-    public class DateTimeElement : ColumnElement
+    public static class ConfigurationSerializer
     {
-        public DateTimeElement()
+        private static readonly XmlSerializer SERIALIZER = new XmlSerializer(typeof(DbElement));
+        private static readonly XmlSerializer JOURNAL_SERIALIZER = new XmlSerializer(typeof(JournalElement));
+
+        public static DbElement ReadConfiguration(Stream input)
         {
-            OnDeserializing();
+            return (DbElement)SERIALIZER.Deserialize(input);
         }
 
-        [OnDeserializing]
-        private void OnDeserializing()
+        public static void WriteJournalConfiguration(Stream output, JournalElement element)
         {
-            AvgSize = 8;
-            MaxSize = 8;
+            JOURNAL_SERIALIZER.Serialize(output, element);
         }
 
-        [XmlAttribute("isEpochMilliseconds")]
-        public bool IsEpochMilliseconds { get; set; }
-
-        public override EFieldType ColumnType
+        public static JournalElement ReadJournalConfiguration(FileStream input)
         {
-            get
-            {
-                return IsEpochMilliseconds
-                    ? EFieldType.DateTimeEpochMilliseconds
-                    : EFieldType.DateTime;
-            }
+            return (JournalElement)JOURNAL_SERIALIZER.Deserialize(input);
         }
-         
     }
 }

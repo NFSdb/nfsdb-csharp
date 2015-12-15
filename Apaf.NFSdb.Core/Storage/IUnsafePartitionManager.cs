@@ -2,7 +2,7 @@
 
 namespace Apaf.NFSdb.Core.Storage
 {
-    internal interface IUnsafePartitionManager : IPartitionManagerCore
+    internal interface IUnsafePartitionManager : IPartitionManager
     {
         IColumnStorage SymbolFileStorage { get; }
         IPartitionCore GetPartition(int paritionID);

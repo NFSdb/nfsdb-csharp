@@ -28,10 +28,10 @@ namespace Apaf.NFSdb.Core.Queries
 {
     public class JournalStatistics : IQueryStatistics
     {
-        private readonly IJournalMetadataCore _metadata;
+        private readonly IJournalMetadata _metadata;
         private readonly IUnsafePartitionManager _partitionManager;
 
-        internal JournalStatistics(IJournalMetadataCore metadata, IUnsafePartitionManager partitionManager)
+        internal JournalStatistics(IJournalMetadata metadata, IUnsafePartitionManager partitionManager)
         {
             _metadata = metadata;
             _partitionManager = partitionManager;

@@ -33,7 +33,7 @@ namespace Apaf.NFSdb.Core.Storage
         private readonly int _partitionID;
 
         public ColumnStorage(
-            IJournalMetadataCore metadata,
+            IJournalMetadata metadata,
             DateTime start,
             EFileAccess access,
             int partitionID,
@@ -47,7 +47,7 @@ namespace Apaf.NFSdb.Core.Storage
         }
 
         public ColumnStorage(
-            IJournalMetadataCore metadata,
+            IJournalMetadata metadata,
             string folder,
             EFileAccess access,
             int partitionID,

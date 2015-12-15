@@ -258,7 +258,7 @@ namespace Apaf.NFSdb.Core.Queries.Queryable.PlanItem
                     _partitionFilter = new LatestByFilter<string>(_journal, column, ExtractColumnContains<string>(column));
                     break;
                 case EFieldType.DateTime:
-                case EFieldType.DateTimeEpochMilliseconds:
+                case EFieldType.DateTimeEpochMs:
                     _partitionFilter = new LatestByFilter<DateTime>(_journal, column, ExtractColumnContains<DateTime>(column));
                     break;
                 default:
@@ -408,7 +408,7 @@ namespace Apaf.NFSdb.Core.Queries.Queryable.PlanItem
                                 .Distinct().ToArray());
                         break;
                     case EFieldType.DateTime:
-                    case EFieldType.DateTimeEpochMilliseconds:
+                    case EFieldType.DateTimeEpochMs:
                         _partitionFilter = new SymbolFilter<DateTime>(c1,
                             ExtractColumnContains<DateTime>(c1)
                                 .Concat(rowScan2.ExtractColumnContains<DateTime>(c2))

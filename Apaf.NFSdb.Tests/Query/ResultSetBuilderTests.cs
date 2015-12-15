@@ -137,11 +137,11 @@ namespace Apaf.NFSdb.Tests.Query
         private ResultSetBuilder CreateResultSetBuilder()
         {
             var journal = new Mock<IJournalCore>();
-            var metadata = new Mock<IJournalMetadata<Quote>>();
+            var metadata = new Mock<IJournalMetadata>();
             var journalStat = new Mock<IQueryStatistics>();
             journalStat.Setup(j => j.GetCardinalityByColumnValue(It.IsAny<IReadTransactionContext>(),
                 It.IsAny<ColumnMetadata>(), It.IsAny<string[]>())).Returns(long.MaxValue);
-            journal.Setup(j => j.MetadataCore).Returns(metadata.Object);
+            journal.Setup(j => j.Metadata).Returns(metadata.Object);
             journal.Setup(j => j.QueryStatistics).Returns(journalStat.Object);
             metadata.Setup(m => m.GetColumnByPropertyName(It.IsAny<string>())).Returns(
                 (string name) =>

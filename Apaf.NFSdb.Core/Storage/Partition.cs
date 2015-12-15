@@ -41,13 +41,13 @@ namespace Apaf.NFSdb.Core.Storage
         private ColumnStorage _columnStorage;
         private FileTxSupport _txSupport;
         private IFixedWidthColumn _timestampColumn;
-        private readonly IJournalMetadataCore _metadata;
+        private readonly IJournalMetadata _metadata;
         private bool _isStorageInitialized;
         private readonly object _syncRoot = new object();
         private int _refCount;
         private ColumnSource[] _columns;
 
-        public Partition(IJournalMetadataCore metadata,
+        public Partition(IJournalMetadata metadata,
             ICompositeFileFactory memeorymMappedFileFactory,
             EFileAccess access,
             DateTime startDate, int partitionID,
@@ -240,7 +240,7 @@ namespace Apaf.NFSdb.Core.Storage
             var hi = tx.GetRowCount(PartitionID);
             var timestampType = _timestampColumn.FieldType;
             long values = timestampType == EFieldType.Int64
-                     || timestampType == EFieldType.DateTimeEpochMilliseconds
+                     || timestampType == EFieldType.DateTimeEpochMs
                 ? DateUtils.DateTimeToUnixTimeStamp(value)
                 : DateUtils.ToUnspecifiedDateTicks(value);
             

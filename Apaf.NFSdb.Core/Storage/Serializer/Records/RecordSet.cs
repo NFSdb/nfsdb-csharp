@@ -1,23 +1,23 @@
 ﻿using System.Collections.Generic;
 using Apaf.NFSdb.Core.Column;
 using Apaf.NFSdb.Core.Configuration;
-using Apaf.NFSdb.Core.Storage;
+using Apaf.NFSdb.Core.Queries;
 using Apaf.NFSdb.Core.Tx;
 
-namespace Apaf.NFSdb.Core.Queries.Records
+namespace Apaf.NFSdb.Core.Storage.Serializer.Records
 {
     public class RecordSet : IRecordSet
     {
         private readonly IEnumerable<long> _rowIDs;
         private readonly IReadTransactionContext _tx;
-        private readonly IJournalMetadataCore _metadata;
+        private readonly IJournalMetadata _metadata;
         private int[] _columnMaps;
         IPartitionReader _lastPartitionReader;
         int _lastPartitionID = -1;
 
         public RecordSet(IEnumerable<long> rowIDs, 
             IReadTransactionContext tx, 
-            IJournalMetadataCore metadata)
+            IJournalMetadata metadata)
         {
             _rowIDs = rowIDs;
             _tx = tx;

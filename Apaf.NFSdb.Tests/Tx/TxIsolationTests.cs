@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Linq;
+using Apaf.NFSdb.Core.Configuration;
 using Apaf.NFSdb.Core.Queries;
 using Apaf.NFSdb.Core.Storage;
 using Apaf.NFSdb.Tests.Columns.ThriftModel;
@@ -112,7 +113,7 @@ namespace Apaf.NFSdb.Tests.Tx
             const int increment = 2;
             Utils.ClearJournal<Quote>();
             var config = Utils.ReadConfig<Quote>();
-            var symSymbol = config.Symbols.Single(s => s.Name.EndsWith("sym", StringComparison.OrdinalIgnoreCase));
+            var symSymbol = (SymbolElement)config.Columns.Single(s => s.Name.EndsWith("sym", StringComparison.OrdinalIgnoreCase));
             symSymbol.HintDistinctCount = 20;
             config.RecordHint = 20;
 

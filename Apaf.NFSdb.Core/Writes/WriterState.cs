@@ -16,30 +16,21 @@
  */
 #endregion
 using System;
-using Apaf.NFSdb.Core.Configuration;
 
 namespace Apaf.NFSdb.Core.Writes
 {
-    public class WriterState<T> 
+    public class WriterState<T> : IWriterState
     {
         private readonly Func<T, DateTime> _timestampReader;
-
-        public WriterState(IJournalMetadata<T> metadata)
-        {
-            _timestampReader = metadata.GetTimestampReader();
-        }
 
         public WriterState(Func<T, DateTime> metadata)
         {
             _timestampReader = metadata;
         }
 
-        public Func<T, DateTime> GetTimestampDelegate
+        public DateTime GetTimestampDelegate(object o)
         {
-            get
-            {
-                return _timestampReader;
-            }
+            return _timestampReader((T)o);
         }
     }
 }

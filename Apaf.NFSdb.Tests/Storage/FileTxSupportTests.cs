@@ -143,7 +143,7 @@ namespace Apaf.NFSdb.Tests.Storage
 
         private FileTxSupport CreateFileTxSupport(List<Mock<IRawFile>> files, int partitionID = 0)
         {
-            var jornalMeta = new Mock<IJournalMetadataCore>();
+            var jornalMeta = new Mock<IJournalMetadata>();
             jornalMeta.Setup(j => j.FileCount).Returns(files.Count);
 
             var storage = new Mock<IColumnStorage>();

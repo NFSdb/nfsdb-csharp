@@ -1,9 +1,10 @@
 ﻿using System;
 using System.Linq;
 using Apaf.NFSdb.Core;
+using Apaf.NFSdb.Core.Configuration;
 using Apaf.NFSdb.Core.Queries.Queryable;
-using Apaf.NFSdb.Core.Queries.Records;
 using Apaf.NFSdb.Core.Storage;
+using Apaf.NFSdb.Core.Storage.Serializer.Records;
 using Apaf.NFSdb.Tests.Columns.ThriftModel;
 using Apaf.NFSdb.TestShared;
 using NUnit.Framework;
@@ -103,7 +104,7 @@ namespace Apaf.NFSdb.Tests.Ql
 
         [TestCase("Timestamp", 4, ExpectedResult = "299,298,297,296")]
         [TestCase("Abracadabra", 4, ExpectedException = typeof(NFSdbQueryableNotSupportedException),
-            ExpectedMessage = "line 1:16 Column [Abracadabra] does not exists in journal Apaf.NFSdb.TestModel.Model.Quote")]
+            ExpectedMessage = "line 1:16 Column [Abracadabra] does not exists in journal ")]
         public string SelectedLongColumns(string column, int take)
         {
             return SelectedColumns<long>(column, take);
@@ -149,9 +150,12 @@ namespace Apaf.NFSdb.Tests.Ql
                 AppendRecords(qj, 0, 1);
             }
 
-            using (var qj = Utils.CreateJournal<Quote>(config))
+            using (var qj = new JournalBuilder()
+                .WithAccess(EFileAccess.Read)
+                .WithLocation(config.DefaultPath)
+                .ToJournal())
             {
-                using (var rdr = qj.Core.OpenRecordReadTx())
+                using (var rdr = qj.OpenRecordReadTx())
                 {
                     var qts = rdr.Execute(query, parameters);
 

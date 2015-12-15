@@ -31,27 +31,26 @@ using Apaf.NFSdb.Core.Tx;
 
 namespace Apaf.NFSdb.Core.Storage
 {
-    public class PartitionManager<T> : IPartitionManager<T>, IUnsafePartitionManager
+    public class PartitionManager : IPartitionManager, IUnsafePartitionManager
     {
         // ReSharper disable once StaticFieldInGenericType
         private const int SYMBOL_PARTITION_ID = MetadataConstants.SYMBOL_PARTITION_ID;
         private readonly ICompositeFileFactory _fileFactory;
         private readonly IJournalServer _server;
-        private readonly IJournalMetadataCore _metadata;
+        private readonly IJournalMetadata _metadata;
         private readonly List<IPartitionCore> _partitions = new List<IPartitionCore>();
         private readonly JournalSettings _settings;
         private readonly ColumnStorage _symbolStorage;
         private readonly FileTxSupport _symbolTxSupport;
         private readonly CompositeRawFile _txLogFile;
         private readonly ITxLog _txLog;
-        private readonly EPartitionType _partitionType;
         private ITransactionContext _lastTransactionLog;
         private readonly ConcurrentBag<TxState> _resuableTxState = new ConcurrentBag<TxState>();
         private const int RESERVED_PARTITION_COUNT = 10;
 
         private TxRec _lastTxRec;
 
-        public PartitionManager(IJournalMetadataCore metadata, EFileAccess access,
+        public PartitionManager(IJournalMetadata metadata, EFileAccess access,
             ICompositeFileFactory fileFactory, IJournalServer server, ITxLog txLog = null)
         {
             Access = access;
@@ -73,14 +72,6 @@ namespace Apaf.NFSdb.Core.Storage
                 txLog = new TxLog(_txLogFile);
             }
             _txLog = txLog;
-
-            var di = new DirectoryInfo(_settings.DefaultPath);
-            if (!di.Exists)
-            {
-                di.Create();
-            }
-            ConfigurePartitionType();
-            _partitionType = _settings.PartitionType;
         }
 
         internal event Action OnDisposed;
@@ -391,7 +382,7 @@ namespace Apaf.NFSdb.Core.Storage
             {
                 if (!subDir.StartsWith(MetadataConstants.TEMP_DIRECTORY_PREFIX))
                 {
-                    var dateFromName = PartitionManagerUtils.ParseDateFromDirName(subDir, _partitionType);
+                    var dateFromName = PartitionManagerUtils.ParseDateFromDirName(subDir, _settings.PartitionType);
                     var fullPath = Path.Combine(defaultPath, subDir);
 
                     if (dateFromName.HasValue)
@@ -413,7 +404,7 @@ namespace Apaf.NFSdb.Core.Storage
                             {
                                 Trace.TraceInformation(
                                     "Ignoring directory '{0}' for partition type '{1}' as fully rolled back partition.",
-                                    fullPath, _partitionType);
+                                    fullPath, _settings.PartitionType);
                                 break;
                             }
                         }
@@ -421,7 +412,7 @@ namespace Apaf.NFSdb.Core.Storage
                     else
                     {
                         Trace.TraceWarning("Invalid directory '{0}' for partition type '{1}'. " +
-                                                      "Will be ignored.", fullPath, _partitionType);
+                                                      "Will be ignored.", fullPath, _settings.PartitionType);
                     }
                 }
             }
@@ -436,47 +427,6 @@ namespace Apaf.NFSdb.Core.Storage
             {
                 throw new NFSdbConfigurationException("SYMBOL_PARTITION_ID supposed to be 0 but was " + SYMBOL_PARTITION_ID);
             }
-        }
-
-        private void ConfigurePartitionType()
-        {
-            var partitionType = ReadPartitionType();
-
-            if (!partitionType.HasValue)
-            {
-                partitionType = _settings.PartitionType;
-                WritePartitionType(partitionType.Value);
-            }
-            else
-            {
-                _settings.OverridePartitionType(partitionType.Value);
-            }
-        }
-
-        private void WritePartitionType(EPartitionType value)
-        {
-            var path = Path.Combine(_settings.DefaultPath, MetadataConstants.PARTITION_TYPE_FILENAME);
-            File.WriteAllText(path, value.ToString().ToUpper());
-        }
-
-        private EPartitionType? ReadPartitionType()
-        {
-            var path = Path.Combine(_settings.DefaultPath, MetadataConstants.PARTITION_TYPE_FILENAME);
-            try
-            {
-                if (File.Exists(path))
-                {
-                    EPartitionType val;
-                    if (Enum.TryParse(File.ReadAllText(path), true, out val))
-                    {
-                        return val;
-                    }
-                }
-            }
-            catch (IOException)
-            {
-            }
-            return null;
         }
 
         public void Dispose()

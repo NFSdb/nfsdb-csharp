@@ -26,7 +26,7 @@ namespace Apaf.NFSdb.Tests.Query
             var config = Utils.ReadConfig<Quote>();
             var indexed = ExecuteLamdaOnJournal(lambda, increment, config);
 
-            config.Symbols = config.Symbols.Where(s =>
+            config.Columns = config.Columns.Where(s =>
                 !string.Equals("Sym", s.Name, StringComparison.OrdinalIgnoreCase)).ToList();
 
             Utils.ClearJournal<Quote>();

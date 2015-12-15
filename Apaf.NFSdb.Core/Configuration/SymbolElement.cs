@@ -21,8 +21,7 @@ using Apaf.NFSdb.Core.Column;
 
 namespace Apaf.NFSdb.Core.Configuration
 {
-    [XmlRoot("sym")]
-    public class SymbolElement : ColumnElement
+    public class SymbolElement : VarLenColumnElement
     {  
         public SymbolElement()
         {
@@ -32,8 +31,7 @@ namespace Apaf.NFSdb.Core.Configuration
         [OnDeserializing]
         private void OnDeserializing()
         {
-            AvgSize = MetadataConstants.DEFAULT_SYMBOL_AVG_SIZE;
-            MaxSize = MetadataConstants.DEFAULT_SYMBOL_MAX_SIZE;
+            ColumnType = EFieldType.Symbol;
             HintDistinctCount = MetadataConstants.DEFAULT_DISTINCT_HINT_COUNT;
         }
 
@@ -45,10 +43,5 @@ namespace Apaf.NFSdb.Core.Configuration
 
         [XmlAttribute("hintDistinctCount")]
         public int HintDistinctCount { get; set; }
-
-        public override EFieldType ColumnType
-        {
-            get { return EFieldType.Symbol; }
-        }
     }
 }

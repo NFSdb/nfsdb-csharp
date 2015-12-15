@@ -1,4 +1,5 @@
-﻿using Apaf.NFSdb.Core;
+﻿using System.IO;
+using Apaf.NFSdb.Core;
 using Apaf.NFSdb.Core.Column;
 using Apaf.NFSdb.Core.Configuration;
 using Apaf.NFSdb.Core.Storage;
@@ -12,6 +13,7 @@ namespace Apaf.NFSdb.Tests.Storage
     {
         private Mock<ICompositeFileFactory> _fileFactory;
         private int _bitHint;
+        private const string DIRECTORY_PATH = "TestJournal";
 
         public class TestJournal
         {
@@ -25,7 +27,7 @@ namespace Apaf.NFSdb.Tests.Storage
         [TestCase(1000, "intField", Result = 16)]
         [TestCase(250000, "intField", Result = 17)]
         [TestCase(500000, "intField", Result = 18)]
-        [TestCase((int)1E6, "intField", Result = 19)]
+        [TestCase((int) 1E6, "intField", Result = 19)]
         [TestCase(100000000, "intField", Result = 26)]
         [TestCase(1000000000, "intField", Result = 27)]
         [TestCase(2000000000, "intField", Result = 27)]
@@ -34,7 +36,7 @@ namespace Apaf.NFSdb.Tests.Storage
         [TestCase(1000, "longField", Result = 16)]
         [TestCase(250000, "longField", Result = 18)]
         [TestCase(500000, "longField", Result = 19)]
-        [TestCase((int)1E6, "longField", Result = 20)]
+        [TestCase((int) 1E6, "longField", Result = 20)]
         [TestCase(100000000, "longField", Result = 27)]
         [TestCase(1000000000, "longField", Result = 27)]
         [TestCase(2000000000, "longField", Result = 27)]
@@ -42,9 +44,10 @@ namespace Apaf.NFSdb.Tests.Storage
         public int Should_calculate_bit_hint_for_fixed_columns(int recordCount, string fieldName)
         {
             // Create.
+            ClearJournalFolder();
             using (var journal = new JournalBuilder()
                 .WithRecordCountHint(recordCount)
-                .WithLocation(".")
+                .WithLocation(DIRECTORY_PATH)
                 .ToJournal<TestJournal>())
             {
                 var storage = CreateStorage(journal);
@@ -53,6 +56,17 @@ namespace Apaf.NFSdb.Tests.Storage
                 storage.GetFile(fieldName, 1, 1, EDataType.Data);
 
                 return _bitHint;
+            }
+        }
+
+        private static void ClearJournalFolder()
+        {
+            try
+            {
+                Directory.Delete(DIRECTORY_PATH, true);
+            }
+            catch (IOException)
+            {
             }
         }
 
@@ -66,11 +80,12 @@ namespace Apaf.NFSdb.Tests.Storage
         public int Should_calculate_bit_hint_for_string_columns(int recordCount, int avSize, int maxSize)
         {
             // Create.
+            ClearJournalFolder();
             const string fieldName = "stringField";
             using (var journal = new JournalBuilder()
                 .WithRecordCountHint(recordCount)
                 .WithStringColumn(fieldName, avSize, maxSize)
-                .WithLocation(".")
+                .WithLocation(DIRECTORY_PATH)
                 .ToJournal<TestJournal>())
             {
 
@@ -107,11 +122,12 @@ namespace Apaf.NFSdb.Tests.Storage
             int recordCount, int distinctCount, int avgSize, EDataType dataType)
         {
             // Create.
+            ClearJournalFolder();
             const string fieldName = "symbolField";
             using (var journal = new JournalBuilder()
                 .WithRecordCountHint(recordCount)
                 .WithSymbolColumn(fieldName, distinctCount, avgSize)
-                .WithLocation(".")
+                .WithLocation(DIRECTORY_PATH)
                 .ToJournal<TestJournal>())
             {
                 var storage = CreateStorage(journal);

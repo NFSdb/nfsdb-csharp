@@ -42,7 +42,7 @@ namespace Apaf.NFSdb.TestShared
             using (Stream dbXml = typeof(Quote).Assembly.GetManifestResourceStream(
                 "Apaf.NFSdb.TestShared.Resources.nfsdb.xml"))
             {
-                var dbElement = new ConfigurationReader().ReadConfiguration(dbXml);
+                var dbElement = ConfigurationSerializer.ReadConfiguration(dbXml);
                 var jconf = dbElement.Journals.Single(j => j.Class.EndsWith("." + typeof(T).Name));
                 jconf.DefaultPath = Path.Combine(FindJournalsPath(), jconf.DefaultPath);
                 return jconf;
@@ -57,6 +57,15 @@ namespace Apaf.NFSdb.TestShared
                 .ToJournal<T>();
         }
 
+
+        public static IJournalCore CreateJournal(string path, EFileAccess access = EFileAccess.Read)
+        {
+            return new JournalBuilder()
+                .WithAccess(access)
+                .WithLocation(path)
+                .ToJournal();
+        }
+
         public static void ClearJournal<T>(string folderPath = null)
         {
             using (Stream dbXml = typeof (Quote).Assembly.GetManifestResourceStream(
@@ -64,7 +73,7 @@ namespace Apaf.NFSdb.TestShared
             {
                 if (folderPath == null)
                 {
-                    var dbElement = new ConfigurationReader().ReadConfiguration(dbXml);
+                    var dbElement = ConfigurationSerializer.ReadConfiguration(dbXml);
                     var jconf = dbElement.Journals.Single(j => j.Class.EndsWith("." + typeof(T).Name));
                     folderPath = jconf.DefaultPath;
                 }
@@ -86,8 +95,9 @@ namespace Apaf.NFSdb.TestShared
         public static string FindJournalsPath()
         {
             var dirInfo = new DirectoryInfo(Environment.CurrentDirectory);
-            while (!dirInfo.EnumerateDirectories("journals").Any() 
-                && !dirInfo.Name.Equals("journal.net"))
+            while (!dirInfo.EnumerateDirectories("journals").Any()
+                && !dirInfo.Name.Equals("journal.net") 
+                && !dirInfo.EnumerateDirectories("Apaf.NFSdb.Tests").Any())
             {
                 dirInfo = dirInfo.Parent;
             }
@@ -101,7 +111,7 @@ namespace Apaf.NFSdb.TestShared
             using (var dbXml = typeof(Quote).Assembly.GetManifestResourceStream(
                 "Apaf.NFSdb.TestShared.Resources.nfsdb.xml"))
             {
-                var dbElement = new ConfigurationReader().ReadConfiguration(dbXml);
+                var dbElement = ConfigurationSerializer.ReadConfiguration(dbXml);
                 var jconf = dbElement.Journals.Single(j => j.Class.EndsWith("." + typeof(T).Name));
                 if (recordHint.HasValue)
                 {
@@ -110,7 +120,7 @@ namespace Apaf.NFSdb.TestShared
                 var journalPath = Path.Combine(FindJournalsPath(), jconf.DefaultPath);
                 jconf.DefaultPath = journalPath;
 
-                var metadata = new JournalMetadata<T>(jconf);
+                var metadata = JournalBuilder.CreateNewJournalMetadata(jconf);
                 var startDate = new DateTime(2013, 10, 1);
                 var journalStorage = new ColumnStorage(metadata, jconf.DefaultPath,
                     access, 0, mmFactory);

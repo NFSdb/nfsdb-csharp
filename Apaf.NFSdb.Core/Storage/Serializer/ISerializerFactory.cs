@@ -26,8 +26,8 @@ namespace Apaf.NFSdb.Core.Storage.Serializer
 {
     public interface ISerializerFactory
     {
-        void Initialize(Type objectType);
-        IList<IColumnSerializerMetadata> ParseColumns();
+        IEnumerable<IColumnSerializerMetadata> Initialize(Type objectType);
         IFieldSerializer CreateFieldSerializer(IEnumerable<ColumnSource> columns);
+        Func<T, TRes> ColumnReader<T, TRes>(IColumnSerializerMetadata column);
     }
 }

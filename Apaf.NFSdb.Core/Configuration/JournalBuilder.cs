@@ -17,6 +17,7 @@
 #endregion
 
 using System;
+using System.IO;
 using Apaf.NFSdb.Core.Column;
 using Apaf.NFSdb.Core.Exceptions;
 using Apaf.NFSdb.Core.Server;
@@ -27,7 +28,7 @@ namespace Apaf.NFSdb.Core.Configuration
 {
     public class JournalBuilder
     {
-        private readonly JournalElement _config;
+        private JournalElement _config;
         private bool _serializerNameSet;
         private bool _serializerInstaceSet;
         private IJournalServer _server;
@@ -95,7 +96,7 @@ namespace Apaf.NFSdb.Core.Configuration
         public JournalBuilder WithSymbolColumn(string name, int hintDistinctCount, int avgSize = -1,
             int maxSize = -1)
         {
-            _config.Symbols.Add(new SymbolElement
+            _config.Columns.Add(new SymbolElement
             {
                 Name = name,
                 HintDistinctCount = hintDistinctCount,
@@ -109,7 +110,7 @@ namespace Apaf.NFSdb.Core.Configuration
         public JournalBuilder WithUnindexedSymbolColumn(string name, int hintDistinctCount, int avgSize = -1,
             int maxSize = -1)
         {
-            _config.Symbols.Add(new SymbolElement
+            _config.Columns.Add(new SymbolElement
             {
                 Name = name,
                 HintDistinctCount = hintDistinctCount,
@@ -122,7 +123,7 @@ namespace Apaf.NFSdb.Core.Configuration
 
         public JournalBuilder WithStringColumn(string name, int avgSize = -1, int maxSize = -1)
         {
-            _config.Strings.Add(new StringElement
+            _config.Columns.Add(new StringElement
             {
                 Name = name,
                 AvgSize = avgSize > 0 ? avgSize : MetadataConstants.DEFAULT_SYMBOL_AVG_SIZE,
@@ -133,10 +134,10 @@ namespace Apaf.NFSdb.Core.Configuration
 
         public JournalBuilder WithEpochDateTimeColumn(string name)
         {
-            _config.DateTimes.Add(new DateTimeElement
+            _config.Columns.Add(new ColumnElement
             {
                 Name = name,
-                IsEpochMilliseconds = true
+                ColumnType = EFieldType.DateTimeEpochMs
             });
             return this;
         }
@@ -177,23 +178,100 @@ namespace Apaf.NFSdb.Core.Configuration
             return this;
         }
 
-        public IJournal<T> ToJournal<T>()
+
+        public IJournalCore ToJournal()
         {
-            var meta = new JournalMetadata<T>(_config);
+            var meta = CreateJournalMetadata(_config);
             var fileFactory = new CompositeFileFactory(_config.FileFlags);
 
             if (_server != null)
             {
-                var partMan = new PartitionManager<T>(meta, _access, fileFactory, _server);
+                var partMan = new PartitionManager(meta, _access, fileFactory, _server);
+                return new JournalCore(meta, partMan);
+            }
+            else
+            {
+                var server = new AsyncJournalServer(_serverTasksLatency);
+                var partMan = new PartitionManager(meta, _access, fileFactory, server);
+                partMan.OnDisposed += server.Dispose;
+                return new JournalCore(meta, partMan);
+            }
+        }
+
+        public static JournalMetadata CreateNewJournalMetadata(JournalElement config, Type t = null)
+        {
+            if (t != null)
+            {
+                var serializerFactory =
+                    JournalSerializers.Instance.GetSerializer(config.SerializerName ??
+                                                              MetadataConstants.DEFAULT_SERIALIZER_NAME);
+                return new JournalMetadata(config, serializerFactory, t);
+            }
+
+            return new JournalMetadata(config, new RecordSerializerFactory(config), null);
+        }
+
+        public static JournalMetadata CreateJournalMetadata(JournalElement config, Type t = null)
+        {
+            config = UpdateConfiguration(config);
+            return CreateNewJournalMetadata(config);
+        }
+
+        public IJournal<T> ToJournal<T>()
+        {
+            _config = UpdateConfiguration(_config);
+            var serializerFactory =
+                JournalSerializers.Instance.GetSerializer(_config.SerializerName ??
+                                                          MetadataConstants.DEFAULT_SERIALIZER_NAME);
+            var meta = new JournalMetadata(_config, serializerFactory, typeof(T));
+
+            var fileFactory = new CompositeFileFactory(_config.FileFlags);
+
+            if (_server != null)
+            {
+                var partMan = new PartitionManager(meta, _access, fileFactory, _server);
                 return new Journal<T>(meta, partMan);
             }
             else
             {
                 var server = new AsyncJournalServer(_serverTasksLatency);
-                var partMan = new PartitionManager<T>(meta, _access, fileFactory, server);
+                var partMan = new PartitionManager(meta, _access, fileFactory, server);
                 partMan.OnDisposed += server.Dispose;
                 return new Journal<T>(meta, partMan);
             }
+        }
+
+        private static JournalElement UpdateConfiguration(JournalElement conf)
+        {
+            string settingsFile = Path.Combine(conf.DefaultPath, MetadataConstants.JOURNAL_SETTINGS_FILE_NAME);
+            JournalElement existingConfig = null;
+            if (File.Exists(settingsFile))
+            {
+                try
+                {
+                    using (var dbXml = File.OpenRead(settingsFile))
+                    {
+                        existingConfig = ConfigurationSerializer.ReadJournalConfiguration(dbXml);
+                    }
+                }
+                catch (IOException)
+                {
+                }
+                catch (InvalidOperationException)
+                {
+                }
+
+                if (existingConfig != null)
+                {
+                    existingConfig.OpenPartitionTtl = conf.OpenPartitionTtl;
+                    existingConfig.MaxOpenPartitions = conf.MaxOpenPartitions;
+                    existingConfig.LagHours = conf.LagHours;
+                    existingConfig.DefaultPath = conf.DefaultPath;
+                    existingConfig.SerializerName = conf.SerializerName;
+                    return existingConfig;
+                }
+            }
+            return conf;
         }
     }
 }

@@ -23,7 +23,9 @@ using System.Reflection.Emit;
 using System.Runtime.CompilerServices;
 using System.Runtime.Serialization;
 using Apaf.NFSdb.Core.Column;
+using Apaf.NFSdb.Core.Configuration;
 using Apaf.NFSdb.Core.Exceptions;
+using Apaf.NFSdb.Core.Reflection;
 using Apaf.NFSdb.Core.Tx;
 
 namespace Apaf.NFSdb.Core.Storage.Serializer
@@ -31,14 +33,14 @@ namespace Apaf.NFSdb.Core.Storage.Serializer
     public class PocoSerializerFactory : ISerializerFactory
     {
         private Type _objectType;
-        private IList<IColumnSerializerMetadata> _allColumns;
-        private IColumnSerializerMetadata[] _allDataColumns;
+        private IList<IPocoClassSerializerMetadata> _allColumns;
+        private IPocoClassSerializerMetadata[] _allDataColumns;
         private Func<ByteArray, IFixedWidthColumn[], long, IRefTypeColumn[], IReadContext, object> _readMethod;
         private Action<object, ByteArray, IFixedWidthColumn[], long, IRefTypeColumn[], ITransactionContext> _writeMethod;
         private static readonly Guid GENERATOR_MARK_GUID = Guid.NewGuid();
         private bool _isAnonymouse;
 
-        public void Initialize(Type objectType)
+        public IEnumerable<IColumnSerializerMetadata> Initialize(Type objectType)
         {
             _objectType = objectType;
             _isAnonymouse = CheckIfAnonymousType(objectType);
@@ -49,9 +51,10 @@ namespace Apaf.NFSdb.Core.Storage.Serializer
 
             _readMethod = GenerateReadMethod();
             _writeMethod = GenerateWriteMethod();
+            return _allColumns;
         }
 
-        public IList<IColumnSerializerMetadata> ParseColumns()
+        public IEnumerable<IColumnSerializerMetadata> ParseColumns()
         {
             return _allColumns;
         }
@@ -59,6 +62,12 @@ namespace Apaf.NFSdb.Core.Storage.Serializer
         public IFieldSerializer CreateFieldSerializer(IEnumerable<ColumnSource> columns)
         {
             return new PocoObjectSerializer(columns, _readMethod, _writeMethod);
+        }
+
+        public Func<T, TRes> ColumnReader<T, TRes>(IColumnSerializerMetadata column)
+        {
+            var classCol = (IClassColumnSerializerMetadata)column;
+            return ReflectionHelper.CreateFieldsAccessDelegate<T, TRes>(classCol.FieldName);
         }
 
         /*
@@ -540,7 +549,7 @@ namespace Apaf.NFSdb.Core.Storage.Serializer
 
         }
 
-        protected virtual IList<IColumnSerializerMetadata> ParseColumnsImpl()
+        protected virtual IList<IPocoClassSerializerMetadata> ParseColumnsImpl()
         {
             // Properties.
             // Public.
@@ -548,7 +557,7 @@ namespace Apaf.NFSdb.Core.Storage.Serializer
                 _objectType.GetFields(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
 
             // Build.
-            var cols = new List<IColumnSerializerMetadata>();
+            var cols = new List<IPocoClassSerializerMetadata>();
             int nullableCount = 0;
 
             foreach (FieldInfo field in fields)

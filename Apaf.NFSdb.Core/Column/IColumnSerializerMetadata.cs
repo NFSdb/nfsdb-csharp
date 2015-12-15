@@ -17,27 +17,15 @@
  */
 
 #endregion
-using System;
-using System.Reflection;
 
 namespace Apaf.NFSdb.Core.Column
 {
     public interface IColumnSerializerMetadata
     {
-        EFieldType DataType { get; }
+        EFieldType DataType { get; set; }
         int Size { get; }
         bool Nulllable { get; }
-
         string PropertyName { get; }
-        string FieldName { get; }
         string GetFileName();
-
-        MethodInfo GetSetMethod();
-        MethodInfo GetGetMethod();
-
-        FieldInfo GetNullableHasValueField();
-        FieldInfo GetNullableValueField();
-        Type GetDataType();
-        bool IsRefType();
     }
 }

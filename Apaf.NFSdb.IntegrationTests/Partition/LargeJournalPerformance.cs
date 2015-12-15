@@ -132,10 +132,10 @@ namespace Apaf.NFSdb.IntegrationTests.Partition
             {
                 var readTx = j.OpenReadTx();
                 var first = readTx.Enumerate().Take(1).ToArray();
-                Console.WriteLine(j.Core.Diagnostics.GetTotalFilesOpen());
-                Console.WriteLine(j.Core.Diagnostics.GetTotalMemoryMapped());
+                Console.WriteLine(j.Diagnostics.GetTotalFilesOpen());
+                Console.WriteLine(j.Diagnostics.GetTotalMemoryMapped());
 
-                Assert.That(j.Core.Diagnostics.GetTotalFilesOpen(), Is.LessThan(27 + 18));
+                Assert.That(j.Diagnostics.GetTotalFilesOpen(), Is.LessThan(27 + 18));
             }
         }
     }

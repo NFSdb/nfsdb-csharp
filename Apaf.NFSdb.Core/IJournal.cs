@@ -15,23 +15,16 @@
  * limitations under the License.
  */
 #endregion
-using System;
-using Apaf.NFSdb.Core.Configuration;
 using Apaf.NFSdb.Core.Queries;
 using Apaf.NFSdb.Core.Writes;
 
 namespace Apaf.NFSdb.Core
 {
-    public interface IJournal<T> : IDisposable
+    public interface IJournal<T> : IJournalCore
     {
         IQuery<T> OpenReadTx();
-        IWriter<T> OpenWriteTx();
-        IWriter<T> OpenWriteTx(int partitionTtlMs);
-
+        IWriter OpenWriteTx();
+        IWriter OpenWriteTx(int partitionTtlMs);
         void Truncate();
-
-        IJournalMetadata<T> Metadata { get; }
-
-        IJournalCore Core { get; }
     }
 }

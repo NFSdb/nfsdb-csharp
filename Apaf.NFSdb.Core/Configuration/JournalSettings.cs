@@ -17,6 +17,7 @@
 #endregion
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using Apaf.NFSdb.Core.Column;
 
@@ -34,7 +35,7 @@ namespace Apaf.NFSdb.Core.Configuration
         private readonly long _recordHint;
         private readonly string _timestampColumn;
 
-        public JournalSettings(JournalElement jconf, IEnumerable<ColumnMetadata> actualColumns)
+        internal JournalSettings(JournalElement jconf, IEnumerable<ColumnMetadata> actualColumns)
         {
             _defaultPath = jconf.DefaultPath;
             _timestampColumn = jconf.TimestampColumn;
@@ -44,12 +45,75 @@ namespace Apaf.NFSdb.Core.Configuration
             _maxOpenPartitions = jconf.MaxOpenPartitions;
             _lagHours = jconf.LagHours;
             _columns = actualColumns.ToArray();
-            Columns = _columns;
             _recordHint = jconf.RecordHint;
             if (_recordHint <= 0) _recordHint = MetadataConstants.DEFAULT_RECORD_HINT;
         }
 
-        public IEnumerable<ColumnMetadata> Columns { get; private set; }
+        public void SaveTo(Stream stream)
+        {
+            var existingConfig = new JournalElement
+            {
+                DefaultPath = ".",
+                TimestampColumn = TimestampColumn,
+                Key = KeySymbol,
+                PartitionType = PartitionType,
+                OpenPartitionTtl = OpenPartitionTtl,
+                MaxOpenPartitions = MaxOpenPartitions,
+                RecordHint = RecordHint,
+                SerializerName = null,
+                Columns = _columns
+                    .Where(c => c.FieldType != EFieldType.BitSet)
+                    .Select(CreateColumnElement)
+                    .ToList()
+            };
+            ConfigurationSerializer.WriteJournalConfiguration(stream, existingConfig);
+        }
+
+        private ColumnElement CreateColumnElement(ColumnMetadata meta)
+        {
+            switch (meta.FieldType)
+            {
+                case EFieldType.Byte:
+                case EFieldType.Bool:
+                case EFieldType.Int16:
+                case EFieldType.Int32:
+                case EFieldType.Int64:
+                case EFieldType.Double:
+                case EFieldType.DateTime:
+                case EFieldType.DateTimeEpochMs:
+                    return new ColumnElement
+                    {
+                        Name = meta.SerializerMetadata.GetFileName(),
+                        ColumnType = meta.FieldType
+                    };
+                case EFieldType.String:
+                    return new StringElement
+                    {
+                        AvgSize = meta.GetConfigAvgSize(),
+                        MaxSize = meta.MaxSize,
+                        Name = meta.SerializerMetadata.GetFileName()
+                    };
+                case EFieldType.Symbol:
+                    return new SymbolElement
+                    {
+                        AvgSize = meta.GetConfigAvgSize(),
+                        MaxSize = meta.MaxSize,
+                        Name = meta.SerializerMetadata.GetFileName(),
+                        Indexed = meta.Indexed,
+                        HintDistinctCount = meta.HintDistinctCount,
+                        SameAs = meta.SameAs
+                    };
+                case EFieldType.Binary:
+                    return new BinaryElement
+                    {
+                        AvgSize = meta.GetConfigAvgSize(),
+                        MaxSize = meta.MaxSize,
+                        Name = meta.SerializerMetadata.GetFileName()
+                    };
+                default:
+                    throw new ArgumentOutOfRangeException();
+            }
+        }
 
         public string DefaultPath
         {

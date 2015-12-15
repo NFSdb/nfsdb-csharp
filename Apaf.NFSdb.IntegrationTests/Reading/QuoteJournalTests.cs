@@ -334,7 +334,7 @@ namespace Apaf.NFSdb.IntegrationTests.Reading
             return stopwatch.Elapsed;
         }
 
-        public static void GenerateRecords(int count, IWriter<Quote> wr, long increment)
+        public static void GenerateRecords(int count, IWriter wr, long increment)
         {
             var trade = new Quote();
             trade.Ex = "LXE";

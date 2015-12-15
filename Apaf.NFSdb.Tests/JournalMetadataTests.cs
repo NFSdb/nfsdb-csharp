@@ -44,11 +44,11 @@ namespace Apaf.NFSdb.Tests
                 .FieldType;
         }
 
-        private JournalMetadata<T> CreateMetadata<T>(string[] privateFields = null)
+        private JournalMetadata CreateMetadata<T>(string[] privateFields = null)
         {
             var settings = new JournalElement();
             var journalStorage = new Mock<IColumnStorage>();
-            var meta = new JournalMetadata<T>(settings);
+            var meta = JournalBuilder.CreateNewJournalMetadata(settings, typeof(T));
             meta.InitializeSymbols(journalStorage.Object);
             return meta;
         }

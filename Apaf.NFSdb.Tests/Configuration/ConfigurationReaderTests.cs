@@ -16,6 +16,7 @@
  */
 #endregion
 using System.IO;
+using System.Linq;
 using Apaf.NFSdb.Core;
 using Apaf.NFSdb.Core.Column;
 using Apaf.NFSdb.Core.Configuration;
@@ -36,8 +37,7 @@ namespace Apaf.NFSdb.Tests.Configuration
                     writer.Flush();
                     stream.Position = 0;
 
-                    var rdr = new ConfigurationReader();
-                    return rdr.ReadConfiguration(stream);
+                    return ConfigurationSerializer.ReadConfiguration(stream);
                 }
             }
         }
@@ -72,8 +72,8 @@ namespace Apaf.NFSdb.Tests.Configuration
                   </db>";
 
             DbElement db = Parse(config);
-            Assert.That(db.Journals[0].Symbols.Count, Is.EqualTo(2));
-            Assert.That(db.Journals[0].Strings.Count, Is.EqualTo(1));
+            Assert.That(db.Journals[0].Columns.OfType<SymbolElement>().Count(), Is.EqualTo(2));
+            Assert.That(db.Journals[0].Columns.OfType<StringElement>().Count(), Is.EqualTo(1));
         }
 
         [TestCase("class", ExpectedResult = "namespace.model.clas1")]
@@ -153,7 +153,7 @@ namespace Apaf.NFSdb.Tests.Configuration
                               + attributeName.Substring(1);
 
             var val = typeof(StringElement).GetProperty(properyName)
-                .GetValue(journal.Strings[0], null);
+                .GetValue(journal.Columns.OfType<StringElement>().ToArray()[0], null);
             return val;
         }
 
@@ -175,7 +175,7 @@ namespace Apaf.NFSdb.Tests.Configuration
                               + attributeName.Substring(1);
 
             var val = typeof(StringElement).GetProperty(properyName)
-                .GetValue(journal.Strings[0], null);
+                .GetValue(journal.Columns.OfType<StringElement>().ToArray()[0], null);
             return val;
         }
 
@@ -203,13 +203,13 @@ namespace Apaf.NFSdb.Tests.Configuration
                               + attributeName.Substring(1);
 
             var val = typeof(SymbolElement).GetProperty(properyName)
-                .GetValue(journal.Symbols[0], null);
+                .GetValue(journal.Columns.OfType<SymbolElement>().ToArray()[0], null);
             return val;
         }
 
         [TestCase("name", ExpectedResult = null)]
-        [TestCase("maxSize", ExpectedResult = 128)]
-        [TestCase("avgSize", ExpectedResult = 12)]
+        [TestCase("maxSize", ExpectedResult = null)]
+        [TestCase("avgSize", ExpectedResult = null)]
         [TestCase("indexed", ExpectedResult = false)]
         [TestCase("sameAs", ExpectedResult = null)]
         [TestCase("hintDistinctCount", ExpectedResult = 255)]
@@ -230,7 +230,7 @@ namespace Apaf.NFSdb.Tests.Configuration
                               + attributeName.Substring(1);
 
             var val = typeof(SymbolElement).GetProperty(properyName)
-                .GetValue(journal.Symbols[0], null);
+                .GetValue(journal.Columns.OfType<SymbolElement>().ToArray()[0], null);
             return val;
         }
     }

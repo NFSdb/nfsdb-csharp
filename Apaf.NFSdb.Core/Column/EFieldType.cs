@@ -30,6 +30,6 @@ namespace Apaf.NFSdb.Core.Column
         Symbol,
         Binary,
         DateTime,
-        DateTimeEpochMilliseconds
+        DateTimeEpochMs
     }
 }

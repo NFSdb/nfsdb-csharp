@@ -1,10 +1,11 @@
 ﻿using Antlr4.Runtime;
 using Antlr4.Runtime.Tree;
 using Apaf.NFSdb.Core.Ql.Gramma;
+using Apaf.NFSdb.Core.Queries;
 using Apaf.NFSdb.Core.Queries.Queryable;
 using Apaf.NFSdb.Core.Tx;
 
-namespace Apaf.NFSdb.Core.Queries.Records
+namespace Apaf.NFSdb.Core.Storage.Serializer.Records
 {
     public class RecordQuery : IRecordQuery
     {
@@ -42,7 +43,7 @@ namespace Apaf.NFSdb.Core.Queries.Records
 
             var evalVis = new ExpressionEvaluatorVisitor(_journal, _tx, parameters);
             var res = evalVis.Visit(expr);
-            IRecordSet records = new RecordSet(res.Build().Rowids, _tx, _journal.MetadataCore);
+            IRecordSet records = new RecordSet(res.Build().Rowids, _tx, _journal.Metadata);
             if (res.Columns != null)
             {
                 records = records.Map(res.Columns);

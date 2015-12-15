@@ -19,7 +19,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using Apaf.NFSdb.Core.Queries.Queryable;
-using Apaf.NFSdb.Core.Queries.Records;
+using Apaf.NFSdb.Core.Storage.Serializer.Records;
 using Apaf.NFSdb.Core.Tx;
 
 namespace Apaf.NFSdb.Core.Queries
@@ -36,9 +36,9 @@ namespace Apaf.NFSdb.Core.Queries
             _transactionContext = transactionContext;
             _journal = journal;
             _queryable = new Lazy<JournalQueryable<T>>(
-                () => new JournalQueryable<T>(new JournalQueryProvider<T>(_journal.Core, transactionContext)));
+                () => new JournalQueryable<T>(new JournalQueryProvider<T>(_journal, transactionContext)));
             _transactionContext.AddRefsAllPartitions();
-            _recordQuery = new RecordQuery(journal.Core, transactionContext);
+            _recordQuery = new RecordQuery(journal, transactionContext);
         }
 
         public ResultSet<T> AllBySymbolValueOverInterval<TT>(string symbol, TT value, DateInterval interval)
@@ -68,11 +68,6 @@ namespace Apaf.NFSdb.Core.Queries
         public IRecordQuery RecordQuery
         {
             get { return _recordQuery; }
-        }
-
-        public ResultSet<T> AllByKeyOverInterval<TT>(TT value, DateInterval interval)
-        {
-            return AllBySymbolValueOverInterval(_journal.Metadata.KeySymbol, value, interval);
         }
 
         public ResultSet<T> AllBySymbol<TT>(string symbol, TT value)

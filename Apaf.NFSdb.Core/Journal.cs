@@ -24,21 +24,19 @@ using Apaf.NFSdb.Core.Writes;
 
 namespace Apaf.NFSdb.Core
 {
-    public class Journal<T> : IJournal<T>
+    public class Journal<T> : JournalCore, IJournal<T>
     {
-        private readonly IJournalMetadata<T> _metadata;
-        private readonly IPartitionManager<T> _partitionManager;
+        private readonly IPartitionManager _partitionManager;
 
         private readonly object _writeLock = new object();
         private readonly WriterState<T> _writerState;
 
-        internal Journal(IJournalMetadata<T> metadata,
-            IPartitionManager<T> partitionManager)
+        internal Journal(IJournalMetadata metadata,
+            IPartitionManager partitionManager)
+            : base(metadata, partitionManager)
         {
-            _metadata = metadata;
             _partitionManager = partitionManager;
-            _writerState = new WriterState<T>(metadata);
-            Core = new JournalCore(metadata, partitionManager);
+            _writerState = new WriterState<T>(metadata.GetTimestampReader<T>());
         }
 
         public void Truncate()
@@ -46,42 +44,30 @@ namespace Apaf.NFSdb.Core
             throw new NotImplementedException();
         }
 
-        public IJournalMetadata<T> Metadata
-        {
-            get { return _metadata; }
-        }
-
-        public IJournalCore Core { get; private set; }
-
         public IQuery<T> OpenReadTx()
         {
             var txCntx = _partitionManager.ReadTxLog(Metadata.PartitionTtl.Milliseconds);
             return new Query<T>(this, txCntx);
         }
 
-        public IWriter<T> OpenWriteTx()
+        public IWriter OpenWriteTx()
         {
             if (_partitionManager.Access != EFileAccess.ReadWrite)
             {
                 throw new InvalidOperationException("Journal is not writable");
             }
             Monitor.Enter(_writeLock);
-            return new Writer<T>(_writerState, _partitionManager, _writeLock);
+            return new Writer(_writerState, _partitionManager, _writeLock);
         }
 
-        public IWriter<T> OpenWriteTx(int partitionTtlMs)
+        public IWriter OpenWriteTx(int partitionTtlMs)
         {
             if (_partitionManager.Access != EFileAccess.ReadWrite)
             {
                 throw new InvalidOperationException("Journal is not writable");
             }
             Monitor.Enter(_writeLock);
-            return new Writer<T>(_writerState, _partitionManager, _writeLock, partitionTtlMs);
-        }
-
-        public void Dispose()
-        {
-            _partitionManager.Dispose();
+            return new Writer(_writerState, _partitionManager, _writeLock, partitionTtlMs);
         }
     }
 }

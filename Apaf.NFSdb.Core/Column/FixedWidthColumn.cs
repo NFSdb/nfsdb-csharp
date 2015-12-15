@@ -69,7 +69,7 @@ namespace Apaf.NFSdb.Core.Column
 
         public unsafe DateTime GetDateTime(long rowID)
         {
-            if (_fieldType == EFieldType.DateTimeEpochMilliseconds)
+            if (_fieldType == EFieldType.DateTimeEpochMs)
             {
                 return DateUtils.UnixTimestampToDateTime(GetInt64(rowID));
             }
@@ -116,7 +116,7 @@ namespace Apaf.NFSdb.Core.Column
 
         public void SetDateTime(long rowID, DateTime value, ITransactionContext readContext)
         {
-            var toLong = _fieldType == EFieldType.DateTimeEpochMilliseconds
+            var toLong = _fieldType == EFieldType.DateTimeEpochMs
                 ? DateUtils.DateTimeToUnixTimeStamp(value)
                 : DateUtils.ToUnspecifiedDateTicks(value);
 

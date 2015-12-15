@@ -1,18 +1,17 @@
 ﻿using Apaf.NFSdb.Core.Column;
 using Apaf.NFSdb.Core.Configuration;
-using Apaf.NFSdb.Core.Storage;
 
-namespace Apaf.NFSdb.Core.Queries.Records
+namespace Apaf.NFSdb.Core.Storage.Serializer.Records
 {
     public class TransactionParition
     {
-        private readonly IJournalMetadataCore _metadata;
+        private readonly IJournalMetadata _metadata;
 
         public readonly IPartitionCore Partition;
         public readonly IReadContext ReadContext;
 
         public TransactionParition(IPartitionCore partition, 
-            IReadContext readContext, IJournalMetadataCore metadata)
+            IReadContext readContext, IJournalMetadata metadata)
         {
             Partition = partition;
             ReadContext = readContext;

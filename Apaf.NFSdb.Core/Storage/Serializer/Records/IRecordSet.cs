@@ -1,6 +1,6 @@
 ﻿using System.Collections.Generic;
 
-namespace Apaf.NFSdb.Core.Queries.Records
+namespace Apaf.NFSdb.Core.Storage.Serializer.Records
 {
     public interface IRecordSet
     {

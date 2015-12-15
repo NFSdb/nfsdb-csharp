@@ -1,57 +1,36 @@
-﻿#region copyright
-
-/*
- * Copyright (c) 2014. APAF http://apafltd.co.uk
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- * http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-
-#endregion
-
-using System;
+﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using Apaf.NFSdb.Core.Collections;
 using Apaf.NFSdb.Core.Column;
 using Apaf.NFSdb.Core.Exceptions;
-using Apaf.NFSdb.Core.Reflection;
 using Apaf.NFSdb.Core.Storage;
 using Apaf.NFSdb.Core.Storage.Serializer;
+using Apaf.NFSdb.Core.Writes;
 
 namespace Apaf.NFSdb.Core.Configuration
 {
-    public class JournalMetadata<T> : IJournalMetadata<T>
+    public class JournalMetadata : IJournalMetadata
     {
         private readonly IList<ColumnMetadata> _columns;
         private readonly JournalSettings _settings;
 
-        private readonly ExpandableList<SymbolCache> _symbolCaches =
-            new ExpandableList<SymbolCache>(() => new SymbolCache());
-
-        private readonly Func<T, DateTime> _timestampDelegate;
+        private readonly ExpandableList<SymbolCache> _symbolCaches = new ExpandableList<SymbolCache>(() => new SymbolCache());
         private IColumnStorage _symbolStorage;
         private readonly ISerializerFactory _serializerFactory;
+        private readonly ColumnMetadata _timestampColumn;
 
-        public JournalMetadata(JournalElement config)
+        internal JournalMetadata(JournalElement config, ISerializerFactory serializerFactory, Type itemType)
         {
-            var itemType = typeof (T);
+            _serializerFactory = serializerFactory;
+            var columnSerializers = _serializerFactory.Initialize(itemType);
+            _columns = ParseColumns(columnSerializers, config);
+            // config = UpdateConfiguration(config, _columns);
+            CheckColumnMatch(config, _columns);
 
-            _serializerFactory =
-                JournalSerializers.Instance.GetSerializer(config.SerializerName ??
-                                                          MetadataConstants.DEFAULT_SERIALIZER_NAME);
-            _serializerFactory.Initialize(itemType);
-            var columnsFields = _serializerFactory.ParseColumns().ToArray();
-            _columns = ParseColumns(columnsFields, config);
+            // _columns = ParseColumns(columnsMetadata, config);
+            _settings = new JournalSettings(config, _columns);
 
             // Parse.
             FileCount = CalcFilesCount(_columns);
@@ -59,46 +38,34 @@ namespace Apaf.NFSdb.Core.Configuration
             // Timestamp.
             if (!string.IsNullOrEmpty(config.TimestampColumn))
             {
-                var timestampColumn = columnsFields.FirstOrDefault(c => 
+                var timestampColumn = _columns.FirstOrDefault(c =>
                     c.PropertyName.Equals(config.TimestampColumn, StringComparison.OrdinalIgnoreCase));
 
                 if (timestampColumn == null)
                 {
-                    throw new NFSdbConfigurationException("Timestamp column with name {0} is not found", 
+                    throw new NFSdbConfigurationException("Timestamp column with name {0} is not found",
                         config.TimestampColumn);
                 }
 
-                if (timestampColumn.DataType != EFieldType.DateTime
-                    && timestampColumn.DataType != EFieldType.DateTimeEpochMilliseconds
-                    && timestampColumn.DataType != EFieldType.Int64)
+                if (timestampColumn.FieldType != EFieldType.DateTime
+                    && timestampColumn.FieldType != EFieldType.DateTimeEpochMs
+                    && timestampColumn.FieldType != EFieldType.Int64)
                 {
                     throw new NFSdbConfigurationException("Timestamp column {0} must be DateTime or Int64 but was {1}",
-                        config.TimestampColumn, timestampColumn.DataType);
+                        config.TimestampColumn, timestampColumn.FieldType);
                 }
-                _timestampDelegate = 
-                    ReflectionHelper.CreateTimestampDelegate<T>(timestampColumn.FieldName);
 
-                TimestampFieldID = _columns.Single(
-                    c => c.FileName.Equals(config.TimestampColumn,
-                        StringComparison.OrdinalIgnoreCase)).FieldID;
-            }
-            else
-            {
-                _timestampDelegate = DefaultGetTimestamp;
+                _timestampColumn = _columns.Single(c => c.FileName.Equals(config.TimestampColumn, StringComparison.OrdinalIgnoreCase));
+                TimestampFieldID = _timestampColumn.FieldID;
             }
 
-            // Create settings.
-            _settings = new JournalSettings(config, _columns);
 
             // Misc.
-            KeySymbol = config.Key != null ? GetPropertyName(config.Key) : null;
-
             PartitionTtl = TimeSpan.FromMilliseconds(config.OpenPartitionTtl);
-
             Name = config.Class;
         }
-
-        private int CalcFilesCount(IList<ColumnMetadata> columns)
+        
+        private int CalcFilesCount(IEnumerable<ColumnMetadata> columns)
         {
             int fileID = 0;
             foreach (var cType in columns)
@@ -174,6 +141,63 @@ namespace Apaf.NFSdb.Core.Configuration
             return CreateColumnsFromColumnMetadata(_columns, partitionStorage);
         }
 
+        public JournalElement UpdateConfiguration(JournalElement conf, IList<ColumnMetadata> columnsMetadata)
+        {
+            string settingsFile = Path.Combine(conf.DefaultPath, MetadataConstants.JOURNAL_SETTINGS_FILE_NAME);
+            JournalElement existingConfig = null;
+            if (File.Exists(settingsFile))
+            {
+                try
+                {
+                    using (var dbXml = File.OpenRead(settingsFile))
+                    {
+                        existingConfig = ConfigurationSerializer.ReadJournalConfiguration(dbXml);
+                    }
+                }
+                catch (IOException)
+                {
+                }
+                catch (InvalidOperationException)
+                {
+                }
+
+                if (existingConfig != null)
+                {
+                    existingConfig.OpenPartitionTtl = _settings.OpenPartitionTtl;
+                    existingConfig.MaxOpenPartitions = _settings.MaxOpenPartitions;
+                    existingConfig.LagHours = _settings.LagHours;
+                    CheckColumnMatch(existingConfig, _columns);
+                    return existingConfig;
+                }
+            }
+            return conf;
+        }
+        
+        private static void CheckColumnMatch(JournalElement jconf, IList<ColumnMetadata> columns)
+        {
+            // TODO check that fields of the class match columns saved on disk.
+        }
+
+        public Func<T, DateTime> GetTimestampReader<T>()
+        {
+            if (_timestampColumn == null)
+            {
+                return DummyTimestampDelegate;
+            }
+            if (_timestampColumn.FieldType == EFieldType.Int64)
+            {
+                var longReader = _serializerFactory.ColumnReader<T, long>(_timestampColumn.SerializerMetadata);
+                return t => DateUtils.UnixTimestampToDateTime(longReader(t));
+            }
+
+            return _serializerFactory.ColumnReader<T, DateTime>(_timestampColumn.SerializerMetadata);
+        }
+
+        public static DateTime DummyTimestampDelegate<T>(T anyValue)
+        {
+            return DateTime.MinValue;
+        }
+
         public ColumnMetadata GetColumnById(int columndID)
         {
             return _columns[columndID];
@@ -181,7 +205,7 @@ namespace Apaf.NFSdb.Core.Configuration
 
         public ColumnMetadata GetColumnByPropertyName(string propertyName)
         {
-            var col = _columns.FirstOrDefault(c => c.PropertyName == propertyName);
+            var col = _columns.FirstOrDefault(c => string.Equals(c.PropertyName, propertyName, StringComparison.OrdinalIgnoreCase));
             if (col == null)
             {
                 throw new NFSdbConfigurationException("Property {0} does not exist in journal {1}",
@@ -193,11 +217,6 @@ namespace Apaf.NFSdb.Core.Configuration
         public int ColumnCount
         {
             get { return _columns.Count; }
-        }
-
-        public Func<T, DateTime> GetTimestampReader()
-        {
-            return _timestampDelegate;
         }
 
         public int GetColumnID(string filename)
@@ -214,7 +233,6 @@ namespace Apaf.NFSdb.Core.Configuration
             return -1;
         }
 
-        public string KeySymbol { get; private set; }
         public int FileCount { get; private set; }
         public TimeSpan PartitionTtl { get; private set; }
 
@@ -298,12 +316,12 @@ namespace Apaf.NFSdb.Core.Configuration
             }
         }
 
-        private IList<ColumnMetadata> ParseColumns(IEnumerable<IColumnSerializerMetadata> fields, JournalElement config)
+        private IList<ColumnMetadata> ParseColumns(IEnumerable<IColumnSerializerMetadata> columnsMetadata, JournalElement config)
         {
             // Build.
             var cols = new List<ColumnMetadata>();
 
-            foreach (IColumnSerializerMetadata field in fields)
+            foreach (IColumnSerializerMetadata field in columnsMetadata)
             {
                 // Type.
                 switch (field.DataType)
@@ -319,30 +337,21 @@ namespace Apaf.NFSdb.Core.Configuration
 
                     case EFieldType.DateTime:
                         // Check config.
-                        var dateTimeConfig = ((IEnumerable<ColumnElement>)(config.DateTimes))
-                            .Concat(config.Symbols)
-                            .FirstOrDefault(c => c.Name.Equals(field.PropertyName,
-                                StringComparison.OrdinalIgnoreCase));
+                        var dateTimeConfig = config.Columns
+                            .FirstOrDefault(c => c.Name.Equals(field.PropertyName, StringComparison.OrdinalIgnoreCase));
 
                         if (dateTimeConfig != null
-                            && ((DateTimeElement)dateTimeConfig).IsEpochMilliseconds)
+                            && dateTimeConfig.ColumnType == EFieldType.DateTimeEpochMs)
                         {
-                            cols.Add(ColumnMetadata.FromFixedField(
-                                new ColumnSerializerMetadata(EFieldType.DateTimeEpochMilliseconds, 
-                                    field.PropertyName, field.FieldName, field.Nulllable), 
-                                cols.Count));
+                            field.DataType = EFieldType.DateTimeEpochMs;
                         }
-                        else
-                        {
-                            cols.Add(ColumnMetadata.FromFixedField(field, cols.Count));
-                        }
+                        cols.Add(ColumnMetadata.FromFixedField(field, cols.Count));
                         break;
 
                     case EFieldType.Symbol:
                     case EFieldType.String:
                         // Check config.
-                        var stringConfig = ((IEnumerable<ColumnElement>) (config.Strings))
-                            .Concat(config.Symbols)
+                        var stringConfig = (VarLenColumnElement) config.Columns
                             .FirstOrDefault(c => c.Name.Equals(field.PropertyName,
                                 StringComparison.OrdinalIgnoreCase));
 
@@ -360,7 +369,7 @@ namespace Apaf.NFSdb.Core.Configuration
                         }
                         break;
                     case EFieldType.Binary:
-                        var binaryConfig = ((IEnumerable<ColumnElement>) (config.Binaries))
+                        var binaryConfig = (VarLenColumnElement)config.Columns
                             .FirstOrDefault(c => c.Name.Equals(field.PropertyName,
                                 StringComparison.OrdinalIgnoreCase));
 
@@ -392,11 +401,6 @@ namespace Apaf.NFSdb.Core.Configuration
         {
             return name.Substring(0, 1).ToUpper()
                    + name.Substring(1, name.Length - 1);
-        }
-
-        private static DateTime DefaultGetTimestamp(T item)
-        {
-            return DateTime.MinValue;
         }
     }
 }

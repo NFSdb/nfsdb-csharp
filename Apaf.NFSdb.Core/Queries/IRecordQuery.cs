@@ -1,6 +1,6 @@
 ﻿using System;
 using Apaf.NFSdb.Core.Queries.Queryable;
-using Apaf.NFSdb.Core.Queries.Records;
+using Apaf.NFSdb.Core.Storage.Serializer.Records;
 
 namespace Apaf.NFSdb.Core.Queries
 {

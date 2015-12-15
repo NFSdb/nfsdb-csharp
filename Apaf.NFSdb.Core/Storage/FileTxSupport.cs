@@ -32,12 +32,12 @@ namespace Apaf.NFSdb.Core.Storage
     {
         private readonly int _partitionID;
         private readonly IColumnStorage _storage;
-        private readonly IJournalMetadataCore _metadata;
+        private readonly IJournalMetadata _metadata;
         private readonly DateTime _startDate;
         private readonly DateTime _endTime;
         private const int TIMESTAMP_DATA_SIZE = 8;
 
-        public FileTxSupport(int partitionID, IColumnStorage storage, IJournalMetadataCore metadata, DateTime startDate, DateTime endTime)
+        public FileTxSupport(int partitionID, IColumnStorage storage, IJournalMetadata metadata, DateTime startDate, DateTime endTime)
         {
             _partitionID = partitionID;
             _storage = storage;
