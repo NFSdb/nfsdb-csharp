@@ -268,6 +268,7 @@ namespace Apaf.NFSdb.Core.Configuration
                     existingConfig.LagHours = conf.LagHours;
                     existingConfig.DefaultPath = conf.DefaultPath;
                     existingConfig.SerializerName = conf.SerializerName;
+                    existingConfig.FromDisk = true;
                     return existingConfig;
                 }
             }

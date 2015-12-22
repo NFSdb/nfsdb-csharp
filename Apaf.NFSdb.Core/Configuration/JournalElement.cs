@@ -89,6 +89,9 @@ namespace Apaf.NFSdb.Core.Configuration
         [XmlIgnore]
         public ISerializerFactory SerializerInstace { get; set; }
 
+        [XmlIgnore]
+        public bool FromDisk { get; set; }
+
         [XmlElement("fileFlags")]
         public EFileFlags FileFlags { get; set; }
 

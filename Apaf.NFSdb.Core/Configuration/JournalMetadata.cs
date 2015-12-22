@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.IO;
 using System.Linq;
 using Apaf.NFSdb.Core.Collections;
 using Apaf.NFSdb.Core.Column;
@@ -25,11 +24,8 @@ namespace Apaf.NFSdb.Core.Configuration
         {
             _serializerFactory = serializerFactory;
             var columnSerializers = _serializerFactory.Initialize(itemType);
+            columnSerializers = CheckColumnMatch(config, columnSerializers, itemType);
             _columns = ParseColumns(columnSerializers, config);
-            // config = UpdateConfiguration(config, _columns);
-            CheckColumnMatch(config, _columns);
-
-            // _columns = ParseColumns(columnsMetadata, config);
             _settings = new JournalSettings(config, _columns);
 
             // Parse.
@@ -141,41 +137,69 @@ namespace Apaf.NFSdb.Core.Configuration
             return CreateColumnsFromColumnMetadata(_columns, partitionStorage);
         }
 
-        public JournalElement UpdateConfiguration(JournalElement conf, IList<ColumnMetadata> columnsMetadata)
+        private static IEnumerable<IColumnSerializerMetadata> CheckColumnMatch(JournalElement jconf,
+            IEnumerable<IColumnSerializerMetadata> columns, Type itemType)
         {
-            string settingsFile = Path.Combine(conf.DefaultPath, MetadataConstants.JOURNAL_SETTINGS_FILE_NAME);
-            JournalElement existingConfig = null;
-            if (File.Exists(settingsFile))
+            if (!jconf.FromDisk)
             {
-                try
+                return columns;
+            }
+
+            var columnsList = columns as IList<IColumnSerializerMetadata>;
+            if (columnsList == null) columnsList = columns.ToList();
+
+            // Columns and column order must match.
+            // If bitset exists it must be the last one.
+            var hasBitSet = columnsList[columnsList.Count - 1].DataType == EFieldType.BitSet;
+            var parsedColLen = hasBitSet ? columnsList.Count - 1 : columnsList.Count;
+            var confColumns = jconf.Columns;
+            if (parsedColLen != confColumns.Count)
+            {
+                throw new NFSdbConfigurationException("Settings loaded from disk has '{0}' " +
+                                                      "columns but the serializer parsed " +
+                                                      "class of '{1}' as '{2}' fields. Column count mismatch.",
+                    confColumns.Count, itemType, parsedColLen);
+            }
+
+
+            for (int i = 0; i < confColumns.Count; i++)
+            {
+                bool found = false;
+                for (int j = i; j < parsedColLen; j++)
                 {
-                    using (var dbXml = File.OpenRead(settingsFile))
+                    if (string.Equals(confColumns[i].Name, columnsList[j].PropertyName,
+                        StringComparison.OrdinalIgnoreCase))
                     {
-                        existingConfig = ConfigurationSerializer.ReadJournalConfiguration(dbXml);
+                        if (columnsList[j].DataType != confColumns[i].ColumnType)
+                        {
+                            if (!(confColumns[i].ColumnType == EFieldType.Symbol &&
+                                  columnsList[i].DataType == EFieldType.String))
+                            {
+                                throw new NFSdbConfigurationException("Type '{0}' has field '{1}' of type '{2}' " +
+                                                                      "while data on disk has column '{3}' of type '{4}'",
+                                    itemType, columnsList[j].PropertyName, columnsList[j].DataType,
+                                    confColumns[i].Name, confColumns[i].ColumnType);
+                            }
+                        }
+
+                        // Put column j at place i in columnList
+                        if (i != j)
+                        {
+                            var t = columnsList[j];
+                            columnsList[j] = columnsList[i];
+                            columnsList[i] = t;
+                        }
+                        found = true;
+                        break;
                     }
                 }
-                catch (IOException)
+                if (!found)
                 {
-                }
-                catch (InvalidOperationException)
-                {
-                }
-
-                if (existingConfig != null)
-                {
-                    existingConfig.OpenPartitionTtl = _settings.OpenPartitionTtl;
-                    existingConfig.MaxOpenPartitions = _settings.MaxOpenPartitions;
-                    existingConfig.LagHours = _settings.LagHours;
-                    CheckColumnMatch(existingConfig, _columns);
-                    return existingConfig;
+                    throw new NFSdbConfigurationException("Type '{0}' does not have field for column name '{1}'",
+                        itemType, confColumns[i].Name);
                 }
             }
-            return conf;
-        }
-        
-        private static void CheckColumnMatch(JournalElement jconf, IList<ColumnMetadata> columns)
-        {
-            // TODO check that fields of the class match columns saved on disk.
+            return columnsList;
         }
 
         public Func<T, DateTime> GetTimestampReader<T>()

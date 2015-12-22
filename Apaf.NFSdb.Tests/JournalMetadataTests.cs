@@ -19,6 +19,7 @@ using System;
 using System.Linq;
 using Apaf.NFSdb.Core.Column;
 using Apaf.NFSdb.Core.Configuration;
+using Apaf.NFSdb.Core.Exceptions;
 using Apaf.NFSdb.Core.Storage;
 using Apaf.NFSdb.Tests.Columns.ThriftModel;
 using Moq;
@@ -44,9 +45,36 @@ namespace Apaf.NFSdb.Tests
                 .FieldType;
         }
 
-        private JournalMetadata CreateMetadata<T>(string[] privateFields = null)
+
+        [TestCase("timestamp,sym,bid,bidSize,mode,pool,last", Result = "Timestamp,Sym,Bid,BidSize,Mode,Pool,Last,_nulls")]
+        [TestCase("sym,bid,bidSize,mode,pool,last,timestamp", Result = "Sym,Bid,BidSize,Mode,Pool,Last,Timestamp,_nulls")]
+        [TestCase("bidSize,pool,sym,bid,mode,last,timestamp", Result = "BidSize,Pool,Sym,Bid,Mode,Last,Timestamp,_nulls")]
+        [TestCase("bidSize,pool,sym,bid,mode,last", ExpectedException = typeof(NFSdbConfigurationException))]
+        [TestCase("timestamp,timestamp,sym,bid,bidSize,mode,pool", ExpectedException = typeof(NFSdbConfigurationException))]
+        public string ShouldCheckColumsMatch(string colNames)
         {
-            var settings = new JournalElement();
+            var noConfMeta = CreateMetadata<FieldTypes>();
+
+            var conf = new JournalElement
+            {
+                Columns = colNames.Split(new[] {','})
+                    .Select(n =>
+                    {
+                        var column = noConfMeta.GetColumnByPropertyName(n);
+                        return column.FieldType == EFieldType.String
+                            ? new StringElement {Name = n}
+                            : new ColumnElement {Name = n, ColumnType = column.FieldType};
+                    }).ToList(),
+                    FromDisk = true
+            };
+
+            var meta = CreateMetadata<FieldTypes>(conf);
+            return string.Join(",", meta.Columns.Select(c => c.PropertyName));
+        }
+
+        private JournalMetadata CreateMetadata<T>(JournalElement conf = null, string[] privateFields = null)
+        {
+            var settings = conf ?? new JournalElement();
             var journalStorage = new Mock<IColumnStorage>();
             var meta = JournalBuilder.CreateNewJournalMetadata(settings, typeof(T));
             meta.InitializeSymbols(journalStorage.Object);
