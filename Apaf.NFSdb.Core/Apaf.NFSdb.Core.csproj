@@ -382,9 +382,9 @@
   <!-- ILRepack -->
   <Target Name="AfterBuild" Condition="'$(Configuration)' == 'Release'">
     <ItemGroup>
+      <InputAssemblies Include="$(OutputPath)\$(AssemblyName).dll" />
       <InputAssemblies Include="$(OutputPath)\IQToolkit.Data.dll" />
       <InputAssemblies Include="$(OutputPath)\IQToolkit.dll" />
-      <InputAssemblies Include="$(OutputPath)\$(AssemblyName).dll" />
     </ItemGroup>
     <ItemGroup>
       <DoNotInternalizeAssemblies Include="$(AssemblyName)" />
