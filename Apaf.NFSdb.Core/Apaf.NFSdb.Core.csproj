@@ -28,6 +28,7 @@
     <WarningLevel>4</WarningLevel>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <PlatformTarget>AnyCPU</PlatformTarget>
+    <NoWarn>3021</NoWarn>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
     <DebugType>pdbonly</DebugType>
@@ -37,6 +38,7 @@
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <NoWarn>3021</NoWarn>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|x64'">
     <DebugSymbols>true</DebugSymbols>
@@ -382,13 +384,12 @@
     <ItemGroup>
       <InputAssemblies Include="$(OutputPath)\IQToolkit.Data.dll" />
       <InputAssemblies Include="$(OutputPath)\IQToolkit.dll" />
-      <InputAssemblies Include="$(OutputPath)\Apaf.NFSdb.Core.dll" />
+      <InputAssemblies Include="$(OutputPath)\$(AssemblyName).dll" />
     </ItemGroup>
     <ItemGroup>
-      <!-- Must be a fully qualified name -->
-      <DoNotInternalizeAssemblies Include="Apaf.NFSdb.Core" />
+      <DoNotInternalizeAssemblies Include="$(AssemblyName)" />
     </ItemGroup>
-    <ILRepack Parallel="true" Internalize="true" InternalizeExclude="@(DoNotInternalizeAssemblies)" InputAssemblies="@(InputAssemblies)" TargetKind="Dll" OutputFile="$(OutputPath)\$(AssemblyName).dll" />
+    <ILRepack Parallel="true" Internalize="true" InternalizeExclude="@(DoNotInternalizeAssemblies)" InputAssemblies="@(InputAssemblies)" TargetKind="Dll" OutputFile="$(OutputPath)\$(AssemblyName).dll" AttributeFile="$(OutputPath)\$(AssemblyName).dll"/>
   </Target>
   <Import Project="..\packages\Antlr4.4.3.0\build\Antlr4.targets" Condition="Exists('..\packages\Antlr4.4.3.0\build\Antlr4.targets')" />
   <!-- /ILRepack -->
