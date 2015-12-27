@@ -20,7 +20,9 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
+using Apaf.NFSdb.Core;
 using Apaf.NFSdb.Core.Column;
+using Apaf.NFSdb.Core.Configuration;
 using Apaf.NFSdb.Core.Storage;
 using Apaf.NFSdb.Core.Storage.Serializer;
 using Apaf.NFSdb.Tests.Columns.ThriftModel;
@@ -54,10 +56,8 @@ namespace Apaf.NFSdb.Tests.Serializer
             };
             s.__isset.askSize = false;
             s.__isset.ex = true;
-            var rdr = CreateReader(s);
-            
-            var deser = (Quote)rdr.Read(0, null);
-            return (bool) typeof (Quote.Isset).GetField(propertyName)
+            var deser = SerializeCircle(s);
+            return (bool)typeof(Quote.Isset).GetField(propertyName)
                 .GetValue(deser.__isset);
         }
 
@@ -72,9 +72,7 @@ namespace Apaf.NFSdb.Tests.Serializer
             };
             s.__isset.mode = false;
             s.__isset.sym = true;
-            var rdr = CreateReader(s);
-
-            var deser = (Quote)rdr.Read(0, null);
+            var deser = SerializeCircle(s);
             return (bool)typeof(Quote.Isset).GetField(propertyName)
                 .GetValue(deser.__isset);
         }
@@ -83,17 +81,44 @@ namespace Apaf.NFSdb.Tests.Serializer
         [Test]
         public void ShouldReadFirstInt64()
         {
-            var rdr = CreateReader(new Quote {Timestamp = 12345});
-            var deser = (Quote)rdr.Read(0, null);
+            var deser = SerializeCircle(new Quote { Timestamp = 12345 });
             Assert.That(deser.Timestamp, Is.EqualTo(12345));
         }
 
         [Test]
         public void ShouldReadDouble()
         {
-            var rdr = CreateReader(new Quote { Bid = 0.12345 });
-            var deser = (Quote)rdr.Read(0, null);
+            var deser = SerializeCircle(new Quote { Bid = 0.12345 });
             Assert.That(deser.Bid, Is.EqualTo(0.12345));
+        }
+
+        private T SerializeCircle<T>(T item)
+        {
+            using (var j = ToJournal(item))
+            {
+                using (var r = j.OpenReadTx())
+                {
+                    return r.Items.First();
+                }
+            }
+        }
+
+        private static IJournal<T> ToJournal<T>(T item)
+        {
+            TestShared.Utils.ClearDir("ThriftSerializerFactoryTests");
+            var j = new JournalBuilder()
+                .WithAccess(EFileAccess.ReadWrite)
+                .WithLocation("ThriftSerializerFactoryTests")
+                .WithSerializerFactoryName(MetadataConstants.THRIFT_SERIALIZER_NAME)
+                .ToJournal<T>();
+
+            using (var wr = j.OpenWriteTx())
+            {
+                wr.Append(item);
+                wr.Commit();
+            }
+
+            return j;
         }
 
         [Test]
@@ -164,41 +189,7 @@ namespace Apaf.NFSdb.Tests.Serializer
                 .First(c => c.PropertyName == propertyName);
             return resultCol.Value;
         }
-
-        [TestCase("Timestamp", ExpectedResult = false)]
-        [TestCase("Ask", ExpectedResult = true)]
-        [TestCase("Bid", ExpectedResult = false)]
-        [TestCase("BidSize", ExpectedResult = false)]
-        [TestCase("AskSize", ExpectedResult = true)]
-        [TestCase("Ex", ExpectedResult = false)]
-        [TestCase("Mode", ExpectedResult = false)]
-        [TestCase("Sym", ExpectedResult = true)]
-        public bool ShouldWriteBitmapValues(string propertyName)
-        {
-            var s = new Quote
-            {
-                Timestamp = 12345,
-                Bid = 2.4,
-                BidSize = 0,
-                Ex = "qwerty",
-                Mode = ""
-            };
-            var columns = GetQuoteColumns(s);
-            var serializer = CreateWriter(columns);
-
-            // Act.
-            serializer.Write(s, 0, TestTxLog.TestContext());
-
-            // Verify.
-            // Probed column.
-            var searchCol = columns.Select(c => c.Column).First(c => c.PropertyName == propertyName);
-            // Bitset.
-            var resultCol = (QuoteBitsetColumnStub)columns.Select(c => c.Column).First(c => c.FieldType == EFieldType.BitSet);
-            // Non-bitset.
-            var columnList = new List<IColumn>(columns.Select(c => c.Column).Where(c => c.FieldType != EFieldType.BitSet));
-            return resultCol.SetColumnIndecies.Contains(columnList.IndexOf(searchCol));
-        }
-
+        
 #if RELEASE
         [Test]
         [Category("Performance")]
@@ -290,16 +281,50 @@ namespace Apaf.NFSdb.Tests.Serializer
                CreateSolumnSource(EFieldType.String, "Mode", t.Mode, i++),
                CreateSolumnSource(EFieldType.String, "Ex", t.Ex, i++)
             };
-            var bitset = new ColumnSource(new ColumnSerializerMetadata(EFieldType.BitSet, "_isset", null),
-                new QuoteBitsetColumnStub(columns.Select(c => c.Column).ToArray(), GetNullsColumn(t).ToArray()), i);
+            var bitset = BitSetColumnSource(columns);
 
             return columns.Concat(new[] {bitset}).ToArray();
         }
 
+        private static ColumnSource BitSetColumnSource(ColumnSource[] columns)
+        {
+            var nullableCount = columns.Count(c => c.Metadata.Nullable);
+            var bitsetColSource =
+                ColumnMetadata.FromBitsetField(
+                    new ColumnSerializerMetadata(EFieldType.BitSet, MetadataConstants.NULLS_FILE_NAME, null), nullableCount, columns.Length);
+
+            var bitset =
+                new ColumnSource(bitsetColSource,
+                    new QuoteBitsetColumnStub(columns.Select(c => c.Column).ToArray(), new[] { 0, 2 }), columns.Length);
+            return bitset;
+        }
+
         private static ColumnSource CreateSolumnSource<T>(EFieldType type, string name, T value, int order)
         {
-            return new ColumnSource(new ColumnSerializerMetadata(type, name, null),
-                ColumnsStub.CreateColumn(value, type, order, name), order);
+            ColumnMetadata colMeta;
+            switch (type)
+            {
+                case EFieldType.Byte:
+                case EFieldType.Bool:
+                case EFieldType.Int16:
+                case EFieldType.Int32:
+                case EFieldType.Int64:
+                case EFieldType.Double:
+                case EFieldType.DateTime:
+                case EFieldType.DateTimeEpochMs:
+                    colMeta = ColumnMetadata.FromFixedField(new ColumnSerializerMetadata(type, name, null), order, order);
+                    break;
+                case EFieldType.Symbol:
+                case EFieldType.String:
+                    colMeta = ColumnMetadata.FromStringField(new ColumnSerializerMetadata(type, name, null), 10, 10, order, order);
+                    break;
+                case EFieldType.Binary:
+                    colMeta = ColumnMetadata.FromBinaryField(new ColumnSerializerMetadata(type, name, null), 10, 10, order, order);
+                    break;
+                default:
+                    throw new ArgumentOutOfRangeException("type");
+            }
+            return new ColumnSource(colMeta, ColumnsStub.CreateColumn(value, type, order, name), order);
         }
 
         private static IEnumerable<int> GetNullsColumn(Quote quote)

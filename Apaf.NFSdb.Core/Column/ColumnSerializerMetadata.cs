@@ -26,19 +26,19 @@ namespace Apaf.NFSdb.Core.Column
     public class ColumnSerializerMetadata : IPocoClassSerializerMetadata
     {
         public ColumnSerializerMetadata(EFieldType type, string propertyName, 
-            string fieldName, bool nullable = false, int size = 0)
+            string fieldName, bool nullable = true, int size = 0)
         {
             DataType = type;
             PropertyName = propertyName;
             Size = size;
-            Nulllable = nullable;
+            Nullable = nullable;
             FieldName = fieldName;
         }
 
         public EFieldType DataType { get; set; }
         public string PropertyName { get; private set; }
         public int Size { get; private set; }
-        public bool Nulllable { get; private set; }
+        public bool Nullable { get; private set; }
         public string FieldName { get; private set; }
 
         public MethodInfo GetGetMethod()
@@ -50,6 +50,12 @@ namespace Apaf.NFSdb.Core.Column
                 return typeof(IRefTypeColumn).GetMethod("GetValue");
             }
             EFieldType fieldType = DataType;
+
+            // DateTimeEpochMs means DateTime field but stored as Epoch Ms.
+            if (fieldType == EFieldType.DateTimeEpochMs)
+            {
+                fieldType = EFieldType.DateTime;
+            }
             return typeof(IFixedWidthColumn).GetMethod("Get" + fieldType);
         }
 
@@ -67,6 +73,11 @@ namespace Apaf.NFSdb.Core.Column
                 return typeof(IRefTypeColumn).GetMethod("SetValue");
             }
             EFieldType fieldType = DataType;
+            // DateTimeEpochMs means DateTime field but stored as Epoch Ms.
+            if (fieldType == EFieldType.DateTimeEpochMs)
+            {
+                fieldType = EFieldType.DateTime;
+            }
             return typeof(IFixedWidthColumn).GetMethod("Set" + fieldType);
         }
 
@@ -135,6 +146,7 @@ namespace Apaf.NFSdb.Core.Column
                     ntype = typeof(double?);
                     break;
                 case EFieldType.DateTime:
+                case EFieldType.DateTimeEpochMs:
                     ntype = typeof(DateTime?);
                     break;
                 default:

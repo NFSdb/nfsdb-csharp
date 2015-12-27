@@ -336,7 +336,7 @@ namespace Apaf.NFSdb.Core.Configuration
                     column = new FixedColumn(data, cType.FieldType, GetPropertyName(cType.FileName));
                 }
 
-                yield return new ColumnSource(cType.SerializerMetadata, column, fileID);
+                yield return new ColumnSource(cType, column, fileID);
             }
         }
 
@@ -344,9 +344,11 @@ namespace Apaf.NFSdb.Core.Configuration
         {
             // Build.
             var cols = new List<ColumnMetadata>();
+            int nullIndex = 0;
 
             foreach (IColumnSerializerMetadata field in columnsMetadata)
             {
+                var nIndex = field.Nullable ? nullIndex++ : -1;
                 // Type.
                 switch (field.DataType)
                 {
@@ -356,7 +358,7 @@ namespace Apaf.NFSdb.Core.Configuration
                     case EFieldType.Int32:
                     case EFieldType.Int64:
                     case EFieldType.Double:
-                        cols.Add(ColumnMetadata.FromFixedField(field, cols.Count));
+                        cols.Add(ColumnMetadata.FromFixedField(field, cols.Count, nIndex));
                         break;
 
                     case EFieldType.DateTime:
@@ -369,7 +371,7 @@ namespace Apaf.NFSdb.Core.Configuration
                         {
                             field.DataType = EFieldType.DateTimeEpochMs;
                         }
-                        cols.Add(ColumnMetadata.FromFixedField(field, cols.Count));
+                        cols.Add(ColumnMetadata.FromFixedField(field, cols.Count, nIndex));
                         break;
 
                     case EFieldType.Symbol:
@@ -381,7 +383,7 @@ namespace Apaf.NFSdb.Core.Configuration
 
                         if (stringConfig != null)
                         {
-                            cols.Add(ColumnMetadata.FromColumnElement(field, stringConfig, cols.Count));
+                            cols.Add(ColumnMetadata.FromColumnElement(field, stringConfig, cols.Count, nIndex));
                         }
                         else
                         {
@@ -389,7 +391,7 @@ namespace Apaf.NFSdb.Core.Configuration
                             cols.Add(ColumnMetadata.FromStringField(field,
                                 MetadataConstants.DEFAULT_STRING_AVG_SIZE,
                                 MetadataConstants.DEFAULT_STRING_MAX_SIZE,
-                                cols.Count));
+                                cols.Count, nIndex));
                         }
                         break;
                     case EFieldType.Binary:
@@ -399,7 +401,7 @@ namespace Apaf.NFSdb.Core.Configuration
 
                         if (binaryConfig != null)
                         {
-                            cols.Add(ColumnMetadata.FromColumnElement(field, binaryConfig, cols.Count));
+                            cols.Add(ColumnMetadata.FromColumnElement(field, binaryConfig, cols.Count, nIndex));
                         }
                         else
                         {
@@ -407,7 +409,7 @@ namespace Apaf.NFSdb.Core.Configuration
                             cols.Add(ColumnMetadata.FromBinaryField(field, 
                                 MetadataConstants.DEFAULT_BINARY_AVG_SIZE,
                                 MetadataConstants.DEFAULT_BINARY_MAX_SIZE,
-                                cols.Count));
+                                cols.Count, nIndex));
                         }
                         break;
                     case EFieldType.BitSet:

@@ -33,8 +33,6 @@ namespace Apaf.NFSdb.Core.Storage.Serializer
     public class PocoSerializerFactory : ISerializerFactory
     {
         private Type _objectType;
-        private IList<IPocoClassSerializerMetadata> _allColumns;
-        private IPocoClassSerializerMetadata[] _allDataColumns;
         private Func<ByteArray, IFixedWidthColumn[], long, IRefTypeColumn[], IReadContext, object> _readMethod;
         private Action<object, ByteArray, IFixedWidthColumn[], long, IRefTypeColumn[], ITransactionContext> _writeMethod;
         private static readonly Guid GENERATOR_MARK_GUID = Guid.NewGuid();
@@ -44,24 +42,18 @@ namespace Apaf.NFSdb.Core.Storage.Serializer
         {
             _objectType = objectType;
             _isAnonymouse = CheckIfAnonymousType(objectType);
-            _allColumns = ParseColumnsImpl();
-            _allDataColumns = _allColumns
-                .Where(c => c.DataType != EFieldType.BitSet)
-                .ToArray();
-
-            _readMethod = GenerateReadMethod();
-            _writeMethod = GenerateWriteMethod();
-            return _allColumns;
-        }
-
-        public IEnumerable<IColumnSerializerMetadata> ParseColumns()
-        {
-            return _allColumns;
+            return ParseColumnsImpl();
         }
 
         public IFieldSerializer CreateFieldSerializer(IEnumerable<ColumnSource> columns)
         {
-            return new PocoObjectSerializer(columns, _readMethod, _writeMethod);
+            var colsList = columns as IList<ColumnSource> ?? columns.ToList();
+            if (_readMethod == null || _writeMethod == null)
+            {
+                _readMethod = GenerateReadMethod(colsList);
+                _writeMethod = GenerateWriteMethod(colsList);
+            }
+            return new PocoObjectSerializer(colsList, _readMethod, _writeMethod);
         }
 
         public Func<T, TRes> ColumnReader<T, TRes>(IColumnSerializerMetadata column)
@@ -188,7 +180,7 @@ namespace Apaf.NFSdb.Core.Storage.Serializer
 
          * */
 
-        private Func<ByteArray, IFixedWidthColumn[], long, IRefTypeColumn[], IReadContext, object> GenerateReadMethod()
+        private Func<ByteArray, IFixedWidthColumn[], long, IRefTypeColumn[], IReadContext, object> GenerateReadMethod(IList<ColumnSource> columns)
         {
             ConstructorInfo constructor = _objectType.GetConstructor(Type.EmptyTypes);
             var isSetMethod = typeof (ByteArray).GetMethod("IsSet");
@@ -217,25 +209,25 @@ namespace Apaf.NFSdb.Core.Storage.Serializer
                 il.Emit(OpCodes.Newobj, constructor);
                 il.Emit(OpCodes.Stloc_0);
             }
-            Label[] notSetLabels = _allDataColumns.Select(c => il.DefineLabel()).ToArray();
+            Label[] notSetLabels = columns.Select(c => il.DefineLabel()).ToArray();
 
             int fci = 0;
             int sci = 0;
-            int nulli  = 0;
 
-            for (int i = 0; i < _allDataColumns.Length; i++)
+            for (int i = 0; i < columns.Count; i++)
             {
-                var column = _allDataColumns[i];
-                bool isRefType = column.IsRefType();
+                var column = columns[i].Metadata;
+                var columnMeta = (IPocoClassSerializerMetadata)column.SerializerMetadata;
+                bool isRefType = columnMeta.IsRefType();
 
-                if (column.DataType != EFieldType.BitSet)
+                if (columnMeta.DataType != EFieldType.BitSet)
                 {
                     // Start.
                     if (isRefType)
                     {
                         // Use IStringColumn[].
                         il.Emit(OpCodes.Ldarga_S, (byte)0);
-                        il.Emit(OpCodes.Ldc_I4, nulli++);
+                        il.Emit(OpCodes.Ldc_I4, column.NullIndex);
                         il.Emit(OpCodes.Call, isSetMethod);
                         il.Emit(OpCodes.Brtrue_S, notSetLabels[i]);
                         il.Emit(OpCodes.Ldloc_0);
@@ -244,12 +236,12 @@ namespace Apaf.NFSdb.Core.Storage.Serializer
                         il.Emit(OpCodes.Ldelem_Ref);
                         il.Emit(OpCodes.Ldarg_2);
                         il.Emit(OpCodes.Ldarg_S, 4);
-                        il.Emit(OpCodes.Callvirt, column.GetGetMethod());
-                        il.Emit(OpCodes.Castclass, column.GetDataType());
-                        il.Emit(OpCodes.Stfld, GetFieldInfo(column.FieldName));
+                        il.Emit(OpCodes.Callvirt, columnMeta.GetGetMethod());
+                        il.Emit(OpCodes.Castclass, columnMeta.GetDataType());
+                        il.Emit(OpCodes.Stfld, GetFieldInfo(columnMeta.FieldName));
                         il.MarkLabel(notSetLabels[i]);
                     }
-                    else if (!column.Nulllable)
+                    else if (!columnMeta.Nullable)
                     {
                         // Use IFixedWidthColumn[].
                         il.Emit(OpCodes.Ldloc_0);
@@ -257,29 +249,28 @@ namespace Apaf.NFSdb.Core.Storage.Serializer
                         il.Emit(OpCodes.Ldc_I4, fci++);
                         il.Emit(OpCodes.Ldelem_Ref);
                         il.Emit(OpCodes.Ldarg_2);
-                        il.Emit(OpCodes.Callvirt, column.GetGetMethod());
-                        il.Emit(OpCodes.Stfld, GetFieldInfo(column.FieldName));
+                        il.Emit(OpCodes.Callvirt, columnMeta.GetGetMethod());
+                        il.Emit(OpCodes.Stfld, GetFieldInfo(columnMeta.FieldName));
                     }
                     else
                     {
                         il.Emit(OpCodes.Ldarga_S, (byte)0);
-                        il.Emit(OpCodes.Ldc_I4, nulli);
+                        il.Emit(OpCodes.Ldc_I4, column.NullIndex);
                         il.Emit(OpCodes.Call, isSetMethod);
                         il.Emit(OpCodes.Brtrue_S, notSetLabels[i]);
                         il.Emit(OpCodes.Ldloc_0);
-                        il.Emit(OpCodes.Ldflda, GetFieldInfo(column.FieldName));
+                        il.Emit(OpCodes.Ldflda, GetFieldInfo(columnMeta.FieldName));
                         il.Emit(OpCodes.Ldarg_1);
                         il.Emit(OpCodes.Ldc_I4, fci);
                         il.Emit(OpCodes.Ldelem_Ref);
                         il.Emit(OpCodes.Ldarg_2);
-                        il.Emit(OpCodes.Callvirt, column.GetGetMethod());
-                        il.Emit(OpCodes.Stfld, column.GetNullableValueField());
+                        il.Emit(OpCodes.Callvirt, columnMeta.GetGetMethod());
+                        il.Emit(OpCodes.Stfld, columnMeta.GetNullableValueField());
                         il.Emit(OpCodes.Ldloc_0);
-                        il.Emit(OpCodes.Ldflda, GetFieldInfo(column.FieldName));
+                        il.Emit(OpCodes.Ldflda, GetFieldInfo(columnMeta.FieldName));
                         il.Emit(OpCodes.Ldc_I4_1);
-                        il.Emit(OpCodes.Stfld, column.GetNullableHasValueField());
+                        il.Emit(OpCodes.Stfld, columnMeta.GetNullableHasValueField());
                         il.MarkLabel(notSetLabels[i]);
-                        nulli++;
                         fci++;
                     }
                 }
@@ -451,9 +442,7 @@ namespace Apaf.NFSdb.Core.Storage.Serializer
 } // end of method QuotePoco::WriteItemPoco
 
          * */
-        private Action<object, ByteArray, IFixedWidthColumn[], 
-            long, IRefTypeColumn[], ITransactionContext> 
-            GenerateWriteMethod()
+        private Action<object, ByteArray, IFixedWidthColumn[], long, IRefTypeColumn[], ITransactionContext> GenerateWriteMethod(IList<ColumnSource> columns)
         {
             var argTypes = new[]
             {
@@ -474,32 +463,33 @@ namespace Apaf.NFSdb.Core.Storage.Serializer
             int fci = 0;
             int sci = 0;
             int nci = 0;
-            Label[] notSetLabels = _allDataColumns.Select(c => il.DefineLabel()).ToArray();
+            Label[] notSetLabels = columns.Select(c => il.DefineLabel()).ToArray();
 
-            for (int i = 0; i < _allDataColumns.Length; i++)
+            for (int i = 0; i < columns.Count; i++)
             {
-                var column = _allColumns[i];
-                if (column.DataType != EFieldType.BitSet)
+                var column = columns[i].Metadata;
+                var columnMeta = (IPocoClassSerializerMetadata)column.SerializerMetadata;
+                if (columnMeta.DataType != EFieldType.BitSet)
                 {
-                    if (!column.Nulllable)
+                    if (!column.Nullable)
                     {
                         il.Emit(OpCodes.Ldarg_2);
                         il.Emit(OpCodes.Ldc_I4, fci++);
                         il.Emit(OpCodes.Ldelem_Ref);
                         il.Emit(OpCodes.Ldarg_3);
                         il.Emit(OpCodes.Ldloc_0);
-                        il.Emit(OpCodes.Ldfld, GetFieldInfo(column.FieldName));
+                        il.Emit(OpCodes.Ldfld, GetFieldInfo(columnMeta.FieldName));
                         il.Emit(OpCodes.Ldarg_S, (byte) 5);
-                        il.Emit(OpCodes.Callvirt, column.GetSetMethod());
+                        il.Emit(OpCodes.Callvirt, columnMeta.GetSetMethod());
                     }
-                    else if (column.DataType == EFieldType.String 
-                        || column.DataType == EFieldType.Symbol
-                        || column.DataType == EFieldType.Binary)
+                    else if (columnMeta.DataType == EFieldType.String
+                        || columnMeta.DataType == EFieldType.Symbol
+                        || columnMeta.DataType == EFieldType.Binary)
                     {
                         il.Emit(OpCodes.Ldarga_S, 1);
                         il.Emit(OpCodes.Ldc_I4, nci++);
                         il.Emit(OpCodes.Ldloc_0);
-                        il.Emit(OpCodes.Ldfld, GetFieldInfo(column.FieldName));
+                        il.Emit(OpCodes.Ldfld, GetFieldInfo(columnMeta.FieldName));
                         il.Emit(OpCodes.Ldnull);
                         il.Emit(OpCodes.Ceq);
                         il.Emit(OpCodes.Call, setMethod);
@@ -508,15 +498,15 @@ namespace Apaf.NFSdb.Core.Storage.Serializer
                         il.Emit(OpCodes.Ldelem_Ref);
                         il.Emit(OpCodes.Ldarg_3);
                         il.Emit(OpCodes.Ldloc_0);
-                        il.Emit(OpCodes.Ldfld, GetFieldInfo(column.FieldName));
+                        il.Emit(OpCodes.Ldfld, GetFieldInfo(columnMeta.FieldName));
                         il.Emit(OpCodes.Ldarg_S, (byte)5);
-                        il.Emit(OpCodes.Callvirt, column.GetSetMethod());
+                        il.Emit(OpCodes.Callvirt, columnMeta.GetSetMethod());
                     }
                     else
                     {
                         il.Emit(OpCodes.Ldloc_0);
-                        il.Emit(OpCodes.Ldflda, GetFieldInfo(column.FieldName));
-                        il.Emit(OpCodes.Ldfld, column.GetNullableHasValueField());
+                        il.Emit(OpCodes.Ldflda, GetFieldInfo(columnMeta.FieldName));
+                        il.Emit(OpCodes.Ldfld, columnMeta.GetNullableHasValueField());
                         il.Emit(OpCodes.Ldc_I4_0);
                         il.Emit(OpCodes.Ceq);
                         il.Emit(OpCodes.Stloc_1);
@@ -531,10 +521,10 @@ namespace Apaf.NFSdb.Core.Storage.Serializer
                         il.Emit(OpCodes.Ldelem_Ref);
                         il.Emit(OpCodes.Ldarg_3);
                         il.Emit(OpCodes.Ldloc_0);
-                        il.Emit(OpCodes.Ldflda, GetFieldInfo(column.FieldName));
-                        il.Emit(OpCodes.Ldfld, column.GetNullableValueField());
+                        il.Emit(OpCodes.Ldflda, GetFieldInfo(columnMeta.FieldName));
+                        il.Emit(OpCodes.Ldfld, columnMeta.GetNullableValueField());
                         il.Emit(OpCodes.Ldarg_S, 5);
-                        il.Emit(OpCodes.Callvirt, column.GetSetMethod());
+                        il.Emit(OpCodes.Callvirt, columnMeta.GetSetMethod());
                         il.MarkLabel(notSetLabels[i]);
                     }
                 }

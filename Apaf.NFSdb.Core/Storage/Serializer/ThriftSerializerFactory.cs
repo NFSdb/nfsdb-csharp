@@ -40,9 +40,6 @@ namespace Apaf.NFSdb.Core.Storage.Serializer
         private Action<object, ByteArray, IFixedWidthColumn[], long, 
             IRefTypeColumn[], ITransactionContext> _writeMethod;
 
-        private IClassColumnSerializerMetadata[] _allDataColumns;
-        private IClassColumnSerializerMetadata[] _fixedColumns;
-        private IClassColumnSerializerMetadata[] _stringColumns;
         private IList<IClassColumnSerializerMetadata> _allColumns;
 
         public IEnumerable<IColumnSerializerMetadata> Initialize(Type objectType)
@@ -58,23 +55,6 @@ namespace Apaf.NFSdb.Core.Storage.Serializer
             _objectType = objectType;
             _allColumns = ParseColumnsImpl();
 
-            _allDataColumns = _allColumns
-                .Where(c => c.DataType != EFieldType.BitSet)
-                .ToArray();
-
-            _fixedColumns = _allDataColumns
-                .Where(c => c.DataType != EFieldType.BitSet
-                            && c.DataType != EFieldType.String
-                            && c.DataType != EFieldType.Symbol)
-                .ToArray();
-
-            _stringColumns = _allDataColumns
-                .Where(c => c.DataType == EFieldType.String
-                            || c.DataType == EFieldType.Symbol)
-                .ToArray();
-
-            _readMethod = GenerateFillMethod();
-            _writeMethod = GenerateWriteMethod();
             return _allColumns;
         }
 
@@ -147,7 +127,13 @@ namespace Apaf.NFSdb.Core.Storage.Serializer
 
         public IFieldSerializer CreateFieldSerializer(IEnumerable<ColumnSource> columns)
         {
-            return new ObjectSerializer(columns, _readMethod, _writeMethod);
+            var colsList = columns as IList<ColumnSource> ?? columns.ToList();
+            if (_readMethod == null || _writeMethod == null)
+            {
+                _readMethod = GenerateFillMethod(colsList);
+                _writeMethod = GenerateWriteMethod(colsList);
+            }
+            return new ObjectSerializer(colsList, _readMethod, _writeMethod);
         }
 
         public Func<T, TRes> ColumnReader<T, TRes>(IColumnSerializerMetadata column)
@@ -232,8 +218,7 @@ namespace Apaf.NFSdb.Core.Storage.Serializer
 
 */
 
-        private Action<object, ByteArray, IFixedWidthColumn[],
-            long, IRefTypeColumn[], ITransactionContext> GenerateWriteMethod()
+        private Action<object, ByteArray, IFixedWidthColumn[], long, IRefTypeColumn[], ITransactionContext> GenerateWriteMethod(IList<ColumnSource> columns)
         {
             var methodSet = typeof(ByteArray).GetMethod("Set");
             var issetType = _objectType.GetNestedType("Isset");
@@ -252,10 +237,11 @@ namespace Apaf.NFSdb.Core.Storage.Serializer
             int fci = 0;
             int sci = 0;
 
-            for (int i = 0; i < _allDataColumns.Length; i++)
+            for (int i = 0; i < columns.Count; i++)
             {
-                var column = _allDataColumns[i];
-                EFieldType fieldType = column.DataType;
+                var column = columns[i].Metadata;
+                var columnMeta = (IClassColumnSerializerMetadata)column.SerializerMetadata;
+                EFieldType fieldType = columnMeta.DataType;
                 switch (fieldType)
                 {
                     case EFieldType.Byte:
@@ -264,19 +250,11 @@ namespace Apaf.NFSdb.Core.Storage.Serializer
                     case EFieldType.Int32:
                     case EFieldType.Int64:
                     case EFieldType.Double:
-
-                        var fixedCol = _fixedColumns[fci];
-                        if (fixedCol != column)
-                        {
-                            throw new NFSdbInitializationException(
-                                "Error generating Object Reader. Fixed column order does not match columns order");
-                        }
-
                         il.Emit(OpCodes.Ldarga_S, (byte)1);
-                        il.Emit(OpCodes.Ldc_I4, i);
+                        il.Emit(OpCodes.Ldc_I4, column.NullIndex);
                         il.Emit(OpCodes.Ldloc_0);
                         il.Emit(OpCodes.Ldflda, issetField);
-                        il.Emit(OpCodes.Ldfld, GetIssetFieldInfo(issetType, fixedCol));
+                        il.Emit(OpCodes.Ldfld, GetIssetFieldInfo(issetType, columnMeta));
                         il.Emit(OpCodes.Ldc_I4_0);
                         il.Emit(OpCodes.Ceq);
                         il.Emit(OpCodes.Call, methodSet);
@@ -286,27 +264,20 @@ namespace Apaf.NFSdb.Core.Storage.Serializer
                         il.Emit(OpCodes.Ldelem_Ref);
                         il.Emit(OpCodes.Ldarg_3);
                         il.Emit(OpCodes.Ldloc_0);
-                        il.Emit(OpCodes.Call, _objectType.GetProperty(fixedCol.PropertyName).GetGetMethod());
+                        il.Emit(OpCodes.Call, _objectType.GetProperty(columnMeta.PropertyName).GetGetMethod());
                         il.Emit(OpCodes.Ldarg_S, (byte)5);
-                        il.Emit(OpCodes.Callvirt, fixedCol.GetSetMethod());
+                        il.Emit(OpCodes.Callvirt, columnMeta.GetSetMethod());
 
                         fci++;
                         break;
 
                     case EFieldType.String:
                     case EFieldType.Symbol:
-                        var stringColumn = _stringColumns[sci];
-                        if (stringColumn != column)
-                        {
-                            throw new NFSdbInitializationException(
-                                "Error generating Object Reader. String column order does not match all columns order");
-                        }
-
                         il.Emit(OpCodes.Ldarga_S, (byte)1);
-                        il.Emit(OpCodes.Ldc_I4, i);
+                        il.Emit(OpCodes.Ldc_I4, column.NullIndex);
                         il.Emit(OpCodes.Ldloc_0);
                         il.Emit(OpCodes.Ldflda, issetField);
-                        il.Emit(OpCodes.Ldfld, GetIssetFieldInfo(issetType, stringColumn));
+                        il.Emit(OpCodes.Ldfld, GetIssetFieldInfo(issetType, columnMeta));
                         il.Emit(OpCodes.Ldc_I4_0);
                         il.Emit(OpCodes.Ceq);
                         il.Emit(OpCodes.Call, methodSet);
@@ -316,9 +287,9 @@ namespace Apaf.NFSdb.Core.Storage.Serializer
                         il.Emit(OpCodes.Ldelem_Ref);
                         il.Emit(OpCodes.Ldarg_3);
                         il.Emit(OpCodes.Ldloc_0);
-                        il.Emit(OpCodes.Call, _objectType.GetProperty(stringColumn.PropertyName).GetGetMethod());
+                        il.Emit(OpCodes.Call, _objectType.GetProperty(columnMeta.PropertyName).GetGetMethod());
                         il.Emit(OpCodes.Ldarg_S, (byte)5);
-                        il.Emit(OpCodes.Callvirt, stringColumn.GetSetMethod());
+                        il.Emit(OpCodes.Callvirt, columnMeta.GetSetMethod());
 
                         sci++;
                         break;
@@ -406,8 +377,7 @@ namespace Apaf.NFSdb.Core.Storage.Serializer
 
 * */
 
-        private Func<ByteArray, IFixedWidthColumn[], long, IRefTypeColumn[],
-            IReadContext, object> GenerateFillMethod()
+        private Func<ByteArray, IFixedWidthColumn[], long, IRefTypeColumn[], IReadContext, object> GenerateFillMethod(IList<ColumnSource> columns)
         {
             ConstructorInfo constructor = _objectType.GetConstructor(Type.EmptyTypes);
             MethodInfo isSet = typeof(ByteArray).GetMethod("IsSet");
@@ -424,27 +394,21 @@ namespace Apaf.NFSdb.Core.Storage.Serializer
                 _objectType, argTypes, _objectType, true);
 
             ILGenerator il = method.GetILGenerator();
-            Label[] notSetLabels = _allDataColumns.Select(c => il.DefineLabel()).ToArray();
+            Label[] notSetLabels = columns.Select(c => il.DefineLabel()).ToArray();
             il.DeclareLocal(_objectType);
             il.Emit(OpCodes.Newobj, constructor);
             il.Emit(OpCodes.Stloc_0);
 
             int fci = 0;
             int sci = 0;
-            for (int i = 0; i < _allDataColumns.Length; i++)
+            for (int i = 0; i < columns.Count; i++)
             {
-                var column = _allDataColumns[i];
-                if (column.DataType != EFieldType.BitSet)
+                var column = columns[i].Metadata;
+                var columnMeta = (IClassColumnSerializerMetadata)column.SerializerMetadata;
+                if (columnMeta.DataType != EFieldType.BitSet)
                 {
-                    if (column.IsRefType())
+                    if (columnMeta.IsRefType())
                     {
-                        var stringColumn = _stringColumns[sci];
-                        if (stringColumn != column)
-                        {
-                            throw new NFSdbInitializationException(
-                                "Error generating Object Reader. String column order does not match all columns order");
-                        }
-
                         il.Emit(OpCodes.Ldarga_S, (byte) 0);
                         il.Emit(OpCodes.Ldc_I4, i);
                         il.Emit(OpCodes.Call, isSet);
@@ -455,9 +419,9 @@ namespace Apaf.NFSdb.Core.Storage.Serializer
                         il.Emit(OpCodes.Ldelem_Ref);
                         il.Emit(OpCodes.Ldarg_2);
                         il.Emit(OpCodes.Ldarg_S, (byte) 4);
-                        il.Emit(OpCodes.Callvirt, stringColumn.GetGetMethod());
-                        il.Emit(OpCodes.Castclass, column.GetDataType());
-                        il.Emit(OpCodes.Callvirt, _objectType.GetProperty(stringColumn.PropertyName).GetSetMethod());
+                        il.Emit(OpCodes.Callvirt, columnMeta.GetGetMethod());
+                        il.Emit(OpCodes.Castclass, columnMeta.GetDataType());
+                        il.Emit(OpCodes.Callvirt, _objectType.GetProperty(columnMeta.PropertyName).GetSetMethod());
 
                         il.MarkLabel(notSetLabels[i]);
 
@@ -465,13 +429,6 @@ namespace Apaf.NFSdb.Core.Storage.Serializer
                     }
                     else
                     {
-                        var fixedCol = _fixedColumns[fci];
-                        if (fixedCol != column)
-                        {
-                            throw new NFSdbInitializationException(
-                                "Error generating Object Reader. Fixed column order does not match columns order");
-                        }
-
                         il.Emit(OpCodes.Ldarga_S, (byte) 0);
                         il.Emit(OpCodes.Ldc_I4, i);
                         il.Emit(OpCodes.Call, isSet);
@@ -481,8 +438,8 @@ namespace Apaf.NFSdb.Core.Storage.Serializer
                         il.Emit(OpCodes.Ldc_I4, fci);
                         il.Emit(OpCodes.Ldelem_Ref);
                         il.Emit(OpCodes.Ldarg_2);
-                        il.Emit(OpCodes.Callvirt, fixedCol.GetGetMethod());
-                        il.Emit(OpCodes.Callvirt, _objectType.GetProperty(fixedCol.PropertyName).GetSetMethod());
+                        il.Emit(OpCodes.Callvirt, columnMeta.GetGetMethod());
+                        il.Emit(OpCodes.Callvirt, _objectType.GetProperty(columnMeta.PropertyName).GetSetMethod());
 
                         il.MarkLabel(notSetLabels[i]);
 

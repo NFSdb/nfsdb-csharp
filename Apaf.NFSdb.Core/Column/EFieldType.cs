@@ -30,6 +30,8 @@ namespace Apaf.NFSdb.Core.Column
         Symbol,
         Binary,
         DateTime,
+
+        // DateTimeEpochMs means DateTime field but stored as Epoch Ms.
         DateTimeEpochMs
     }
 }

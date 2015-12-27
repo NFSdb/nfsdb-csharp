@@ -149,9 +149,9 @@ namespace Apaf.NFSdb.Tests.Query
                     if (name != "bidSize")
                     {
                         return ColumnMetadata.FromStringField(new ColumnSerializerMetadata(EFieldType.String, name, name),
-                        10, 10, name.GetHashCode());
+                        10, 10, name.GetHashCode(), -1);
                     }
-                    return ColumnMetadata.FromFixedField(new ColumnSerializerMetadata(EFieldType.Int32, name, name),2);
+                    return ColumnMetadata.FromFixedField(new ColumnSerializerMetadata(EFieldType.Int32, name, name),2, -1);
                 });
 
             return new ResultSetBuilder(journal.Object,

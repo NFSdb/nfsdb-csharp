@@ -23,7 +23,7 @@ namespace Apaf.NFSdb.Core.Storage.Serializer
             var allColumns = _config.Columns.Select(c => new RecordSerializerMetadata(
                 c.ColumnType, c.Name, c.IsNull, i++)).ToList();
 
-            var nullColsCount = allColumns.Count(c => c.Nulllable);
+            var nullColsCount = allColumns.Count(c => c.Nullable);
             if (nullColsCount > 0)
             {
                 // Add bitset.

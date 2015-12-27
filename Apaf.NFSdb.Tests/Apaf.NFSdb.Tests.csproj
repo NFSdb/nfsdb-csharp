@@ -154,7 +154,9 @@
     <Compile Include="Columns\PocoModel\Trade.cs" />
     <Compile Include="Common\DisposableTempDir.cs" />
     <Compile Include="Common\TestUtils.cs" />
+    <Compile Include="Ql\QlPocoNullTests.cs" />
     <Compile Include="Ql\QlParserTests.cs" />
+    <Compile Include="Ql\QlThriftNullTests.cs" />
     <Compile Include="Ql\RecordsQueryTests.cs" />
     <Compile Include="Query\ExecuteLatestBySymUtil.cs" />
     <Compile Include="Query\JournalPocoQueriableContextTests.cs" />

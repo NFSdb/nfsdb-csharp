@@ -25,42 +25,51 @@ namespace Apaf.NFSdb.Core.Column
 {
     public class ColumnMetadata
     {
-        private ColumnMetadata(IColumnSerializerMetadata serializerMetadata, 
-            SymbolElement symbolConfig, int fieldID)
-            : this(serializerMetadata, (VarLenColumnElement) symbolConfig, fieldID)
+        private ColumnMetadata(IColumnSerializerMetadata serializerMetadata,
+            SymbolElement symbolConfig, int fieldID, int nullIndex)
+            : this(serializerMetadata, (VarLenColumnElement) symbolConfig, fieldID, nullIndex)
         {
             HintDistinctCount = symbolConfig.HintDistinctCount;
             Indexed = symbolConfig.Indexed;
             SameAs = symbolConfig.SameAs;
+            Nullable = serializerMetadata.Nullable;
         }
 
-        private ColumnMetadata(IColumnSerializerMetadata serializerMetadata, 
-            StringElement stringConfig, int fieldID)
-            : this(serializerMetadata, (VarLenColumnElement) stringConfig, fieldID)
+
+        private ColumnMetadata(IColumnSerializerMetadata serializerMetadata,
+            StringElement stringConfig, int fieldID, int nullIndex)
+            : this(serializerMetadata, (VarLenColumnElement) stringConfig, fieldID, nullIndex)
         {
         }
 
         private ColumnMetadata(IColumnSerializerMetadata serializerMetadata, 
-            VarLenColumnElement configElement, int fieldID)
+            VarLenColumnElement configElement, int fieldID, int nullIndex)
         {
             SerializerMetadata = serializerMetadata;
             FieldID = fieldID;
             MaxSize = configElement.MaxSize ?? (configElement.AvgSize ?? MetadataConstants.DEFAULT_STRING_MAX_SIZE);
             AvgSize = GetStringAvgSize(configElement.AvgSize ?? (configElement.MaxSize ?? MetadataConstants.DEFAULT_SYMBOL_AVG_SIZE));
+            Nullable = serializerMetadata.Nullable;
+            NullIndex = nullIndex;
         }
 
+
         private ColumnMetadata(IColumnSerializerMetadata serializerMetadata,
-            int avgSize, int maxSize, int fieldID)
+            int avgSize, int maxSize, int fieldID, int nullIndex)
         {
             SerializerMetadata = serializerMetadata;
             AvgSize = avgSize;
             MaxSize = maxSize;
             FieldID = fieldID;
+            Nullable = serializerMetadata.Nullable;
+            NullIndex = nullIndex;
         }
 
+        public int NullIndex { get; private set; }
         public int FieldID { get; private set; }
         public string SameAs { get; private set; }
         public bool Indexed { get; private set; }
+        public bool Nullable { get; private set; }
 
         public EFieldType FieldType
         {
@@ -83,15 +92,15 @@ namespace Apaf.NFSdb.Core.Column
         public IColumnSerializerMetadata SerializerMetadata { get; private set; }
 
         public static ColumnMetadata FromColumnElement(IColumnSerializerMetadata metadata, 
-            VarLenColumnElement colElement, int fieldID)
+            VarLenColumnElement colElement, int fieldID, int nullIndex)
         {
             switch (colElement.ColumnType)
             {
                 case EFieldType.String:
-                    return new ColumnMetadata(metadata, (StringElement) colElement, fieldID);
+                    return new ColumnMetadata(metadata, (StringElement)colElement, fieldID, nullIndex);
                 case EFieldType.Symbol:
                     metadata.DataType = EFieldType.Symbol;
-                    return new ColumnMetadata(metadata, (SymbolElement) colElement, fieldID);
+                    return new ColumnMetadata(metadata, (SymbolElement)colElement, fieldID, nullIndex);
                 default:
                     throw new ArgumentOutOfRangeException("colElement",
                         "ColumnType.ColumnType expected to be Symbol or String but was " +
@@ -99,16 +108,16 @@ namespace Apaf.NFSdb.Core.Column
             }
         }
 
-        public static ColumnMetadata FromStringField(IColumnSerializerMetadata serializerMetadata, 
-            int avgSize, int maxSize, int fieldID)
+        public static ColumnMetadata FromStringField(IColumnSerializerMetadata serializerMetadata,
+            int avgSize, int maxSize, int fieldID, int nullIndex)
         {
-            return new ColumnMetadata(serializerMetadata, GetStringAvgSize(avgSize), maxSize, fieldID);
+            return new ColumnMetadata(serializerMetadata, GetStringAvgSize(avgSize), maxSize, fieldID, nullIndex);
         }
 
         public static ColumnMetadata FromBinaryField(IColumnSerializerMetadata serializerMetadata,
-            int avgSize, int maxSize, int fieldID)
+            int avgSize, int maxSize, int fieldID, int nullIndex)
         {
-            return new ColumnMetadata(serializerMetadata, GetBinaryAvgSize(avgSize), maxSize, fieldID);
+            return new ColumnMetadata(serializerMetadata, GetBinaryAvgSize(avgSize), maxSize, fieldID, nullIndex);
         }
 
         private static int GetStringAvgSize(int avgSize)
@@ -126,18 +135,19 @@ namespace Apaf.NFSdb.Core.Column
             return MetadataConstants.LARGE_VAR_COL_HEADER_LENGTH;
         }
 
-        public static ColumnMetadata FromFixedField(IColumnSerializerMetadata serializerMetadata, int fieldID)
+        public static ColumnMetadata FromFixedField(IColumnSerializerMetadata serializerMetadata, 
+            int fieldID, int nullIndex)
         {
             return new ColumnMetadata(serializerMetadata, 
                 serializerMetadata.DataType.GetSize(), 
-                serializerMetadata.DataType.GetSize(), 
-                fieldID);
+                serializerMetadata.DataType.GetSize(),
+                fieldID, nullIndex);
         }
 
-        public static ColumnMetadata FromBitsetField(IColumnSerializerMetadata serializerMetadata, 
+        public static ColumnMetadata FromBitsetField(IColumnSerializerMetadata serializerMetadata,
             int fieldCount, int fieldID)
         {
-            return new ColumnMetadata(serializerMetadata, fieldCount, fieldCount, fieldID);
+            return new ColumnMetadata(serializerMetadata, fieldCount, fieldCount, fieldID, -1);
         }
 
         public int GetConfigAvgSize()

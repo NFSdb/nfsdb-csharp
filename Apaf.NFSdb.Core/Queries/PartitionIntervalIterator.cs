@@ -17,6 +17,7 @@
 #endregion
 
 using System.Collections.Generic;
+using System.Linq;
 using Apaf.NFSdb.Core.Storage;
 using Apaf.NFSdb.Core.Tx;
 
@@ -27,6 +28,13 @@ namespace Apaf.NFSdb.Core.Queries
         public IList<PartitionRowIDRange> IteratePartitions(IEnumerable<IPartitionReader> partitions,
             DateInterval interval, IReadTransactionContext tx)
         {
+            if (DateInterval.Any.Equals(interval))
+            {
+                return
+                    partitions.Select(p => new PartitionRowIDRange(p.PartitionID, 0, tx.GetRowCount(p.PartitionID) - 1))
+                        .ToList();
+            }
+
             var result = new List<PartitionRowIDRange>();
             foreach (var reader in partitions)
             {

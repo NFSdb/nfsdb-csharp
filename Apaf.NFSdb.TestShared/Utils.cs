@@ -43,8 +43,11 @@ namespace Apaf.NFSdb.TestShared
                 "Apaf.NFSdb.TestShared.Resources.nfsdb.xml"))
             {
                 var dbElement = ConfigurationSerializer.ReadConfiguration(dbXml);
-                var jconf = dbElement.Journals.Single(j => j.Class.EndsWith("." + typeof(T).Name));
-                jconf.DefaultPath = Path.Combine(FindJournalsPath(), jconf.DefaultPath);
+                var jconf = dbElement.Journals.FirstOrDefault(j => j.Class.EndsWith("." + typeof(T).Name));
+                if (jconf != null)
+                {
+                    jconf.DefaultPath = Path.Combine(FindJournalsPath(), jconf.DefaultPath);
+                }
                 return jconf;
             }
         }
@@ -79,16 +82,21 @@ namespace Apaf.NFSdb.TestShared
                 }
 
                 var path = Path.Combine(FindJournalsPath(), folderPath);
-                try
-                {
-                    Directory.Delete(path, true);
-                }
-                catch (IOException)
-                {
-                }
-                catch (UnauthorizedAccessException)
-                {
-                }
+                ClearDir(path);
+            }
+        }
+
+        public static void ClearDir(string path)
+        {
+            try
+            {
+                Directory.Delete(path, true);
+            }
+            catch (IOException)
+            {
+            }
+            catch (UnauthorizedAccessException)
+            {
             }
         }
 

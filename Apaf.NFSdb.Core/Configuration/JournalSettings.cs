@@ -84,14 +84,16 @@ namespace Apaf.NFSdb.Core.Configuration
                     return new ColumnElement
                     {
                         Name = meta.SerializerMetadata.GetFileName(),
-                        ColumnType = meta.FieldType
+                        ColumnType = meta.FieldType,
+                        IsNull = meta.Nullable
                     };
                 case EFieldType.String:
                     return new StringElement
                     {
                         AvgSize = meta.GetConfigAvgSize(),
                         MaxSize = meta.MaxSize,
-                        Name = meta.SerializerMetadata.GetFileName()
+                        Name = meta.SerializerMetadata.GetFileName(),
+                        IsNull = meta.Nullable
                     };
                 case EFieldType.Symbol:
                     return new SymbolElement
@@ -101,14 +103,16 @@ namespace Apaf.NFSdb.Core.Configuration
                         Name = meta.SerializerMetadata.GetFileName(),
                         Indexed = meta.Indexed,
                         HintDistinctCount = meta.HintDistinctCount,
-                        SameAs = meta.SameAs
+                        SameAs = meta.SameAs,
+                        IsNull = meta.Nullable
                     };
                 case EFieldType.Binary:
                     return new BinaryElement
                     {
                         AvgSize = meta.GetConfigAvgSize(),
                         MaxSize = meta.MaxSize,
-                        Name = meta.SerializerMetadata.GetFileName()
+                        Name = meta.SerializerMetadata.GetFileName(),
+                        IsNull = meta.Nullable
                     };
                 default:
                     throw new ArgumentOutOfRangeException();

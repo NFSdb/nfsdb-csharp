@@ -24,7 +24,7 @@ namespace Apaf.NFSdb.Core.Column
     {
         EFieldType DataType { get; set; }
         int Size { get; }
-        bool Nulllable { get; }
+        bool Nullable { get; }
         string PropertyName { get; }
         string GetFileName();
     }

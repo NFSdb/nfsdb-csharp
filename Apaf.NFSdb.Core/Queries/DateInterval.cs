@@ -21,6 +21,19 @@ namespace Apaf.NFSdb.Core.Queries
 {
     public struct DateInterval
     {
+        public bool Equals(DateInterval other)
+        {
+            return Start.Equals(other.Start) && End.Equals(other.End);
+        }
+
+        public override int GetHashCode()
+        {
+            unchecked
+            {
+                return (Start.GetHashCode()*397) ^ End.GetHashCode();
+            }
+        }
+
         private static readonly DateInterval ANY = new DateInterval(DateTime.MinValue, DateTime.MaxValue);
         private static readonly DateInterval NONE = new DateInterval(DateTime.MinValue, DateTime.MinValue);
 
@@ -65,6 +78,12 @@ namespace Apaf.NFSdb.Core.Queries
         {
             return string.Format("{0},{1}", Start == DateTime.MinValue ? "-" : Start.ToString(), 
                 End == DateTime.MaxValue ? "-": End.ToString());
+        }
+
+        public override bool Equals(object obj)
+        {
+            if (ReferenceEquals(null, obj)) return false;
+            return obj is DateInterval && Equals((DateInterval) obj);
         }
     }
 }

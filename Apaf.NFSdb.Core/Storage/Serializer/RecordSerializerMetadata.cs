@@ -10,13 +10,13 @@ namespace Apaf.NFSdb.Core.Storage.Serializer
             DataType = type;
             PropertyName = propertyName;
             Size = size;
-            Nulllable = nullable;
+            Nullable = nullable;
             ColumnId = columnId;
         }
 
         public EFieldType DataType { get; set; }
         public int Size { get; private set; }
-        public bool Nulllable { get; private set; }
+        public bool Nullable { get; private set; }
         public int ColumnId { get; set; }
         public string PropertyName { get; private set; }
 

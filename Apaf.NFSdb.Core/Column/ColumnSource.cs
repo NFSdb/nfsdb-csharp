@@ -2,7 +2,7 @@
 {
     public class ColumnSource
     {
-        public ColumnSource(IColumnSerializerMetadata metadata, IColumn column, int fieldID)
+        public ColumnSource(ColumnMetadata metadata, IColumn column, int fieldID)
         {
             Column = column;
             Metadata = metadata;
@@ -11,6 +11,6 @@
 
         public int FieldID { get; private set; }
         public IColumn Column { get; private set; }
-        public IColumnSerializerMetadata Metadata { get; private set; }
+        public ColumnMetadata Metadata { get; private set; }
     }
 }

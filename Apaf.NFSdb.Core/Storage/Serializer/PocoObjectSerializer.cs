@@ -24,12 +24,12 @@ namespace Apaf.NFSdb.Core.Storage.Serializer
         {
             var allColumns = columns.ToArray();
             _fixedColumns = allColumns
-                .Where(c => !((IClassColumnSerializerMetadata)c.Metadata).IsRefType() && c.Metadata.DataType != EFieldType.BitSet)
+                .Where(c => !((IClassColumnSerializerMetadata)c.Metadata.SerializerMetadata).IsRefType() && c.Metadata.SerializerMetadata.DataType != EFieldType.BitSet)
                 .Select(c => c.Column)
                 .Cast<IFixedWidthColumn>().ToArray();
 
             _stringColumns = allColumns
-                .Where(c => ((IClassColumnSerializerMetadata)c.Metadata).IsRefType())
+                .Where(c => ((IClassColumnSerializerMetadata)c.Metadata.SerializerMetadata).IsRefType())
                 .Select(c => c.Column)
                 .Cast<IRefTypeColumn>().ToArray();
 
