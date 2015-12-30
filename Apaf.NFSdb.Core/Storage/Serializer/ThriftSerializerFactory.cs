@@ -72,43 +72,8 @@ namespace Apaf.NFSdb.Core.Storage.Serializer
                 var propertyName = property.Name;
 
                 // Type.
-                if (property.PropertyType == typeof(byte))
-                {
-                    cols.Add(new ColumnSerializerMetadata(EFieldType.Byte, propertyName, GetFieldName(propertyName)));
-                }
-                else if (property.PropertyType == typeof(bool))
-                {
-                    cols.Add(new ColumnSerializerMetadata(EFieldType.Bool, propertyName, GetFieldName(propertyName)));
-                }
-                else if (property.PropertyType == typeof(short))
-                {
-                    cols.Add(new ColumnSerializerMetadata(EFieldType.Int16, propertyName, GetFieldName(propertyName)));
-                }
-                else if (property.PropertyType == typeof(int))
-                {
-                    cols.Add(new ColumnSerializerMetadata(EFieldType.Int32, propertyName, GetFieldName(propertyName)));
-                }
-                else if (property.PropertyType == typeof(long))
-                {
-                    cols.Add(new ColumnSerializerMetadata(EFieldType.Int64, propertyName, GetFieldName(propertyName)));
-                }
-                else if (property.PropertyType == typeof(double))
-                {
-                    cols.Add(new ColumnSerializerMetadata(EFieldType.Double, propertyName, GetFieldName(propertyName)));
-                }
-                else if (property.PropertyType == typeof(string))
-                {
-                    cols.Add(new ColumnSerializerMetadata(EFieldType.String, propertyName, GetFieldName(propertyName)));
-                }
-                else if (property.PropertyType == typeof(byte[]))
-                {
-                    cols.Add(new ColumnSerializerMetadata(EFieldType.Binary, propertyName, GetFieldName(propertyName)));
-                }
-                else
-                {
-                    throw new NFSdbConfigurationException("Unsupported property type " +
-                        property.PropertyType);
-                }
+                var ret = GetColumnDataType(property.PropertyType);
+                cols.Add(new ColumnSerializerMetadata(ret.ColumnType, propertyName, GetFieldName(propertyName)));
             }
 
             var issetField = _objectType.GetField(MetadataConstants.THRIFT_ISSET_FIELD_NAME);
@@ -118,6 +83,16 @@ namespace Apaf.NFSdb.Core.Storage.Serializer
                     MetadataConstants.THRIFT_ISSET_FIELD_NAME));
             }
             return cols;
+        }
+
+        protected virtual IColumnDataType GetColumnDataType(Type propertyType)
+        {
+            var ret = JournalColumnRegistry.Instance.GetSerializer(propertyType);
+            if (ret == null)
+            {
+                throw new NFSdbConfigurationException("Unsupported property type " + propertyType);
+            }
+            return ret;
         }
 
         private string GetFieldName(string propertyName)
@@ -241,7 +216,7 @@ namespace Apaf.NFSdb.Core.Storage.Serializer
             {
                 var column = columns[i].Metadata;
                 var columnMeta = (IClassColumnSerializerMetadata)column.SerializerMetadata;
-                EFieldType fieldType = columnMeta.DataType;
+                EFieldType fieldType = columnMeta.ColumnType;
                 switch (fieldType)
                 {
                     case EFieldType.Byte:
@@ -405,7 +380,7 @@ namespace Apaf.NFSdb.Core.Storage.Serializer
             {
                 var column = columns[i].Metadata;
                 var columnMeta = (IClassColumnSerializerMetadata)column.SerializerMetadata;
-                if (columnMeta.DataType != EFieldType.BitSet)
+                if (columnMeta.ColumnType != EFieldType.BitSet)
                 {
                     if (columnMeta.IsRefType())
                     {

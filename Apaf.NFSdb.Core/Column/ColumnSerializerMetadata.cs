@@ -20,22 +20,26 @@
 using System;
 using System.Reflection;
 using Apaf.NFSdb.Core.Configuration;
+using Apaf.NFSdb.Core.Storage.Serializer;
 
 namespace Apaf.NFSdb.Core.Column
 {
     public class ColumnSerializerMetadata : IPocoClassSerializerMetadata
     {
-        public ColumnSerializerMetadata(EFieldType type, string propertyName, 
+        public ColumnSerializerMetadata(EFieldType fieldType, string propertyName, 
             string fieldName, bool nullable = true, int size = 0)
         {
-            DataType = type;
+            var columnType = JournalColumnRegistry.Instance.GetSerializer(fieldType);
+            ColumnType = columnType.ColumnType;
             PropertyName = propertyName;
             Size = size;
             Nullable = nullable;
             FieldName = fieldName;
+            DataType = columnType.Clazz;
         }
 
-        public EFieldType DataType { get; set; }
+        public EFieldType ColumnType { get; set; }
+        public Type DataType { get; set; }
         public string PropertyName { get; private set; }
         public int Size { get; private set; }
         public bool Nullable { get; private set; }
@@ -43,13 +47,13 @@ namespace Apaf.NFSdb.Core.Column
 
         public MethodInfo GetGetMethod()
         {
-            if (DataType == EFieldType.String
-                || DataType == EFieldType.Symbol
-                || DataType == EFieldType.Binary)
+            if (ColumnType == EFieldType.String
+                || ColumnType == EFieldType.Symbol
+                || ColumnType == EFieldType.Binary)
             {
                 return typeof(IRefTypeColumn).GetMethod("GetValue");
             }
-            EFieldType fieldType = DataType;
+            EFieldType fieldType = ColumnType;
 
             // DateTimeEpochMs means DateTime field but stored as Epoch Ms.
             if (fieldType == EFieldType.DateTimeEpochMs)
@@ -66,13 +70,13 @@ namespace Apaf.NFSdb.Core.Column
 
         public MethodInfo GetSetMethod()
         {
-            if (DataType == EFieldType.String
-                || DataType == EFieldType.Symbol
-                || DataType == EFieldType.Binary)
+            if (ColumnType == EFieldType.String
+                || ColumnType == EFieldType.Symbol
+                || ColumnType == EFieldType.Binary)
             {
                 return typeof(IRefTypeColumn).GetMethod("SetValue");
             }
-            EFieldType fieldType = DataType;
+            EFieldType fieldType = ColumnType;
             // DateTimeEpochMs means DateTime field but stored as Epoch Ms.
             if (fieldType == EFieldType.DateTimeEpochMs)
             {
@@ -83,7 +87,7 @@ namespace Apaf.NFSdb.Core.Column
 
         public Type GetDataType()
         {
-            switch (DataType)
+            switch (ColumnType)
             {
                 case EFieldType.Byte:
                 case EFieldType.Bool:
@@ -105,9 +109,9 @@ namespace Apaf.NFSdb.Core.Column
 
         public bool IsRefType()
         {
-            return DataType == EFieldType.String
-                   || DataType == EFieldType.Symbol
-                   || DataType == EFieldType.Binary;
+            return ColumnType == EFieldType.String
+                   || ColumnType == EFieldType.Symbol
+                   || ColumnType == EFieldType.Binary;
         }
 
         public FieldInfo GetNullableHasValueField()
@@ -125,7 +129,7 @@ namespace Apaf.NFSdb.Core.Column
         private Type GetNullableType()
         {
             Type ntype;
-            switch (DataType)
+            switch (ColumnType)
             {
                 case EFieldType.Byte:
                     ntype = typeof(byte?);

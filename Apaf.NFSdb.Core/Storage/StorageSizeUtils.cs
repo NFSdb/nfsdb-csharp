@@ -4,19 +4,18 @@ namespace Apaf.NFSdb.Core.Storage
 {
     public static class StorageSizeUtils
     {
-        public static int GetRecordSize(ColumnMetadata column, EDataType dataType)
+        public static int GetRecordSize(IColumnMetadata column, EDataType dataType)
         {
-            if (column.FieldType == EFieldType.BitSet)
+            if (column.DataType.ColumnType == EFieldType.BitSet)
                 return column.AvgSize;
 
-            if (column.FieldType.IsFixedSize())
-                return column.FieldType.GetSize();
+            if (column.DataType.IsFixedSize())
+                return column.DataType.Size;
 
             if (dataType.IsFixedSize())
                 return dataType.GetSize();
 
-            if (column.FieldType == EFieldType.Symbol
-                && dataType == EDataType.Data)
+            if (column.DataType.ColumnType == EFieldType.Symbol && dataType == EDataType.Data)
                 return EFieldType.Int32.GetSize();
 
             return -1;

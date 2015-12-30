@@ -211,7 +211,7 @@ namespace Apaf.NFSdb.Core.Storage
                 var file = _columnStorage.GetOpenedFileByID(i);
                 if (file != null)
                 {
-                    var column = _metadata.GetColumnById(file.ColumnID);
+                    var column = _metadata.GetColumnByID(file.ColumnID);
                     var size = StorageSizeUtils.GetRecordSize(column, file.DataType);
                     if (size > 0)
                     {
@@ -297,10 +297,10 @@ namespace Apaf.NFSdb.Core.Storage
 
                     _columns = _metadata.GetPartitionColums(_columnStorage).ToArray();
 
-                    if (_metadata.TimestampFieldID.HasValue)
+                    if (_metadata.TimestampColumnID.HasValue)
                     {
                         _timestampColumn =
-                            (IFixedWidthColumn)_columns[_metadata.TimestampFieldID.Value].Column;
+                            (IFixedWidthColumn)_columns[_metadata.TimestampColumnID.Value].Column;
                     }
 
                     _fieldSerializer = _metadata.GetSerializer(_columns);

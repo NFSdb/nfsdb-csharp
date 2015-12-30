@@ -57,7 +57,7 @@ namespace Apaf.NFSdb.Core.Storage
                 var file = _storage.GetOpenedFileByID(i);
                 if (file == null) continue;
 
-                ColumnMetadata column;
+                IColumnMetadata column;
                 long fileAppendOffset;
                 try
                 {
@@ -71,8 +71,8 @@ namespace Apaf.NFSdb.Core.Storage
                         var keyBlockSize = file.ReadInt64(keyBlockOffset);
                         pd.SymbolData[file.FileID].KeyBlockSize = (int)keyBlockSize;
                     }
-                    column = _metadata.GetColumnById(file.ColumnID);
-                    if (_metadata.TimestampFieldID == column.FieldID)
+                    column = _metadata.GetColumnByID(file.ColumnID);
+                    if (_metadata.TimestampColumnID == column.ColumnID)
                     {
                         var timestamp = file.ReadInt64(fileAppendOffset - TIMESTAMP_DATA_SIZE);
                         pd.LastTimestamp = timestamp;
@@ -161,7 +161,7 @@ namespace Apaf.NFSdb.Core.Storage
                     }
                     else
                     {
-                        ColumnMetadata column = _metadata.GetColumnById(file.ColumnID);
+                        var column = _metadata.GetColumnByID(file.ColumnID);
                         var size = StorageSizeUtils.GetRecordSize(column, file.DataType);
 
                         if (size > 0)
@@ -175,7 +175,7 @@ namespace Apaf.NFSdb.Core.Storage
                             pd.AppendOffset[file.FileID] = file.GetAppendOffset();
                         }
 
-                        if (_metadata.TimestampFieldID == column.FieldID)
+                        if (_metadata.TimestampColumnID == column.ColumnID)
                         {
                             var timestamp = file.ReadInt64(pd.AppendOffset[file.FileID] - TIMESTAMP_DATA_SIZE);
                             pd.LastTimestamp = timestamp;

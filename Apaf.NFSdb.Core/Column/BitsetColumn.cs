@@ -68,5 +68,10 @@ namespace Apaf.NFSdb.Core.Column
 
         public EFieldType FieldType { get; private set; }
         public string PropertyName { get; private set; }
+
+        public ByteArray Get(long rowID, IReadContext readContext)
+        {
+            return new ByteArray(GetValue(rowID, readContext));
+        }
     }
 }

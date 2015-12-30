@@ -41,8 +41,8 @@ namespace Apaf.NFSdb.Tests
         {
             var meta = CreateMetadata<FieldTypes>();
             return meta.Columns
-                .First(c => c.FileName.Equals(colName, StringComparison.OrdinalIgnoreCase))
-                .FieldType;
+                .First(c => c.PropertyName.Equals(colName, StringComparison.OrdinalIgnoreCase))
+                .DataType.ColumnType;
         }
 
 
@@ -61,9 +61,9 @@ namespace Apaf.NFSdb.Tests
                     .Select(n =>
                     {
                         var column = noConfMeta.GetColumnByPropertyName(n);
-                        return column.FieldType == EFieldType.String
+                        return column.DataType.ColumnType == EFieldType.String
                             ? new StringElement {Name = n}
-                            : new ColumnElement {Name = n, ColumnType = column.FieldType};
+                            : new ColumnElement { Name = n, ColumnType = column.DataType.ColumnType };
                     }).ToList(),
                     FromDisk = true
             };

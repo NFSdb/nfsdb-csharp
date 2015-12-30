@@ -220,7 +220,7 @@ namespace Apaf.NFSdb.Core.Storage.Serializer
                 var columnMeta = (IPocoClassSerializerMetadata)column.SerializerMetadata;
                 bool isRefType = columnMeta.IsRefType();
 
-                if (columnMeta.DataType != EFieldType.BitSet)
+                if (columnMeta.ColumnType != EFieldType.BitSet)
                 {
                     // Start.
                     if (isRefType)
@@ -469,7 +469,7 @@ namespace Apaf.NFSdb.Core.Storage.Serializer
             {
                 var column = columns[i].Metadata;
                 var columnMeta = (IPocoClassSerializerMetadata)column.SerializerMetadata;
-                if (columnMeta.DataType != EFieldType.BitSet)
+                if (columnMeta.ColumnType != EFieldType.BitSet)
                 {
                     if (!column.Nullable)
                     {
@@ -482,9 +482,9 @@ namespace Apaf.NFSdb.Core.Storage.Serializer
                         il.Emit(OpCodes.Ldarg_S, (byte) 5);
                         il.Emit(OpCodes.Callvirt, columnMeta.GetSetMethod());
                     }
-                    else if (columnMeta.DataType == EFieldType.String
-                        || columnMeta.DataType == EFieldType.Symbol
-                        || columnMeta.DataType == EFieldType.Binary)
+                    else if (columnMeta.ColumnType == EFieldType.String
+                        || columnMeta.ColumnType == EFieldType.Symbol
+                        || columnMeta.ColumnType == EFieldType.Binary)
                     {
                         il.Emit(OpCodes.Ldarga_S, 1);
                         il.Emit(OpCodes.Ldc_I4, nci++);
@@ -560,55 +560,17 @@ namespace Apaf.NFSdb.Core.Storage.Serializer
                 bool nullable = false;
                 if (propertyType.IsGenericType && propertyType.GetGenericTypeDefinition() == typeof(Nullable<>))
                 {
-                    nullableCount++;
                     propertyType = propertyType.GetGenericArguments()[0];
                     nullable = true;
                 }
 
-                if (propertyType == typeof(byte))
+                if (nullable || propertyType.IsClass)
                 {
-                    cols.Add(new ColumnSerializerMetadata(EFieldType.Byte, propertyName, fieldName, nullable));
-                }
-                else if (propertyType == typeof(bool))
-                {
-                    cols.Add(new ColumnSerializerMetadata(EFieldType.Bool, propertyName, fieldName, nullable));
-                }
-                else if (propertyType == typeof(short))
-                {
-                    cols.Add(new ColumnSerializerMetadata(EFieldType.Int16, propertyName, fieldName, nullable));
-                }
-                else if (propertyType == typeof(int))
-                {
-                    cols.Add(new ColumnSerializerMetadata(EFieldType.Int32, propertyName, fieldName, nullable));
-                }
-                else if (propertyType == typeof(long))
-                {
-                    cols.Add(new ColumnSerializerMetadata(EFieldType.Int64, propertyName, fieldName, nullable));
-                }
-                else if (propertyType == typeof(double))
-                {
-                    cols.Add(new ColumnSerializerMetadata(EFieldType.Double, propertyName, fieldName, nullable));
-                }
-                else if (propertyType == typeof(DateTime))
-                {
-                    cols.Add(new ColumnSerializerMetadata(EFieldType.DateTime, propertyName, fieldName, nullable));
-                }
-                else if (propertyType == typeof(string))
-                {
-                    // ReSharper disable once RedundantArgumentDefaultValue
-                    cols.Add(new ColumnSerializerMetadata(EFieldType.String, propertyName, fieldName, true));
                     nullableCount++;
                 }
-                else if (propertyType == typeof(byte[]))
-                {
-                    cols.Add(new ColumnSerializerMetadata(EFieldType.Binary, propertyName, fieldName, true));
-                    nullableCount++;
-                }
-                else
-                {
-                    throw new NFSdbConfigurationException("Unsupported property type " +
-                                                          propertyType);
-                }
+
+                var ret = GetColumnDataType(propertyType);
+                cols.Add(new ColumnSerializerMetadata(ret.ColumnType, propertyName, fieldName, propertyType.IsClass || nullable));
             }
 
             if (nullableCount > 0)
@@ -616,6 +578,16 @@ namespace Apaf.NFSdb.Core.Storage.Serializer
                 cols.Add(new ColumnSerializerMetadata(EFieldType.BitSet, MetadataConstants.NULLS_FILE_NAME, null, false, nullableCount));
             }
             return cols;
+        }
+
+        protected virtual IColumnDataType GetColumnDataType(Type propertyType)
+        {
+            var ret = JournalColumnRegistry.Instance.GetSerializer(propertyType);
+            if (ret == null)
+            {
+                throw new NFSdbConfigurationException("Unsupported property type " + propertyType);
+            }
+            return ret;
         }
 
         public string GetPropertyName(string fieldName)

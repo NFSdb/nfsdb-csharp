@@ -15,17 +15,24 @@
  * limitations under the License.
  */
 #endregion
-
 using System.Collections.Generic;
-using Apaf.NFSdb.Core.Column;
+using Apaf.NFSdb.Core.Storage.Serializer;
 using Apaf.NFSdb.Core.Tx;
 
-namespace Apaf.NFSdb.Core.Queries
+namespace Apaf.NFSdb.Core.Column
 {
-    public interface IQueryStatistics
+    public interface IColumnMetadata
     {
-        long GetCardinalityByColumnValue<T>(IReadTransactionContext tx, IColumnMetadata column, IList<T> value);
-        int GetColumnDistinctCardinality(IReadTransactionContext tx, IColumnMetadata column);
-        int GetSymbolCount(IReadTransactionContext tx, IColumnMetadata column);
+        int NullIndex { get; }
+        int ColumnID { get; }
+        bool Indexed { get; }
+        bool Nullable { get; }
+        string PropertyName { get; }
+        int HintDistinctCount { get; }
+        IColumnDataType DataType { get; }
+        int AvgSize { get; }
+        IColumnSerializerMetadata SerializerMetadata { get; }
+        IComparer<long> GetColumnComparer(IReadTransactionContext tx, bool asc);
+        object ToTypedValue(object literal);
     }
 }

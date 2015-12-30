@@ -16,6 +16,7 @@
  */
 #endregion
 using System;
+using System.Linq.Expressions;
 using System.Reflection;
 using System.Reflection.Emit;
 using Apaf.NFSdb.Core.Exceptions;
@@ -25,6 +26,13 @@ namespace Apaf.NFSdb.Core.Reflection
 {
     public static class ReflectionHelper
     {
+        public static void CallStaticPrivateGeneric(string methodName, object instance, Type genericArg, params object[] parameters)
+        {
+            var method = instance.GetType().GetMethod(methodName, BindingFlags.NonPublic | BindingFlags.Static);
+            var m = method.MakeGenericMethod(genericArg);
+            m.Invoke(instance, parameters);
+        }
+
         public static Func<object> CreateConstructorDelegate(Type type)
         {
             if (type == null) throw new ArgumentNullException("type");
@@ -103,6 +111,22 @@ namespace Apaf.NFSdb.Core.Reflection
             il.Emit(OpCodes.Ret);
 
             return (Func<object, DateTime>)dynamic.CreateDelegate(typeof(Func<object, DateTime>));
+        }
+
+        public static MethodInfo GetMethodInfo(Expression<Action> expression)
+        {
+            return GetMethodInfo((LambdaExpression)expression);
+        }
+
+        public static MethodInfo GetMethodInfo(LambdaExpression expression)
+        {
+            var outermostExpression = expression.Body as MethodCallExpression;
+            if (outermostExpression == null)
+            {
+                throw new NFSdbArgumentException("Expression is not a method call.");
+            }
+
+            return outermostExpression.Method;
         }
     }
 }

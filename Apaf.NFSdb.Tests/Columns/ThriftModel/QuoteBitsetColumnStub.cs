@@ -87,5 +87,10 @@ namespace Apaf.NFSdb.Tests.Columns.ThriftModel
             }
             return bytes;
         }
+
+        public ByteArray Get(long rowID, IReadContext readContext)
+        {
+            return new ByteArray(GetValue(rowID, readContext));
+        }
     }
 }

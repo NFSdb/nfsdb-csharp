@@ -130,6 +130,58 @@ namespace Apaf.NFSdb.Tests.Query
             Assert.That(result, Is.EqualTo("1"));
         }
 
+        [TestCase("Symbol_1", 21, Result = "0,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,22")]
+        [TestCase("Symbol_2", 21, Result = "0,1,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21")]
+        [TestCase("Symbol_N", 21, Result = "0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20")]
+        public string Supports_not_equal_symbol(string symbol, int take)
+        {
+            string result =
+                ExecuteLambda(
+                    items => (from q in items
+                              where (q.Sym != symbol)
+                              select q).OrderBy(q => q.Timestamp).Take(take), 1);
+
+            return result;
+        }
+
+        [Test]
+        public void Supports_not_null_equal_symbol()
+        {
+            var result =
+                ExecuteLambdaQuotes(
+                    items => (from q in items
+                              where (q.Ex != null)
+                              select q).OrderBy(q => q.Timestamp), 1);
+
+            Assert.That(result.Any(r => r.Timestamp.Ticks % 20 == 2), Is.EqualTo(false));
+        }
+
+        [TestCase(1, 11, Result = "0,2,3,4,5,7,8,9,10,12,13")]
+        [TestCase(2, 11, Result = "0,1,3,4,5,6,8,9,10,11,13")]
+        [TestCase(-1, 11, Result = "0,1,2,3,4,5,6,7,8,9,10")]
+        public string Supports_not_equal_non_symbol(int bidSize, int take)
+        {
+            string result =
+                ExecuteLambda(
+                    items => (from q in items
+                              where (q.BidSize != bidSize)
+                              select q).OrderBy(q => q.Timestamp).Take(take), 1);
+
+            return result;
+        }
+
+        [Test]
+        public void Supports_not_equal_null_non_symbol()
+        {
+            string result =
+                ExecuteLambda(
+                    items => (from q in items
+                              where (q.Bid != null)
+                              select q).OrderBy(q => q.Timestamp).Take(10), 1);
+
+            Assert.That(result, Is.EqualTo("0,2,3,4,5,7,8,9,10,12"));
+        }
+
         [Test]
         public void Supports_last()
         {
@@ -217,7 +269,20 @@ namespace Apaf.NFSdb.Tests.Query
 
         }
 
-        private string ExecuteLambda(Func<IQueryable<DateTimeQuote>, IEnumerable<DateTimeQuote>> lambda, int increment = 2)
+        private string ExecuteLambda(Func<IQueryable<DateTimeQuote>, IEnumerable<DateTimeQuote>> lambda,
+            int increment = 2)
+        {
+            var qts = ExecuteLambdaQuotes(lambda, increment);
+
+            // Act.
+            var result = qts.Select(q => q.Timestamp.Ticks);
+
+            // Verify.
+            return string.Join(",", result);
+        }
+
+
+        private IEnumerable<DateTimeQuote> ExecuteLambdaQuotes(Func<IQueryable<DateTimeQuote>, IEnumerable<DateTimeQuote>> lambda, int increment = 2)
         {
             Utils.ClearJournal<DateTimeQuote>();
             var config = Utils.ReadConfig<DateTimeQuote>();
@@ -232,15 +297,9 @@ namespace Apaf.NFSdb.Tests.Query
             {
                 var rdr = qj.OpenReadTx();
 
-                var qts = lambda(rdr.Items);
+                return lambda(rdr.Items).ToList();
 
-                // Act.
-                var result = qts.Select(q => q.Timestamp.Ticks);
-
-                // Verify.
-                return string.Join(",", result);
             }
-
         }
 
         private IJournal<T> CreateJournal<T>(JournalElement config, EFileAccess readWrite = EFileAccess.Read)
@@ -257,7 +316,9 @@ namespace Apaf.NFSdb.Tests.Query
                     wr.Append(new DateTimeQuote
                     {
                         Ask = i,
-                        Ex = "Ex_" + i % 20,
+                        Bid = i % 5 == 1 ? (double?)null : i%5,
+                        BidSize = i % 5,
+                        Ex = i % 20 == 2 ? null : "Ex_" + i % 20,
                         Sym = "Symbol_" + i % 20,
                         Timestamp = new DateTime(startDate + i * increment)
                     });

@@ -59,7 +59,7 @@ namespace Apaf.NFSdb.Tests.Serializer
 
             PocoSerializerFactory fact = CreatePocoSerializerFactory();
             IList<IColumnSerializerMetadata> cols = fact.Initialize(ojbType.GetType()).ToList();
-            return cols.Single(c => c.DataType == fType).PropertyName;
+            return cols.Single(c => c.ColumnType == fType).PropertyName;
         }
 
         [TestCase(EFieldType.Bool, Result = "Bl")]
@@ -82,7 +82,7 @@ namespace Apaf.NFSdb.Tests.Serializer
 
             PocoSerializerFactory fact = CreatePocoSerializerFactory();
             IList<IColumnSerializerMetadata> cols = fact.Initialize(ojbType.GetType()).ToList();
-            return cols.Single(c => c.DataType == fType).PropertyName;
+            return cols.Single(c => c.ColumnType == fType).PropertyName;
         }
 
         [Test]
@@ -102,7 +102,7 @@ namespace Apaf.NFSdb.Tests.Serializer
             };
 
             PocoSerializerFactory fact = CreatePocoSerializerFactory();
-            IColumnSerializerMetadata bitset = fact.Initialize(ojbType.GetType()).Single(c => c.DataType == EFieldType.BitSet);
+            IColumnSerializerMetadata bitset = fact.Initialize(ojbType.GetType()).Single(c => c.ColumnType == EFieldType.BitSet);
             Assert.That(bitset.Size, Is.EqualTo(7));
         }
         

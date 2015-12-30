@@ -12,6 +12,5 @@ namespace Apaf.NFSdb.Tests.Columns.PocoModel
         public int AskSize { get; set; }
         public string Mode { get; set; }
         public string Ex { get; set; }
-         
     }
 }

@@ -53,6 +53,7 @@ expr
  | expr op=K_IN BIND_PARAMETER                                #InParamExpr
  | expr op=K_IN ( '(' expr ( ',' expr )*                
                       ')')                                    #InListExpr
+ | expr K_IS K_NOT? expr					                  #LogicalIsExpr
  ;
 
 qualified_table_name

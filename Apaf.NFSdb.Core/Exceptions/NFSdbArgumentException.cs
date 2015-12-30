@@ -1,4 +1,5 @@
-﻿/*
+﻿#region copyright
+/*
  * Copyright (c) 2014. APAF http://apafltd.co.uk
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -13,15 +14,23 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
+#endregion
 using System;
-using System.Collections.Generic;
-using Apaf.NFSdb.Core.Configuration;
 
-namespace Apaf.NFSdb.Core.Column
+namespace Apaf.NFSdb.Core.Exceptions
 {
-    public interface ITypeColumnParser
+    public class NFSdbArgumentException : NFSdbBaseExcepton
     {
-        IList<ColumnMetadata> ParseColumns(Type itemType, JournalElement config);
+        internal NFSdbArgumentException()
+        {
+        }
+
+        internal NFSdbArgumentException(string message) : base(message)
+        {
+        }
+
+        internal NFSdbArgumentException(string message, Exception innerException) : base(message, innerException)
+        {
+        }
     }
 }

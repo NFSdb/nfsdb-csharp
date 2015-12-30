@@ -43,18 +43,24 @@ namespace Apaf.NFSdb.Core.Configuration
                         config.TimestampColumn);
                 }
 
-                if (timestampColumn.FieldType != EFieldType.DateTime
-                    && timestampColumn.FieldType != EFieldType.DateTimeEpochMs
-                    && timestampColumn.FieldType != EFieldType.Int64)
+                if (timestampColumn.ColumnType != EFieldType.DateTime
+                    && timestampColumn.ColumnType != EFieldType.DateTimeEpochMs
+                    && timestampColumn.ColumnType != EFieldType.Int64)
                 {
                     throw new NFSdbConfigurationException("Timestamp column {0} must be DateTime or Int64 but was {1}",
-                        config.TimestampColumn, timestampColumn.FieldType);
+                        config.TimestampColumn, timestampColumn.ColumnType);
                 }
 
                 _timestampColumn = _columns.Single(c => c.FileName.Equals(config.TimestampColumn, StringComparison.OrdinalIgnoreCase));
-                TimestampFieldID = _timestampColumn.FieldID;
+                TimestampColumnID = _timestampColumn.ColumnID;
             }
 
+            // IsNull.
+            var last = _columns.Last();
+            if (last.ColumnType == EFieldType.BitSet)
+            {
+                IsNullColumnID = last.ColumnID;
+            }
 
             // Misc.
             PartitionTtl = TimeSpan.FromMilliseconds(config.OpenPartitionTtl);
@@ -66,19 +72,19 @@ namespace Apaf.NFSdb.Core.Configuration
             int fileID = 0;
             foreach (var cType in columns)
             {
-                if (cType.FieldType == EFieldType.String)
+                if (cType.ColumnType == EFieldType.String)
                 {
                     fileID += 2;
                 }
-                else if (cType.FieldType == EFieldType.BitSet)
+                else if (cType.ColumnType == EFieldType.BitSet)
                 {
                     fileID++;
                 }
-                else if (cType.FieldType == EFieldType.Symbol)
+                else if (cType.ColumnType == EFieldType.Symbol)
                 {
                     fileID += 7;
                 }
-                if (cType.FieldType == EFieldType.Binary)
+                if (cType.ColumnType == EFieldType.Binary)
                 {
                     fileID += 2;
                 }
@@ -102,9 +108,9 @@ namespace Apaf.NFSdb.Core.Configuration
             _symbolStorage = symbolStorage;
             foreach (var columnMetadata in _columns)
             {
-                if (columnMetadata.FieldType == EFieldType.Symbol)
+                if (columnMetadata.ColumnType == EFieldType.Symbol)
                 {
-                    _symbolCaches[columnMetadata.FieldID] = new SymbolCache(
+                    _symbolCaches[columnMetadata.ColumnID] = new SymbolCache(
                         columnMetadata.HintDistinctCount);
                 }
             }
@@ -115,7 +121,7 @@ namespace Apaf.NFSdb.Core.Configuration
             return _serializerFactory.CreateFieldSerializer(columns);
         }
 
-        public IEnumerable<ColumnMetadata> Columns
+        public IEnumerable<IColumnMetadata> Columns
         {
             get { return _columns; }
         }
@@ -125,7 +131,8 @@ namespace Apaf.NFSdb.Core.Configuration
             get { return _settings; }
         }
 
-        public int? TimestampFieldID { get; private set; }
+        public int? TimestampColumnID { get; private set; }
+        public int? IsNullColumnID { get; private set; }
 
         public IEnumerable<ColumnSource> GetPartitionColums(IColumnStorage partitionStorage)
         {
@@ -150,7 +157,7 @@ namespace Apaf.NFSdb.Core.Configuration
 
             // Columns and column order must match.
             // If bitset exists it must be the last one.
-            var hasBitSet = columnsList[columnsList.Count - 1].DataType == EFieldType.BitSet;
+            var hasBitSet = columnsList[columnsList.Count - 1].ColumnType == EFieldType.BitSet;
             var parsedColLen = hasBitSet ? columnsList.Count - 1 : columnsList.Count;
             var confColumns = jconf.Columns;
             if (parsedColLen != confColumns.Count)
@@ -170,14 +177,14 @@ namespace Apaf.NFSdb.Core.Configuration
                     if (string.Equals(confColumns[i].Name, columnsList[j].PropertyName,
                         StringComparison.OrdinalIgnoreCase))
                     {
-                        if (columnsList[j].DataType != confColumns[i].ColumnType)
+                        if (columnsList[j].ColumnType != confColumns[i].ColumnType)
                         {
                             if (!(confColumns[i].ColumnType == EFieldType.Symbol &&
-                                  columnsList[i].DataType == EFieldType.String))
+                                  columnsList[i].ColumnType == EFieldType.String))
                             {
                                 throw new NFSdbConfigurationException("Type '{0}' has field '{1}' of type '{2}' " +
                                                                       "while data on disk has column '{3}' of type '{4}'",
-                                    itemType, columnsList[j].PropertyName, columnsList[j].DataType,
+                                    itemType, columnsList[j].PropertyName, columnsList[j].ColumnType,
                                     confColumns[i].Name, confColumns[i].ColumnType);
                             }
                         }
@@ -208,7 +215,7 @@ namespace Apaf.NFSdb.Core.Configuration
             {
                 return DummyTimestampDelegate;
             }
-            if (_timestampColumn.FieldType == EFieldType.Int64)
+            if (_timestampColumn.ColumnType == EFieldType.Int64)
             {
                 var longReader = _serializerFactory.ColumnReader<T, long>(_timestampColumn.SerializerMetadata);
                 return t => DateUtils.UnixTimestampToDateTime(longReader(t));
@@ -222,12 +229,12 @@ namespace Apaf.NFSdb.Core.Configuration
             return DateTime.MinValue;
         }
 
-        public ColumnMetadata GetColumnById(int columndID)
+        public IColumnMetadata GetColumnByID(int columndID)
         {
             return _columns[columndID];
         }
 
-        public ColumnMetadata GetColumnByPropertyName(string propertyName)
+        public IColumnMetadata GetColumnByPropertyName(string propertyName)
         {
             var col = _columns.FirstOrDefault(c => string.Equals(c.PropertyName, propertyName, StringComparison.OrdinalIgnoreCase));
             if (col == null)
@@ -235,6 +242,12 @@ namespace Apaf.NFSdb.Core.Configuration
                 throw new NFSdbConfigurationException("Property {0} does not exist in journal {1}",
                     propertyName, _settings.DefaultPath);
             }
+            return col;
+        }
+
+        public IColumnMetadata TryGetColumnByPropertyName(string propertyName)
+        {
+            var col = _columns.FirstOrDefault(c => string.Equals(c.PropertyName, propertyName, StringComparison.OrdinalIgnoreCase));
             return col;
         }
 
@@ -268,31 +281,31 @@ namespace Apaf.NFSdb.Core.Configuration
             {
                 // Build.
                 IColumn column;
-                if (cType.FieldType == EFieldType.String)
+                if (cType.ColumnType == EFieldType.String)
                 {
                     // String.
-                    var data = columnStorage.GetFile(cType.FileName, fileID++, cType.FieldID, EDataType.Data);
-                    var index = columnStorage.GetFile(cType.FileName, fileID++, cType.FieldID, EDataType.Index);
+                    var data = columnStorage.GetFile(cType.FileName, fileID++, cType.ColumnID, EDataType.Data);
+                    var index = columnStorage.GetFile(cType.FileName, fileID++, cType.ColumnID, EDataType.Index);
                     column = new StringColumn(data, index, cType.MaxSize, GetPropertyName(cType.FileName));
                 }
-                else if (cType.FieldType == EFieldType.BitSet)
+                else if (cType.ColumnType == EFieldType.BitSet)
                 {
-                    var data = columnStorage.GetFile(cType.FileName, fileID++, cType.FieldID, EDataType.Data);
+                    var data = columnStorage.GetFile(cType.FileName, fileID++, cType.ColumnID, EDataType.Data);
                     column = new BitsetColumn(data, cType.MaxSize);
                 }
-                else if (cType.FieldType == EFieldType.Symbol)
+                else if (cType.ColumnType == EFieldType.Symbol)
                 {
-                    var colData = columnStorage.GetFile(cType.FileName, fileID++, cType.FieldID, EDataType.Data);
-                    var symData = _symbolStorage.GetFile(cType.FileName, fileID++, cType.FieldID, EDataType.Symd);
-                    var symi = _symbolStorage.GetFile(cType.FileName, fileID++, cType.FieldID, EDataType.Symi);
-                    var symk = _symbolStorage.GetFile(cType.FileName, fileID++, cType.FieldID, EDataType.Symrk);
-                    var symr = _symbolStorage.GetFile(cType.FileName, fileID++, cType.FieldID, EDataType.Symrr);
+                    var colData = columnStorage.GetFile(cType.FileName, fileID++, cType.ColumnID, EDataType.Data);
+                    var symData = _symbolStorage.GetFile(cType.FileName, fileID++, cType.ColumnID, EDataType.Symd);
+                    var symi = _symbolStorage.GetFile(cType.FileName, fileID++, cType.ColumnID, EDataType.Symi);
+                    var symk = _symbolStorage.GetFile(cType.FileName, fileID++, cType.ColumnID, EDataType.Symrk);
+                    var symr = _symbolStorage.GetFile(cType.FileName, fileID++, cType.ColumnID, EDataType.Symrr);
                     int maxLen = cType.MaxSize;
                     int distinctHintCount = cType.HintDistinctCount;
                     if (cType.Indexed)
                     {
-                        var colDataK = columnStorage.GetFile(cType.FileName, fileID++, cType.FieldID, EDataType.Datak);
-                        var colDataR = columnStorage.GetFile(cType.FileName, fileID++, cType.FieldID, EDataType.Datar);
+                        var colDataK = columnStorage.GetFile(cType.FileName, fileID++, cType.ColumnID, EDataType.Datak);
+                        var colDataR = columnStorage.GetFile(cType.FileName, fileID++, cType.ColumnID, EDataType.Datar);
                         column = new SymbolMapColumn(
                             data: colData,
                             datak: colDataK,
@@ -321,19 +334,19 @@ namespace Apaf.NFSdb.Core.Configuration
                             symbolCache: _symbolCaches[colData.FileID]);
                     }
                 }
-                else if (cType.FieldType == EFieldType.Binary)
+                else if (cType.ColumnType == EFieldType.Binary)
                 {
                     // Byte array.
-                    var data = columnStorage.GetFile(cType.FileName, fileID++, cType.FieldID, EDataType.Data);
-                    var index = columnStorage.GetFile(cType.FileName, fileID++, cType.FieldID, EDataType.Index);
+                    var data = columnStorage.GetFile(cType.FileName, fileID++, cType.ColumnID, EDataType.Data);
+                    var index = columnStorage.GetFile(cType.FileName, fileID++, cType.ColumnID, EDataType.Index);
                     column = new BinaryColumn(data, index, cType.MaxSize, GetPropertyName(cType.FileName));
                     
                 }
                 else
                 {
                     // Fixed size.
-                    var data = columnStorage.GetFile(cType.FileName, fileID++, cType.FieldID, EDataType.Data);
-                    column = new FixedColumn(data, cType.FieldType, GetPropertyName(cType.FileName));
+                    var data = columnStorage.GetFile(cType.FileName, fileID++, cType.ColumnID, EDataType.Data);
+                    column = new FixedColumn(data, cType.ColumnType, GetPropertyName(cType.FileName));
                 }
 
                 yield return new ColumnSource(cType, column, fileID);
@@ -350,7 +363,7 @@ namespace Apaf.NFSdb.Core.Configuration
             {
                 var nIndex = field.Nullable ? nullIndex++ : -1;
                 // Type.
-                switch (field.DataType)
+                switch (field.ColumnType)
                 {
                     case EFieldType.Byte:
                     case EFieldType.Bool:
@@ -369,7 +382,7 @@ namespace Apaf.NFSdb.Core.Configuration
                         if (dateTimeConfig != null
                             && dateTimeConfig.ColumnType == EFieldType.DateTimeEpochMs)
                         {
-                            field.DataType = EFieldType.DateTimeEpochMs;
+                            field.ColumnType = EFieldType.DateTimeEpochMs;
                         }
                         cols.Add(ColumnMetadata.FromFixedField(field, cols.Count, nIndex));
                         break;

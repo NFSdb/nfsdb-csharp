@@ -20,7 +20,7 @@ using Apaf.NFSdb.Core.Tx;
 
 namespace Apaf.NFSdb.Core.Column
 {
-    public interface IBitsetColumn : IColumn
+    public interface IBitsetColumn : IColumn, ITypedColumn<ByteArray>
     {
         byte[] GetValue(long rowID, IReadContext readContext);
         void SetValue(long rowID, byte[] bitArray, ITransactionContext readContext);

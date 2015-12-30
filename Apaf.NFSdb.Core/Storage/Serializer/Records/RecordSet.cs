@@ -1,4 +1,21 @@
-﻿using System.Collections.Generic;
+﻿#region copyright
+/*
+ * Copyright (c) 2014. APAF http://apafltd.co.uk
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+#endregion
+using System.Collections.Generic;
 using System.Linq;
 using Apaf.NFSdb.Core.Column;
 using Apaf.NFSdb.Core.Configuration;
@@ -24,10 +41,10 @@ namespace Apaf.NFSdb.Core.Storage.Serializer.Records
             _rowIDs = rowIDs;
             _tx = tx;
             _metadata = metadata;
-            var bitsetColumn = _metadata.Columns.FirstOrDefault(c => c.FieldType == EFieldType.BitSet);
+            var bitsetColumn = _metadata.Columns.FirstOrDefault(c => c.DataType.ColumnType == EFieldType.BitSet);
             if (bitsetColumn != null)
             {
-                _bitSetColIndex = bitsetColumn.FieldID;
+                _bitSetColIndex = bitsetColumn.ColumnID;
             }
         }
 
@@ -46,8 +63,8 @@ namespace Apaf.NFSdb.Core.Storage.Serializer.Records
             int partitionID = RowIDUtil.ToPartitionIndex(rowId);
             long localRowID = RowIDUtil.ToLocalRowID(rowId);
             if (_columnMaps != null) columnIndex = _columnMaps[columnIndex];
-            var nullable = _metadata.GetColumnById(columnIndex).Nullable;
-            var nullIndex = _metadata.GetColumnById(columnIndex).NullIndex;
+            var nullable = _metadata.GetColumnByID(columnIndex).Nullable;
+            var nullIndex = _metadata.GetColumnByID(columnIndex).NullIndex;
 
             if (nullable && _bitSetColIndex != -1)
             {
@@ -80,8 +97,8 @@ namespace Apaf.NFSdb.Core.Storage.Serializer.Records
             int partitionID = RowIDUtil.ToPartitionIndex(rowId);
             long localRowID = RowIDUtil.ToLocalRowID(rowId);
             if (_columnMaps != null) columnIndex = _columnMaps[columnIndex];
-            var nullable = _metadata.GetColumnById(columnIndex).Nullable;
-            var nullIndex = _metadata.GetColumnById(columnIndex).NullIndex;
+            var nullable = _metadata.GetColumnByID(columnIndex).Nullable;
+            var nullIndex = _metadata.GetColumnByID(columnIndex).NullIndex;
 
             if (nullable && _bitSetColIndex != -1)
             {

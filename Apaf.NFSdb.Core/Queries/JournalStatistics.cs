@@ -37,20 +37,20 @@ namespace Apaf.NFSdb.Core.Queries
             _partitionManager = partitionManager;
         }
 
-        public long GetCardinalityByColumnValue<T>(IReadTransactionContext tx, ColumnMetadata col, IList<T> values)
+        public long GetCardinalityByColumnValue<T>(IReadTransactionContext tx, IColumnMetadata col, IList<T> values)
         {
             if (col.Indexed)
             {
                 var part = _partitionManager.GetOpenPartitions().FirstOrDefault(p => p != null);
                 if (part != null)
                 {
-                    return values.Sum(value => part.GetSymbolRowCount(col.FieldID, value, tx));
+                    return values.Sum(value => part.GetSymbolRowCount(col.ColumnID, value, tx));
                 }
             }
             return _metadata.Settings.RecordHint / col.HintDistinctCount * values.Count;
         }
 
-        public int GetColumnDistinctCardinality(IReadTransactionContext tx, ColumnMetadata column)
+        public int GetColumnDistinctCardinality(IReadTransactionContext tx, IColumnMetadata column)
         {
             if (column.Indexed)
             {
@@ -59,7 +59,7 @@ namespace Apaf.NFSdb.Core.Queries
             return column.HintDistinctCount;
         }
 
-        public int GetSymbolCount(IReadTransactionContext tx, ColumnMetadata column)
+        public int GetSymbolCount(IReadTransactionContext tx, IColumnMetadata column)
         {
             var storage = _partitionManager.SymbolFileStorage;
 
@@ -69,7 +69,7 @@ namespace Apaf.NFSdb.Core.Queries
                 for (int i = 0; i < storage.OpenFileCount; i++)
                 {
                     IRawFile file = storage.GetOpenedFileByID(i);
-                    if (file != null && file.ColumnID == column.FieldID
+                    if (file != null && file.ColumnID == column.ColumnID
                         && file.DataType == EDataType.Symi)
                     {
                         symiFile = file;

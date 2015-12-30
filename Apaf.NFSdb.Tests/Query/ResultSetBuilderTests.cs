@@ -23,7 +23,6 @@ using Apaf.NFSdb.Core.Configuration;
 using Apaf.NFSdb.Core.Queries.Queryable;
 using Apaf.NFSdb.Core.Queries.Queryable.PlanItem;
 using Apaf.NFSdb.Core.Tx;
-using Apaf.NFSdb.Tests.Columns.ThriftModel;
 using Moq;
 using NUnit.Framework;
 
@@ -32,13 +31,15 @@ namespace Apaf.NFSdb.Tests.Query
     [TestFixture]
     public class ResultSetBuilderTests
     {
+        private Mock<IJournalMetadata> _metadata;
+
         [Test]
         public void Should_collect_or_to_single_column_filter()
         {
             var rsb1 = CreateResultSetBuilder();
             var rsb2 = CreateResultSetBuilder();
-            rsb1.ColumnScan("sym", "1");
-            rsb2.ColumnScan("sym", "2");
+            rsb1.ColumnScan(GetColumn("sym"), "1");
+            rsb2.ColumnScan(GetColumn("sym"), "2");
 
             var union = CreateResultSetBuilder();
             union.Logical(rsb1, rsb2, ExpressionType.Or);
@@ -52,8 +53,8 @@ namespace Apaf.NFSdb.Tests.Query
         {
             var rsb1 = CreateResultSetBuilder();
             var rsb2 = CreateResultSetBuilder();
-            rsb1.ColumnScan("sym", "1");
-            rsb2.ColumnScan("sym", "2");
+            rsb1.ColumnScan(GetColumn("sym"), "1");
+            rsb2.ColumnScan(GetColumn("sym"), "2");
 
             var union = CreateResultSetBuilder();
             union.Logical(rsb1, rsb2, ExpressionType.Or);
@@ -92,8 +93,8 @@ namespace Apaf.NFSdb.Tests.Query
         {
             var rsb1 = CreateResultSetBuilder();
             var rsb2 = CreateResultSetBuilder();
-            rsb1.ColumnScan("gym", "1");
-            rsb2.ColumnScan("sym", "2");
+            rsb1.ColumnScan(GetColumn("gym"), "1");
+            rsb2.ColumnScan(GetColumn("sym"), "2");
 
             var intersect = CreateResultSetBuilder();
             intersect.Logical(rsb1, rsb2, ExpressionType.And);
@@ -107,9 +108,9 @@ namespace Apaf.NFSdb.Tests.Query
             var rsb1 = CreateResultSetBuilder();
             var rsb2 = CreateResultSetBuilder();
             var rsb3 = CreateResultSetBuilder();
-            rsb1.ColumnScan("gym", "1");
-            rsb2.ColumnScan("sym", "2");
-            rsb3.ColumnScan("bidSize", 2);
+            rsb1.ColumnScan(GetColumn("gym"), "1");
+            rsb2.ColumnScan(GetColumn("sym"), "2");
+            rsb3.ColumnScan(GetColumn("bidSize"), 2);
 
             var intersect1 = CreateResultSetBuilder();
             var intersect2 = CreateResultSetBuilder();
@@ -126,8 +127,8 @@ namespace Apaf.NFSdb.Tests.Query
         {
             var rsb1 = CreateResultSetBuilder();
             var rsb2 = CreateResultSetBuilder();
-            rsb1.ColumnScan("sym", "1");
-            rsb2.ColumnScan("bym", "2");
+            rsb1.ColumnScan(GetColumn("sym"), "1");
+            rsb2.ColumnScan(GetColumn("bym"), "2");
 
             var union = CreateResultSetBuilder();
             union.Logical(rsb1, rsb2, ExpressionType.Or);
@@ -137,13 +138,13 @@ namespace Apaf.NFSdb.Tests.Query
         private ResultSetBuilder CreateResultSetBuilder()
         {
             var journal = new Mock<IJournalCore>();
-            var metadata = new Mock<IJournalMetadata>();
+            _metadata = new Mock<IJournalMetadata>();
             var journalStat = new Mock<IQueryStatistics>();
             journalStat.Setup(j => j.GetCardinalityByColumnValue(It.IsAny<IReadTransactionContext>(),
                 It.IsAny<ColumnMetadata>(), It.IsAny<string[]>())).Returns(long.MaxValue);
-            journal.Setup(j => j.Metadata).Returns(metadata.Object);
+            journal.Setup(j => j.Metadata).Returns(_metadata.Object);
             journal.Setup(j => j.QueryStatistics).Returns(journalStat.Object);
-            metadata.Setup(m => m.GetColumnByPropertyName(It.IsAny<string>())).Returns(
+            _metadata.Setup(m => m.GetColumnByPropertyName(It.IsAny<string>())).Returns(
                 (string name) =>
                 {
                     if (name != "bidSize")
@@ -156,6 +157,12 @@ namespace Apaf.NFSdb.Tests.Query
 
             return new ResultSetBuilder(journal.Object,
                 new Mock<IReadTransactionContext>().Object);
+        }
+
+
+        private IColumnMetadata GetColumn(string sym)
+        {
+            return _metadata.Object.GetColumnByPropertyName(sym);
         }
     }
 }

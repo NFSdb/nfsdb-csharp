@@ -48,7 +48,7 @@ namespace Apaf.NFSdb.Core.Storage.Serializer
         {
             var allColumns = columns.ToArray();
             _fixedColumns = allColumns
-                .Where(c => !((IClassColumnSerializerMetadata)c.Metadata.SerializerMetadata).IsRefType() && c.Metadata.SerializerMetadata.DataType != EFieldType.BitSet)
+                .Where(c => !((IClassColumnSerializerMetadata)c.Metadata.SerializerMetadata).IsRefType() && c.Metadata.SerializerMetadata.ColumnType != EFieldType.BitSet)
                 .Select(c => c.Column)
                 .Cast<IFixedWidthColumn>().ToArray();
 

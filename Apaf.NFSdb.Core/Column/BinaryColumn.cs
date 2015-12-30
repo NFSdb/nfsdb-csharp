@@ -43,11 +43,6 @@ namespace Apaf.NFSdb.Core.Column
             get { return EFieldType.Binary; }
         }
 
-        public int FieldID
-        {
-            get { return _data.FileID; }
-        }
-
         public virtual string PropertyName { get; private set; }
 
         public virtual int MaxSize

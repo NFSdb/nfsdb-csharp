@@ -15,7 +15,7 @@ namespace Apaf.NFSdb.Tests.Ql
     [TestFixture]
     public class QlPocoNullTests
     {
-        private const string FolderPath = "NullableQuote";
+        private const string FOLDER_PATH = "NullableQuote";
 
         public class NullableQuote
         {
@@ -29,28 +29,38 @@ namespace Apaf.NFSdb.Tests.Ql
             public string Ex { get; set; }
         }
 
-        [TestCase("Symbol_0", 20, ExpectedResult = "4,3,2,1,,4,3,2,1,,4,3,2,1,,4,3,2,1,")]
-        public string ShouldReadNullsPocoSerializer(string symbol, int take)
+        [TestCase(20, ExpectedResult = "4,3,2,1,,4,3,2,1,,4,3,2,1,,4,3,2,1,")]
+        public string ShouldReadNullsPocoSerializer(int take)
         {
             return
                 ExecuteQuery<int>(
                     "SELECT ToP @top AskSize FROM Quote",
-                    MetadataConstants.POCO_SERIALIZER_NAME,
-                    new QlParameter("top", take),
-                    new QlParameter("sym", symbol)
-                    );
+                    new QlParameter("top", take));
         }
 
-        private string ExecuteQuery<T>(string query, string serializerName, params QlParameter[] parameters) where T : struct
+        [TestCase("=", 10, ExpectedResult = "0,5,10,15,20,25,30,35,40,45")]
+        [TestCase("IS", 10, ExpectedResult = "0,5,10,15,20,25,30,35,40,45")]
+        [TestCase("IS NOT", 10, ExpectedResult = "1,2,3,4,6,7,8,9,11,12")]
+        [TestCase("<>", 10, ExpectedResult = "1,2,3,4,6,7,8,9,11,12")]
+        public string ShouldSelectNullsPocoSerializer(string column, int take)
+        {
+            return
+                ExecuteQuery<long>(
+                    string.Format("SELECT ToP @top Timestamp FROM Quote " +
+                                  " WHERE AskSize {0} NULL Order by Timestamp", column),
+                    new QlParameter("top", take));
+        }
+
+        private string ExecuteQuery<T>(string query, params QlParameter[] parameters) where T : struct
         {
             return ExecuteQuery(query, 
                 tt => string.Join(",", tt.RecordIDs().Select(rowid => tt.GetNullable<T>(rowid, 0)))
-                , serializerName, parameters);
+                , parameters);
         }
 
-        private static IJournal<NullableQuote> OpenJournal(EFileAccess access, string serializerName)
+        private static IJournal<NullableQuote> OpenJournal(EFileAccess access)
         {
-            string directoryPath = Path.Combine(Utils.FindJournalsPath(), FolderPath);
+            string directoryPath = Path.Combine(Utils.FindJournalsPath(), FOLDER_PATH);
 
             return new JournalBuilder()
                 .WithRecordCountHint((int)1E6)
@@ -59,16 +69,16 @@ namespace Apaf.NFSdb.Tests.Ql
                 .WithSymbolColumn("Sym", 20, 5, 5)
                 .WithTimestampColumn("Timestamp")
                 .WithAccess(access)
-                .WithSerializerFactoryName(serializerName)
+                .WithSerializerFactoryName(MetadataConstants.POCO_SERIALIZER_NAME)
                 .ToJournal<NullableQuote>();
         }
 
-        private string ExecuteQuery(string query, Func<IRecordSet, string> formatLambda, string serializer, params QlParameter[] parameters)
+        private string ExecuteQuery(string query, Func<IRecordSet, string> formatLambda, params QlParameter[] parameters)
         {
-            Utils.ClearJournal<NullableQuote>(FolderPath);
+            Utils.ClearJournal<NullableQuote>(FOLDER_PATH);
             string location;
 
-            using (var qj = OpenJournal(EFileAccess.ReadWrite, serializer))
+            using (var qj = OpenJournal(EFileAccess.ReadWrite))
             {
                 location = qj.Metadata.Settings.DefaultPath;
                 AppendRecords(qj, 0, 1);

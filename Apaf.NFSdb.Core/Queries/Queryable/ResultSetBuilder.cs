@@ -21,6 +21,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
 using Apaf.NFSdb.Core.Column;
+using Apaf.NFSdb.Core.Configuration;
 using Apaf.NFSdb.Core.Queries.Queryable.Expressions;
 using Apaf.NFSdb.Core.Queries.Queryable.PlanItem;
 using Apaf.NFSdb.Core.Tx;
@@ -29,24 +30,27 @@ namespace Apaf.NFSdb.Core.Queries.Queryable
 {
     public class ResultSetBuilder
     {
-        private class DirectExpression
+        private struct DirectExpression
         {
             public readonly EJournalExpressionType Expression;
-            public readonly string Property;
+            public readonly IColumnMetadata Column;
             public readonly int Count;
 
             public DirectExpression(EJournalExpressionType expression)
+                : this()
             {
                 Expression = expression;
             }
 
-            public DirectExpression(EJournalExpressionType expression, string property)
+            public DirectExpression(EJournalExpressionType expression, IColumnMetadata column)
+                : this()
             {
                 Expression = expression;
-                Property = property;
+                Column = column;
             }
 
             public DirectExpression(EJournalExpressionType expression, int count)
+                : this()
             {
                 Expression = expression;
                 Count = count;
@@ -90,12 +94,6 @@ namespace Apaf.NFSdb.Core.Queries.Queryable
         private ERowIDSortDirection GetTimestampOrder()
         {
             var order = ERowIDSortDirection.Desc;
-            string timestampProperty = null;
-            if (_journal.Metadata.TimestampFieldID != null)
-            {
-                timestampProperty = _journal.Metadata.GetColumnById(_journal.Metadata.TimestampFieldID.Value).PropertyName;
-            }
-
             bool hadNonTimestampOrder = false;
             foreach (var tranform in _directExpressions)
             {
@@ -121,7 +119,7 @@ namespace Apaf.NFSdb.Core.Queries.Queryable
 
                     case EJournalExpressionType.OrderBy:
                     case EJournalExpressionType.OrderByDescending:
-                        if (tranform.Property == timestampProperty)
+                        if (Metadata.TimestampColumnID == tranform.Column.ColumnID)
                         {
                             order = tranform.Expression == EJournalExpressionType.OrderBy
                                 ? ERowIDSortDirection.Asc
@@ -139,14 +137,7 @@ namespace Apaf.NFSdb.Core.Queries.Queryable
 
         private QueryRowsResult BindPostResult(IEnumerable<long> rowIds)
         {
-            string timestampProperty = null;
-            if (_journal.Metadata.TimestampFieldID != null)
-            {
-                timestampProperty = _journal.Metadata.GetColumnById(_journal.Metadata.TimestampFieldID.Value).PropertyName;
-            }
-
-            bool hadNonTimestampOrder = false;
-
+            var hadNonTimestampOrder = false;
             foreach (var tranform in _directExpressions)
             {
                 switch (tranform.Expression)
@@ -169,7 +160,7 @@ namespace Apaf.NFSdb.Core.Queries.Queryable
 
                     case EJournalExpressionType.OrderByDescending:
                     case EJournalExpressionType.OrderBy:
-                        if (tranform.Property != timestampProperty)
+                        if (tranform.Column.ColumnID != Metadata.TimestampColumnID)
                         {
                             hadNonTimestampOrder = true;
                             rowIds = BindOrderBy(rowIds, tranform);
@@ -197,9 +188,8 @@ namespace Apaf.NFSdb.Core.Queries.Queryable
 
         private IEnumerable<long> BindOrderBy(IEnumerable<long> rowIds, DirectExpression tranform)
         {
-            var column = _journal.Metadata.GetColumnByPropertyName(tranform.Property);
             var allRows = rowIds.ToList();
-            allRows.Sort(column.GetComparer(_tx, tranform.Expression == EJournalExpressionType.OrderBy));
+            allRows.Sort(tranform.Column.GetColumnComparer(_tx, tranform.Expression == EJournalExpressionType.OrderBy));
             return allRows;
         }
 
@@ -208,44 +198,53 @@ namespace Apaf.NFSdb.Core.Queries.Queryable
             return planHead;
         }
 
-        public void ColumnScan(string memberName, object literal)
+        public void ColumnScan<T>(IColumnMetadata column, T literal)
         {
-            var column = _journal.Metadata.GetColumnByPropertyName(memberName);
+            var planItem = new RowScanPlanItem(_journal, _tx);
+            planItem.AddContainsScan(column, literal);
+            _planHead = planItem;
+        }
+
+        public void ColumnLambdaScan<T>(IColumnMetadata column, Func<T, bool> lambda)
+        {
+            var planItem = new RowScanPlanItem(_journal, _tx);
+            planItem.AddLambdaScan(column, lambda);
+            _planHead = planItem;
+        }
+
+        public void ColumnNullScan(IColumnMetadata column)
+        {
             var planItem = new RowScanPlanItem(_journal, _tx);
             _planHead = planItem;
-            switch (column.FieldType)
+            if (!Metadata.IsNullColumnID.HasValue || !column.Nullable || column.NullIndex < 0)
             {
-                case EFieldType.Byte:
-                    planItem.AddContainsScan(column, Convert.ToByte(literal));
-                    break;
-                case EFieldType.Bool:
-                    planItem.AddContainsScan(column, (bool)literal);
-                    break;
-                case EFieldType.Int16:
-                    planItem.AddContainsScan(column, Convert.ToInt16(literal));
-                    break;
-                case EFieldType.Int32:
-                    planItem.AddContainsScan(column, Convert.ToInt32(literal));
-                    break;
-                case EFieldType.Int64:
-                    planItem.AddContainsScan(column, Convert.ToInt64(literal));
-                    break;
-                case EFieldType.Double:
-                    planItem.AddContainsScan(column, Convert.ToDouble(literal));
-                    break;
-                case EFieldType.Symbol:
-                case EFieldType.String:
-                    planItem.AddContainsScan(column, (string)literal);
-                    break;
-                case EFieldType.DateTime:
-                case EFieldType.DateTimeEpochMs:
-                    planItem.AddContainsScan(column, (DateTime)literal);
-                    break;
-                default:
-                    throw QueryExceptionExtensions.NotSupported(
-                        "Filtering by column of type '{0}' is not supported." +
-                                      " Column name '{1}'", column.FieldType, memberName);
+                MakeEmpty();
+                return;
             }
+
+            var isNullColumn = Metadata.GetColumnByID(Metadata.IsNullColumnID.Value);
+            Func<ByteArray, bool> lambda = ba => ba.IsSet(column.NullIndex);
+            planItem.AddLambdaScan(isNullColumn, lambda);
+        }
+
+        public void ColumnNotNullScan(IColumnMetadata column)
+        {
+            var planItem = new RowScanPlanItem(_journal, _tx);
+            _planHead = planItem;
+
+            if (!Metadata.IsNullColumnID.HasValue || !column.Nullable || column.NullIndex < 0)
+            {
+                return;
+            }
+
+            var isNullColumn = Metadata.GetColumnByID(Metadata.IsNullColumnID.Value);
+            Func<ByteArray, bool> lambda = ba => !ba.IsSet(column.NullIndex);
+            planItem.AddLambdaScan(isNullColumn, lambda);
+        }
+
+        private IJournalMetadata Metadata
+        {
+            get { return _journal.Metadata; }
         }
 
         public void ApplyLinq(EJournalExpressionType operation)
@@ -260,11 +259,16 @@ namespace Apaf.NFSdb.Core.Queries.Queryable
             if (operation == EJournalExpressionType.Take && count == 0)
             {
                 // No rows to be selected.
-                _planHead.Intersect(new TimestampRangePlanItem(DateInterval.None));
+                MakeEmpty();
                 return;
             }
 
             _directExpressions.Add(new DirectExpression(operation, count));
+        }
+
+        public void MakeEmpty()
+        {
+            _planHead.Intersect(new TimestampRangePlanItem(DateInterval.None));
         }
 
         public void ApplyMap(List<ColumnNameExpression> columns)
@@ -272,19 +276,19 @@ namespace Apaf.NFSdb.Core.Queries.Queryable
             _columns = new List<string>(columns.Count);
             foreach (var columnExp in columns)
             {
-                var col = _journal.Metadata.Columns.FirstOrDefault(c => string.Equals(c.PropertyName, columnExp.Name, StringComparison.OrdinalIgnoreCase));
+                var col = Metadata.Columns.FirstOrDefault(c => string.Equals(c.PropertyName, columnExp.Name, StringComparison.OrdinalIgnoreCase));
                 if (col == null)
                 {
                     throw QueryExceptionExtensions.ExpressionNotSupported(
-                        "Column [{0}] does not exists in journal " + _journal.Metadata.Name, columnExp);
+                        "Column [{0}] does not exists in journal " + Metadata.Name, columnExp);
                 }
                 _columns.Add(col.PropertyName);
             }
         }
 
-        public void ApplyOrderBy(string member, EJournalExpressionType expression)
+        public void ApplyOrderBy(IColumnMetadata column, EJournalExpressionType expression)
         {
-            _directExpressions.Add(new DirectExpression(expression, member));
+            _directExpressions.Add(new DirectExpression(expression, column));
         }
 
         public void Logical(ResultSetBuilder left, ResultSetBuilder right, ExpressionType op)
@@ -348,8 +352,8 @@ namespace Apaf.NFSdb.Core.Queries.Queryable
         public void IndexCollectionScan(string memberName, IEnumerable values, Expression exp)
         {
             var p = new RowScanPlanItem(_journal, _tx);
-            var column = _journal.Metadata.GetColumnByPropertyName(memberName);
-            switch (column.FieldType)
+            var column = Metadata.GetColumnByPropertyName(memberName);
+            switch (column.DataType.ColumnType)
             {
                 case EFieldType.Byte:
                     p.AddContainsScan(column, ToIList<byte>(values));
@@ -379,7 +383,7 @@ namespace Apaf.NFSdb.Core.Queries.Queryable
                     break;
                 default:
                     throw QueryExceptionExtensions.ExpressionNotSupported(
-                        string.Format("Column of type {0} cannot be bound to Contains expressions", column.FieldType), exp);
+                        string.Format("Column of type {0} cannot be bound to Contains expressions", column.DataType.ColumnType), exp);
             }
             _planHead = p;
         }
@@ -394,7 +398,7 @@ namespace Apaf.NFSdb.Core.Queries.Queryable
         public void IndexCollectionScan<TT>(string memberName, TT[] values)
         {
             var p = new RowScanPlanItem(_journal, _tx);
-            p.AddContainsScan(_journal.Metadata.GetColumnByPropertyName(memberName), values);
+            p.AddContainsScan(Metadata.GetColumnByPropertyName(memberName), values);
             _planHead = p;
         }
 
@@ -405,7 +409,7 @@ namespace Apaf.NFSdb.Core.Queries.Queryable
 
         public void TakeLatestBy(string latestBySymbol)
         {
-            var column = _journal.Metadata.GetColumnByPropertyName(latestBySymbol);
+            var column = Metadata.GetColumnByPropertyName(latestBySymbol);
 
             if (_planHead == null)
             {
@@ -431,16 +435,16 @@ namespace Apaf.NFSdb.Core.Queries.Queryable
             }
         }
 
-        private IPlanItem CreateLastestByIdPlanItem(ColumnMetadata column)
+        private IPlanItem CreateLastestByIdPlanItem(IColumnMetadata column)
         {
             var rowScan = new RowScanPlanItem(_journal, _tx);
             rowScan.ApplyLastestByIdPlanItem(column);
             return rowScan;
         }
 
-        private IPlanItem RebuildWithLatest(IPlanItem planHead, ColumnMetadata latestByColumn)
+        private IPlanItem RebuildWithLatest(IPlanItem planHead, IColumnMetadata latestByColumn)
         {
-            var column = _journal.Metadata.GetColumnByPropertyName(latestByColumn.PropertyName);
+            var column = Metadata.GetColumnByPropertyName(latestByColumn.PropertyName);
             var intersc = planHead as IntersectPlanItem;
             if (intersc != null)
             {
@@ -507,7 +511,7 @@ namespace Apaf.NFSdb.Core.Queries.Queryable
             var scan = planHead as IColumnScanPlanItemCore;
             if (scan != null)
             {
-                var col = _journal.Metadata.GetColumnByPropertyName(latestBySymbol);
+                var col = Metadata.GetColumnByPropertyName(latestBySymbol);
                 if (scan.CanTranformLastestByIdPlanItem(col))
                 {
                     return true;

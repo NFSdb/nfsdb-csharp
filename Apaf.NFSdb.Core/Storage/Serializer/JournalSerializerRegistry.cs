@@ -25,23 +25,23 @@ using Apaf.NFSdb.Core.Column;
 
 namespace Apaf.NFSdb.Core.Storage.Serializer
 {
-    public class JournalSerializers
+    public class JournalSerializerRegistry
     {
-        private static readonly Lazy<JournalSerializers> INSTANCE = new Lazy<JournalSerializers>(CreateSigleton, 
+        private static readonly Lazy<JournalSerializerRegistry> INSTANCE = new Lazy<JournalSerializerRegistry>(CreateSigleton, 
             LazyThreadSafetyMode.PublicationOnly);
 
         private readonly ConcurrentDictionary<string, Func<ISerializerFactory>> _factories =
             new ConcurrentDictionary<string, Func<ISerializerFactory>>();
 
-        private static JournalSerializers CreateSigleton()
+        private static JournalSerializerRegistry CreateSigleton()
         {
-            var instance = new JournalSerializers();
+            var instance = new JournalSerializerRegistry();
             instance.AddFactory(MetadataConstants.THRIFT_SERIALIZER_NAME, () => new ThriftSerializerFactory());
             instance.AddFactory(MetadataConstants.POCO_SERIALIZER_NAME, () => new PocoSerializerFactory());
             return instance;
         }
 
-        public static JournalSerializers Instance
+        public static JournalSerializerRegistry Instance
         {
             get { return INSTANCE.Value; }
         }

@@ -29,10 +29,10 @@ namespace Apaf.NFSdb.Core.Queries
     public class LatestByFilter<T> : IPartitionFilter, ILatestBySymbolFilter
     {
         private readonly IJournalCore _journal;
-        private readonly ColumnMetadata _column;
+        private readonly IColumnMetadata _column;
         private readonly IList<T> _keys;
 
-        public LatestByFilter(IJournalCore journal, ColumnMetadata column, IList<T> keys)
+        public LatestByFilter(IJournalCore journal, IColumnMetadata column, IList<T> keys)
         {
             _journal = journal;
             _column = column;
@@ -49,7 +49,7 @@ namespace Apaf.NFSdb.Core.Queries
             return GetLatestByNonIndexedField(partitions, tx, sort);
         }
 
-        public ColumnMetadata Column
+        public IColumnMetadata Column
         {
             get { return _column; }
         }
@@ -80,7 +80,7 @@ namespace Apaf.NFSdb.Core.Queries
             foreach (var partition in partitions)
             {
                 var readPartition = tx.Read(partition.PartitionID);
-                var col = (ITypedColumn<T>) readPartition.ReadColumn(_column.FieldID);
+                var col = (ITypedColumn<T>) readPartition.ReadColumn(_column.ColumnID);
                 for (long r = partition.High; r >= partition.Low; r--)
                 {
                     var val = col.Get(r, tx.ReadCache);
@@ -118,7 +118,7 @@ namespace Apaf.NFSdb.Core.Queries
                     keysMap = new int[_keys.Count];
                     for (int i = 0; i < _keys.Count; i++)
                     {
-                        keysMap[i] = partition.GetSymbolKey(_column.FieldID, _keys[i], tx);
+                        keysMap[i] = partition.GetSymbolKey(_column.ColumnID, _keys[i], tx);
                     }
                 }
 
@@ -131,7 +131,7 @@ namespace Apaf.NFSdb.Core.Queries
                         var key = keysMap == null ? i : keysMap[i];
                         if (key != MetadataConstants.SYMBOL_NOT_FOUND_VALUE)
                         {
-                            var rowIDs = partition.GetSymbolRowsByKey(_column.FieldID, key, tx);
+                            var rowIDs = partition.GetSymbolRowsByKey(_column.ColumnID, key, tx);
 
                             foreach (var rowID in rowIDs)
                             {

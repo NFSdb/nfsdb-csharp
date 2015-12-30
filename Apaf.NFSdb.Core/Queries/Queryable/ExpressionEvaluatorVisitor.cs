@@ -19,9 +19,12 @@ using System;
 using System.Collections;
 using System.Linq;
 using System.Linq.Expressions;
+using Apaf.NFSdb.Core.Annotations;
 using Apaf.NFSdb.Core.Column;
 using Apaf.NFSdb.Core.Configuration;
+using Apaf.NFSdb.Core.Exceptions;
 using Apaf.NFSdb.Core.Queries.Queryable.Expressions;
+using Apaf.NFSdb.Core.Reflection;
 using Apaf.NFSdb.Core.Tx;
 using Apaf.NFSdb.Core.Writes;
 
@@ -180,7 +183,13 @@ namespace Apaf.NFSdb.Core.Queries.Queryable
             }
 
             var member = ExHelper.GetMemberName(predicate, _itemType, exp);
-            result.ApplyOrderBy(member, (EJournalExpressionType) exp.NodeType);
+            var column = _journal.Metadata.TryGetColumnByPropertyName(member);
+            if (column == null)
+            {
+                throw QueryExceptionExtensions.ExpressionNotSupported(
+                    string.Format("Column '{0}' does not exist", member), exp);
+            }
+            result.ApplyOrderBy(column, (EJournalExpressionType)exp.NodeType);
             return result;
         }
 
@@ -249,6 +258,7 @@ namespace Apaf.NFSdb.Core.Queries.Queryable
             switch (expression.NodeType)
             {
                 case ExpressionType.Equal:
+                case ExpressionType.NotEqual:
                     return EvaluateEquals(expression);
 
                 case ExpressionType.Or:
@@ -350,13 +360,13 @@ namespace Apaf.NFSdb.Core.Queries.Queryable
             return nodeType;
         }
 
-        private static ColumnMetadata GetTimestamp(IJournalMetadata metadata)
+        private static IColumnMetadata GetTimestamp(IJournalMetadata metadata)
         {
-            if (!metadata.TimestampFieldID.HasValue)
+            if (!metadata.TimestampColumnID.HasValue)
             {
                 return null;
             }
-            return metadata.GetColumnById(metadata.TimestampFieldID.Value);
+            return metadata.GetColumnByID(metadata.TimestampColumnID.Value);
         }
 
         private ResultSetBuilder EvaluateLogical(Expression expression)
@@ -383,55 +393,127 @@ namespace Apaf.NFSdb.Core.Queries.Queryable
 
         private ResultSetBuilder EvaluateEquals(Expression expression)
         {
-            if (expression.NodeType == ExpressionType.Equal)
+            if (expression.NodeType == ExpressionType.Equal
+                || expression.NodeType == ExpressionType.NotEqual)
             {
                 var literal = ExHelper.GetLiteralValue(expression, _parameters);
                 var memberName = ExHelper.GetMemberName(expression, _itemType);
-                if (literal is long || literal is DateTime)
+
+                IColumnMetadata column;
+                try
                 {
+                    column = _journal.Metadata.GetColumnByPropertyName(memberName);
+                }
+                catch (NFSdbConfigurationException)
+                {
+                    throw QueryExceptionExtensions.ExpressionNotSupported(
+                        string.Format("Column {0} does not exist", memberName), expression);
+                }
 
-                    if (GetTimestamp(_journal.Metadata) != null &&
-                        GetTimestamp(_journal.Metadata).PropertyName == memberName)
+                if (_journal.Metadata.TimestampColumnID == column.ColumnID)
+                {
+                    if (expression.NodeType == ExpressionType.Equal)
                     {
-                        DateInterval filterInterval;
-                        if (literal is long)
+                        if (literal is long || literal is DateTime)
                         {
-                            var timestamp = (long) literal;
-                            filterInterval = new DateInterval(DateUtils.UnixTimestampToDateTime(timestamp),
-                                DateUtils.UnixTimestampToDateTime(timestamp + 1));
-                        }
-                        else
-                        {
-                            var timestamp = (DateTime) literal;
-                            filterInterval = new DateInterval(timestamp,
-                                new DateTime(timestamp.Ticks + 1, timestamp.Kind));
-                        }
 
-                        var result = new ResultSetBuilder(_journal, _tx);
-                        result.TimestampInterval(filterInterval);
-                        return result;
+                            if (GetTimestamp(_journal.Metadata) != null &&
+                                GetTimestamp(_journal.Metadata).PropertyName == memberName)
+                            {
+                                DateInterval filterInterval;
+                                if (literal is long)
+                                {
+                                    var timestamp = (long) literal;
+                                    filterInterval = new DateInterval(DateUtils.UnixTimestampToDateTime(timestamp),
+                                        DateUtils.UnixTimestampToDateTime(timestamp + 1));
+                                }
+                                else
+                                {
+                                    var timestamp = (DateTime) literal;
+                                    filterInterval = new DateInterval(timestamp,
+                                        new DateTime(timestamp.Ticks + 1, timestamp.Kind));
+                                }
+
+                                var result = new ResultSetBuilder(_journal, _tx);
+                                result.TimestampInterval(filterInterval);
+                                return result;
+                            }
+                        }
                     }
                 }
-                else
+
+                var res = new ResultSetBuilder(_journal, _tx);
+                try
                 {
-                    var result = new ResultSetBuilder(_journal, _tx);
-                    try
+                    if (literal != null)
                     {
-                        result.ColumnScan(memberName, literal);
+                        if (expression.NodeType == ExpressionType.Equal)
+                        {
+                            ReflectionHelper.CallStaticPrivateGeneric("CreateColumnScan", this,
+                                column.DataType.Clazz, column, literal, res);
+                        }
+                        else if (expression.NodeType == ExpressionType.NotEqual)
+                        {
+                            ReflectionHelper.CallStaticPrivateGeneric("CreateColumnNotEqualScan", this,
+                                column.DataType.Clazz, column, literal, res);
+                        }
                     }
-                    catch (NFSdbQueryableNotSupportedException ex)
+                    else
                     {
-                        throw QueryExceptionExtensions.ExpressionNotSupported(ex.Message, expression);
+                        if (expression.NodeType == ExpressionType.Equal)
+                        {
+                            ReflectionHelper.CallStaticPrivateGeneric("CreateColumnScan", this,
+                                column.DataType.Clazz, column, null, res);
+                        }
+                        else if (expression.NodeType == ExpressionType.NotEqual)
+                        {
+                            ReflectionHelper.CallStaticPrivateGeneric("CreateColumnNotEqualScan", this,
+                                column.DataType.Clazz, column, null, res);
+                        }
                     }
-                    catch (InvalidCastException ex)
-                    {
-                        throw QueryExceptionExtensions.ExpressionNotSupported(ex.Message, expression);
-                    }
-                    return result;
                 }
+                catch (NFSdbQueryableNotSupportedException ex)
+                {
+                    throw QueryExceptionExtensions.ExpressionNotSupported(ex.Message, expression);
+                }
+                catch (InvalidCastException ex)
+                {
+                    throw QueryExceptionExtensions.ExpressionNotSupported(ex.Message, expression);
+                }
+                return res;
             }
+
             throw new NotSupportedException(
                 string.Format("Unable to translate expression {0} to journal operation", expression));
+        }
+
+        [UsedImplicitly]
+        private static void CreateColumnScan<TT>(IColumnMetadata column, object literal, ResultSetBuilder builder)
+        {
+            if (literal == null)
+            {
+                builder.ColumnNullScan(column);
+            }
+            else
+            {
+                var value = (TT) column.ToTypedValue(literal);
+                builder.ColumnScan<TT>(column, value);
+            }
+        }
+
+        [UsedImplicitly]
+        private static void CreateColumnNotEqualScan<TT>(IColumnMetadata column, object literal, ResultSetBuilder builder)
+        {
+            if (literal == null)
+            {
+                builder.ColumnNotNullScan(column);
+            }
+            else
+            {
+                var value = (TT) column.ToTypedValue(literal);
+                var lambda = (Func<TT, bool>) (t => !object.Equals(t, value));
+                builder.ColumnLambdaScan(column, lambda);
+            }
         }
 
         private ResultSetBuilder VisitUnary(UnaryExpression exp)

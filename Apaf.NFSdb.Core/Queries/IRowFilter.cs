@@ -16,16 +16,14 @@
  */
 #endregion
 
-using System.Collections.Generic;
-using Apaf.NFSdb.Core.Column;
+using Apaf.NFSdb.Core.Storage;
 using Apaf.NFSdb.Core.Tx;
 
 namespace Apaf.NFSdb.Core.Queries
 {
-    public interface IQueryStatistics
+    public interface IRowFilter : IPartitionFilter
     {
-        long GetCardinalityByColumnValue<T>(IReadTransactionContext tx, IColumnMetadata column, IList<T> value);
-        int GetColumnDistinctCardinality(IReadTransactionContext tx, IColumnMetadata column);
-        int GetSymbolCount(IReadTransactionContext tx, IColumnMetadata column);
+        bool IsMatch(IPartitionReader partition, IReadContext tx, long localRowID);
+        long GetCardinality(IJournalCore journal, IReadTransactionContext tx);
     }
 }

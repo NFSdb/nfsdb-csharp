@@ -15,17 +15,35 @@
  * limitations under the License.
  */
 #endregion
-
-using System.Collections.Generic;
+using System;
 using Apaf.NFSdb.Core.Column;
 using Apaf.NFSdb.Core.Tx;
 
 namespace Apaf.NFSdb.Core.Queries
 {
-    public interface IQueryStatistics
+    public class LambdaFilter<T> : ColumnFilterBase<T>
     {
-        long GetCardinalityByColumnValue<T>(IReadTransactionContext tx, IColumnMetadata column, IList<T> value);
-        int GetColumnDistinctCardinality(IReadTransactionContext tx, IColumnMetadata column);
-        int GetSymbolCount(IReadTransactionContext tx, IColumnMetadata column);
+        private readonly Func<T, bool> _lambda;
+
+        public LambdaFilter(IColumnMetadata column, Func<T, bool> lambda) 
+            : base(column)
+        {
+            _lambda = lambda;
+        }
+
+        protected override bool IsMatch(T value)
+        {
+            return _lambda(value);
+        }
+
+        protected override SingleMultipleValues<T> GetAllMatchingValues(IReadTransactionContext tx)
+        {
+            return SingleMultipleValues<T>.NONE;
+        }
+
+        public override long GetCardinality(IJournalCore journal, IReadTransactionContext tx)
+        {
+            return long.MaxValue;
+        }
     }
 }

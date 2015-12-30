@@ -1,4 +1,21 @@
-﻿using System;
+﻿#region copyright
+/*
+ * Copyright (c) 2014. APAF http://apafltd.co.uk
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+#endregion
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
@@ -15,6 +32,7 @@ namespace Apaf.NFSdb.Core.Ql.Gramma
         private const string KEYWORD_SKIP = "OFFSET";
         private const string KEYWORD_ORDER_BY = "ORDER";
         private const string KEYWORD_DESC = "DESC";
+        private const string KEYWORD_NOT = "NOT";
 
         public override QlExpression VisitSelect_stmt(QlParser.Select_stmtContext context)
         {
@@ -185,7 +203,22 @@ namespace Apaf.NFSdb.Core.Ql.Gramma
             }
             throw new NFSdbSyntaxException(string.Format("invalid expression '{0}'", context.GetText()),
                 context.start.Line, context.start.StartIndex);
+        }
 
+        public override QlExpression VisitLogicalIsExpr(QlParser.LogicalIsExprContext context)
+        {
+            var op = ExpressionType.Equal;
+            for (int i = 0; i < context.ChildCount; i++)
+            {
+                var child = context.GetChild(i);
+                var terminal = child as TerminalNodeImpl;
+                if (terminal != null && string.Equals(KEYWORD_NOT, terminal.GetText(), StringComparison.OrdinalIgnoreCase))
+                {
+                    op = ExpressionType.NotEqual;
+                    break;
+                }
+            }
+            return new ComparisonExpression(GetLeft(context), op, GetRight(context), context.ToQlToken());
         }
 
         public override QlExpression VisitParamExpr(QlParser.ParamExprContext context)
@@ -229,6 +262,11 @@ namespace Apaf.NFSdb.Core.Ql.Gramma
                     context.start.Line, context.start.Column);
             }
             return new LiteralExpression(Expression.Constant(text.Substring(1, text.Length - 2)), context.ToQlToken());
+        }
+
+        public override QlExpression VisitNullLiteral(QlParser.NullLiteralContext context)
+        {
+            return new LiteralExpression(Expression.Constant(null), context.ToQlToken());
         }
 
         public override QlExpression VisitNumericLiteral(QlParser.NumericLiteralContext context)

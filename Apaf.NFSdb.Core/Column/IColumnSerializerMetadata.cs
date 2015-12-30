@@ -22,7 +22,7 @@ namespace Apaf.NFSdb.Core.Column
 {
     public interface IColumnSerializerMetadata
     {
-        EFieldType DataType { get; set; }
+        EFieldType ColumnType { get; set; }
         int Size { get; }
         bool Nullable { get; }
         string PropertyName { get; }

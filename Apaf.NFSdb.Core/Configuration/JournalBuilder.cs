@@ -203,7 +203,7 @@ namespace Apaf.NFSdb.Core.Configuration
             if (t != null)
             {
                 var serializerFactory =
-                    JournalSerializers.Instance.GetSerializer(config.SerializerName ??
+                    JournalSerializerRegistry.Instance.GetSerializer(config.SerializerName ??
                                                               MetadataConstants.DEFAULT_SERIALIZER_NAME);
                 return new JournalMetadata(config, serializerFactory, t);
             }
@@ -221,7 +221,7 @@ namespace Apaf.NFSdb.Core.Configuration
         {
             _config = UpdateConfiguration(_config);
             var serializerFactory =
-                JournalSerializers.Instance.GetSerializer(_config.SerializerName ??
+                JournalSerializerRegistry.Instance.GetSerializer(_config.SerializerName ??
                                                           MetadataConstants.DEFAULT_SERIALIZER_NAME);
             var meta = new JournalMetadata(_config, serializerFactory, typeof(T));
 

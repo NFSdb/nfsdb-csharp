@@ -29,7 +29,7 @@ namespace Apaf.NFSdb.Core.Queries.Queryable.PlanItem
     {
         private readonly IJournalCore _journal;
         private readonly IReadTransactionContext _tx;
-        private List<IColumnFilter> _andFilters;
+        private List<IRowFilter> _andFilters;
         private IPartitionFilter _partitionFilter;
         private long? _cardin;
 
@@ -40,21 +40,27 @@ namespace Apaf.NFSdb.Core.Queries.Queryable.PlanItem
             Timestamps = new DateRange();
         }
 
-        public void AddContainsScan<T>(ColumnMetadata column, IList<T> literals)
+        public void AddContainsScan<T>(IColumnMetadata column, IList<T> literals)
         {
             var newFilter = new SymbolFilter<T>(column, literals);
             AddFilter(newFilter);
         }
 
-        public void AddContainsScan<T>(ColumnMetadata column, T literal)
+        public void AddContainsScan<T>(IColumnMetadata column, T literal)
         {
             var newFilter = new SymbolFilter<T>(column, literal);
             AddFilter(newFilter);
         }
 
+        public void AddLambdaScan<T>(IColumnMetadata column, Func<T, bool> lambda)
+        {
+            var newFilter = new LambdaFilter<T>(column, lambda);
+            AddFilter(newFilter);
+        }
+
         private void AddFilter<T>(SymbolFilter<T> newFilter)
         {
-            var partitionAsColumn = _partitionFilter as IColumnFilter;
+            var partitionAsColumn = _partitionFilter as IRowFilter;
             if (_partitionFilter == null ||
                 (partitionAsColumn != null
                  && partitionAsColumn.GetCardinality(_journal, _tx) > newFilter.GetCardinality(_journal, _tx)))
@@ -67,9 +73,9 @@ namespace Apaf.NFSdb.Core.Queries.Queryable.PlanItem
             }
         }
 
-        public void AddFilter(IColumnFilter filter)
+        public void AddFilter(IRowFilter filter)
         {
-            if (_andFilters == null) _andFilters = new List<IColumnFilter>();
+            if (_andFilters == null) _andFilters = new List<IRowFilter>();
             _andFilters.Add(filter);
         }
 
@@ -84,11 +90,6 @@ namespace Apaf.NFSdb.Core.Queries.Queryable.PlanItem
                 }
                 return null;
             }
-        }
-
-        internal IEnumerable<IColumnFilter> ColumnFilters
-        {
-            get { return _andFilters; }
         }
 
         public IEnumerable<long> Execute(IJournalCore journal, IReadTransactionContext tx, 
@@ -200,19 +201,19 @@ namespace Apaf.NFSdb.Core.Queries.Queryable.PlanItem
 
         public DateRange Timestamps { get; private set; }
 
-        public bool CanTranformLastestByIdPlanItem(ColumnMetadata column)
+        public bool CanTranformLastestByIdPlanItem(IColumnMetadata column)
         {
             var partitionAsColumn = _partitionFilter as IColumnFilter;
             if (_partitionFilter != null && partitionAsColumn == null)
             {
                 var existingLatestFileter = _partitionFilter as ILatestBySymbolFilter;
-                return existingLatestFileter != null && existingLatestFileter.Column.FieldID == column.FieldID;
+                return existingLatestFileter != null && existingLatestFileter.Column.ColumnID == column.ColumnID;
             }
 
             return true;
         }
 
-        public void ApplyLastestByIdPlanItem(ColumnMetadata column)
+        public void ApplyLastestByIdPlanItem(IColumnMetadata column)
         {
             if (!CanTranformLastestByIdPlanItem(column))
             {
@@ -220,7 +221,7 @@ namespace Apaf.NFSdb.Core.Queries.Queryable.PlanItem
             }
 
             var existingLatestFileter = _partitionFilter as ILatestBySymbolFilter;
-            if (existingLatestFileter != null && existingLatestFileter.Column.FieldID == column.FieldID)
+            if (existingLatestFileter != null && existingLatestFileter.Column.ColumnID == column.ColumnID)
             {
                 return;
             }
@@ -228,12 +229,12 @@ namespace Apaf.NFSdb.Core.Queries.Queryable.PlanItem
             var partitionAsColumn = _partitionFilter as IColumnFilter;
             if (partitionAsColumn != null)
             {
-                if (_andFilters == null) _andFilters = new List<IColumnFilter>();
+                if (_andFilters == null) _andFilters = new List<IRowFilter>();
                 _andFilters.Add(partitionAsColumn);
                 _partitionFilter = null;
             }
 
-            switch (column.FieldType)
+            switch (column.DataType.ColumnType)
             {
                 case EFieldType.Byte:
                     _partitionFilter = new LatestByFilter<byte>(_journal, column, ExtractColumnContains<byte>(column));
@@ -262,14 +263,14 @@ namespace Apaf.NFSdb.Core.Queries.Queryable.PlanItem
                     _partitionFilter = new LatestByFilter<DateTime>(_journal, column, ExtractColumnContains<DateTime>(column));
                     break;
                 default:
-                    throw QueryExceptionExtensions.NotSupported("Latest by {0} column is not supported.", column.FieldType);
+                    throw QueryExceptionExtensions.NotSupported("Latest by {0} column is not supported.", column.DataType.ColumnType);
             }
         }
 
-        private IList<T> ExtractColumnContains<T>(ColumnMetadata column)
+        private IList<T> ExtractColumnContains<T>(IColumnMetadata column)
         {
             var mainF = _partitionFilter as SymbolFilter<T>;
-            if (mainF != null && mainF.Column.FieldID == column.FieldID)
+            if (mainF != null && mainF.Column.ColumnID == column.ColumnID)
             {
                 return mainF.FilterValues;
             }
@@ -278,7 +279,7 @@ namespace Apaf.NFSdb.Core.Queries.Queryable.PlanItem
             {
                 SymbolFilter<T> found = _andFilters
                     .OfType<SymbolFilter<T>>()
-                    .FirstOrDefault(c => c.Column.FieldID == column.FieldID);
+                    .FirstOrDefault(c => c.Column.ColumnID == column.ColumnID);
 
                 if (found != null)
                 {
@@ -293,7 +294,7 @@ namespace Apaf.NFSdb.Core.Queries.Queryable.PlanItem
         {
             if (_partitionFilter is IColumnFilter && rowScan2._partitionFilter is IColumnFilter)
             {
-                if (_andFilters == null) _andFilters = new List<IColumnFilter>();
+                if (_andFilters == null) _andFilters = new List<IRowFilter>();
                 var thisMain = (IColumnFilter)_partitionFilter;
                 var thatMain = (IColumnFilter)rowScan2._partitionFilter;
 
@@ -318,7 +319,7 @@ namespace Apaf.NFSdb.Core.Queries.Queryable.PlanItem
             }
             else if (_partitionFilter is IColumnFilter)
             {
-                if (_andFilters == null) _andFilters = new List<IColumnFilter>();
+                if (_andFilters == null) _andFilters = new List<IRowFilter>();
                 var thisMain = (IColumnFilter)_partitionFilter;
                 _andFilters.Add(thisMain);
                 _partitionFilter = rowScan2._partitionFilter;
@@ -330,7 +331,7 @@ namespace Apaf.NFSdb.Core.Queries.Queryable.PlanItem
             }
             else if (rowScan2._partitionFilter is IColumnFilter)
             {
-                if (_andFilters == null) _andFilters = new List<IColumnFilter>();
+                if (_andFilters == null) _andFilters = new List<IRowFilter>();
                 var thatMain = (IColumnFilter)rowScan2._partitionFilter;
                 _andFilters.Add(thatMain);
                 if (rowScan2._andFilters != null)
@@ -365,9 +366,9 @@ namespace Apaf.NFSdb.Core.Queries.Queryable.PlanItem
         {
             var c1 = GetOnlySymbolScan();
             var c2 = rowScan2.GetOnlySymbolScan();
-            if (c1 != null && c2 != null && c1.FieldID == c2.FieldID)
+            if (c1 != null && c2 != null && c1.ColumnID == c2.ColumnID)
             {
-                switch (c1.FieldType)
+                switch (c1.DataType.ColumnType)
                 {
                     case EFieldType.Byte:
                         _partitionFilter = new SymbolFilter<byte>(c1,
@@ -423,7 +424,7 @@ namespace Apaf.NFSdb.Core.Queries.Queryable.PlanItem
             return false;
         }
 
-        private ColumnMetadata GetOnlySymbolScan()
+        private IColumnMetadata GetOnlySymbolScan()
         {
             if (_partitionFilter is IColumnFilter && (_andFilters == null || _andFilters.Count == 0))
             {
@@ -433,7 +434,7 @@ namespace Apaf.NFSdb.Core.Queries.Queryable.PlanItem
         }
     }
 
-    public class DescendingCardinalityComparer : IComparer<IColumnFilter>
+    public class DescendingCardinalityComparer : IComparer<IRowFilter>
     {
         private readonly IJournalCore _journal;
         private readonly IReadTransactionContext _rtx;
@@ -444,7 +445,7 @@ namespace Apaf.NFSdb.Core.Queries.Queryable.PlanItem
             _rtx = rtx;
         }
 
-        public int Compare(IColumnFilter x, IColumnFilter y)
+        public int Compare(IRowFilter x, IRowFilter y)
         {
             return y.GetCardinality(_journal, _rtx).CompareTo(x.GetCardinality(_journal, _rtx));
         }

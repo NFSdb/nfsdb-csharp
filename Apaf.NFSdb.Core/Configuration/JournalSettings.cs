@@ -62,7 +62,7 @@ namespace Apaf.NFSdb.Core.Configuration
                 RecordHint = RecordHint,
                 SerializerName = null,
                 Columns = _columns
-                    .Where(c => c.FieldType != EFieldType.BitSet)
+                    .Where(c => c.ColumnType != EFieldType.BitSet)
                     .Select(CreateColumnElement)
                     .ToList()
             };
@@ -71,7 +71,7 @@ namespace Apaf.NFSdb.Core.Configuration
 
         private ColumnElement CreateColumnElement(ColumnMetadata meta)
         {
-            switch (meta.FieldType)
+            switch (meta.ColumnType)
             {
                 case EFieldType.Byte:
                 case EFieldType.Bool:
@@ -84,7 +84,7 @@ namespace Apaf.NFSdb.Core.Configuration
                     return new ColumnElement
                     {
                         Name = meta.SerializerMetadata.GetFileName(),
-                        ColumnType = meta.FieldType,
+                        ColumnType = meta.ColumnType,
                         IsNull = meta.Nullable
                     };
                 case EFieldType.String:
@@ -159,7 +159,7 @@ namespace Apaf.NFSdb.Core.Configuration
             get { return _lagHours; }
         }
 
-        public ColumnMetadata GetColumn(string fieldName)
+        public IColumnMetadata GetColumn(string fieldName)
         {
             return _columns.FirstOrDefault(c => c.FileName.Equals(fieldName, StringComparison.OrdinalIgnoreCase));
         }

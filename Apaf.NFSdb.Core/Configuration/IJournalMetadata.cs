@@ -27,14 +27,16 @@ namespace Apaf.NFSdb.Core.Configuration
     {
         IFieldSerializer GetSerializer(IEnumerable<ColumnSource> columns);
         JournalSettings Settings { get; }
-        int? TimestampFieldID { get; }
+        int? TimestampColumnID { get; }
+        int? IsNullColumnID { get; }
         int GetColumnID(string filename);
         int FileCount { get; }
         TimeSpan PartitionTtl { get; }
 
-        IEnumerable<ColumnMetadata> Columns { get; }
-        ColumnMetadata GetColumnById(int columndID);
-        ColumnMetadata GetColumnByPropertyName(string symbolName);
+        IEnumerable<IColumnMetadata> Columns { get; }
+        IColumnMetadata GetColumnByID(int columndID);
+        IColumnMetadata GetColumnByPropertyName(string symbolName);
+        IColumnMetadata TryGetColumnByPropertyName(string symbolName);
         int ColumnCount { get; }
         string Name { get; }
 

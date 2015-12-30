@@ -2,15 +2,15 @@
 {
     public class ColumnSource
     {
-        public ColumnSource(ColumnMetadata metadata, IColumn column, int fieldID)
+        public ColumnSource(IColumnMetadata metadata, IColumn column, int columnID)
         {
             Column = column;
             Metadata = metadata;
-            FieldID = fieldID;
+            ColumnID = columnID;
         }
 
-        public int FieldID { get; private set; }
+        public int ColumnID { get; private set; }
         public IColumn Column { get; private set; }
-        public ColumnMetadata Metadata { get; private set; }
+        public IColumnMetadata Metadata { get; private set; }
     }
 }

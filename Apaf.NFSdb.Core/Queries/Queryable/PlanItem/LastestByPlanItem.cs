@@ -24,19 +24,19 @@ namespace Apaf.NFSdb.Core.Queries.Queryable.PlanItem
 {
     public class LastestByPlanItem<T> : IPlanItem
     {
-        private readonly ColumnMetadata _column;
+        private readonly IColumnMetadata _column;
         private long? _cardinality;
         private readonly T[] _keys;
         private IPlanItem _child;
 
-        public LastestByPlanItem(ColumnMetadata column, IPlanItem child = null)
+        public LastestByPlanItem(IColumnMetadata column, IPlanItem child = null)
         {
             _column = column;
             _child = child;
             Timestamps = new DateRange();
         }
 
-        public LastestByPlanItem(ColumnMetadata column, T[] literals, IPlanItem child = null)
+        public LastestByPlanItem(IColumnMetadata column, T[] literals, IPlanItem child = null)
             : this(column, child)
         {
             _keys = literals;
