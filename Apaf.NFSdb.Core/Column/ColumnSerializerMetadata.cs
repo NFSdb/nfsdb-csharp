@@ -39,7 +39,7 @@ namespace Apaf.NFSdb.Core.Column
         }
 
         public EFieldType ColumnType { get; set; }
-        public Type DataType { get; set; }
+        public Type DataType { get; private set; }
         public string PropertyName { get; private set; }
         public int Size { get; private set; }
         public bool Nullable { get; private set; }
@@ -83,28 +83,6 @@ namespace Apaf.NFSdb.Core.Column
                 fieldType = EFieldType.DateTime;
             }
             return typeof(IFixedWidthColumn).GetMethod("Set" + fieldType);
-        }
-
-        public Type GetDataType()
-        {
-            switch (ColumnType)
-            {
-                case EFieldType.Byte:
-                case EFieldType.Bool:
-                case EFieldType.Int16:
-                case EFieldType.Int32:
-                case EFieldType.Int64:
-                case EFieldType.Double:
-                case EFieldType.BitSet:
-                    throw new ArgumentOutOfRangeException();
-                case EFieldType.Symbol:
-                case EFieldType.String:
-                    return typeof (string);
-                case EFieldType.Binary:
-                    return typeof (byte[]);
-                default:
-                    throw new ArgumentOutOfRangeException();
-            }
         }
 
         public bool IsRefType()

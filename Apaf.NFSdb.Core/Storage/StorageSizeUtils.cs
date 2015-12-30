@@ -4,6 +4,8 @@ namespace Apaf.NFSdb.Core.Storage
 {
     public static class StorageSizeUtils
     {
+        private static readonly int INT32_RECORD_SIZE = EFieldType.Int32.GetSize();
+
         public static int GetRecordSize(IColumnMetadata column, EDataType dataType)
         {
             if (column.DataType.ColumnType == EFieldType.BitSet)
@@ -16,7 +18,7 @@ namespace Apaf.NFSdb.Core.Storage
                 return dataType.GetSize();
 
             if (column.DataType.ColumnType == EFieldType.Symbol && dataType == EDataType.Data)
-                return EFieldType.Int32.GetSize();
+                return INT32_RECORD_SIZE;
 
             return -1;
         } 

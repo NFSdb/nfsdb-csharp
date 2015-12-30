@@ -8,7 +8,7 @@ namespace Apaf.NFSdb.Core.Configuration
     {
         MethodInfo GetSetMethod();
         MethodInfo GetGetMethod();
-        Type GetDataType();
+        Type DataType { get; }
         string FieldName { get; }
         bool IsRefType();
     }

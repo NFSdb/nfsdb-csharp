@@ -237,7 +237,7 @@ namespace Apaf.NFSdb.Core.Storage.Serializer
                         il.Emit(OpCodes.Ldarg_2);
                         il.Emit(OpCodes.Ldarg_S, 4);
                         il.Emit(OpCodes.Callvirt, columnMeta.GetGetMethod());
-                        il.Emit(OpCodes.Castclass, columnMeta.GetDataType());
+                        il.Emit(OpCodes.Castclass, columnMeta.DataType);
                         il.Emit(OpCodes.Stfld, GetFieldInfo(columnMeta.FieldName));
                         il.MarkLabel(notSetLabels[i]);
                     }

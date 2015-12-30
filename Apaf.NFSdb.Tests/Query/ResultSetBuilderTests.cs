@@ -20,6 +20,7 @@ using System.Linq.Expressions;
 using Apaf.NFSdb.Core;
 using Apaf.NFSdb.Core.Column;
 using Apaf.NFSdb.Core.Configuration;
+using Apaf.NFSdb.Core.Queries;
 using Apaf.NFSdb.Core.Queries.Queryable;
 using Apaf.NFSdb.Core.Queries.Queryable.PlanItem;
 using Apaf.NFSdb.Core.Tx;
