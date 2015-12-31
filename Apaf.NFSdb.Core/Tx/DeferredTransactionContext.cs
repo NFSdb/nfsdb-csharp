@@ -14,7 +14,7 @@ namespace Apaf.NFSdb.Core.Tx
         private readonly IUnsafePartitionManager _paritionManager;
         private readonly TxState _state;
         private readonly IFileTxSupport _symbolTxSupport;
-        private readonly List<IPartitionCore> _paritions;
+        private readonly List<IPartition> _paritions;
         private readonly List<bool> _locks;
 
         private PartitionTxData _currentParitionTx;
@@ -83,7 +83,7 @@ namespace Apaf.NFSdb.Core.Tx
             }
         }
 
-        public IList<IPartitionCore> Partitions
+        public IList<IPartition> Partitions
         {
             get { return _paritions; }
         }
@@ -153,7 +153,7 @@ namespace Apaf.NFSdb.Core.Tx
             return _currentParitionTx = data;
         }
 
-        public void AddPartition(IPartitionCore parition)
+        public void AddPartition(IPartition parition)
         {
             _paritions.Add(parition);
 

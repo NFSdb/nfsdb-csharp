@@ -116,9 +116,9 @@ namespace Apaf.NFSdb.Tests.Query
             return new PartitionIntervalIterator();
         }
 
-        private IPartitionCore[] CreatePartitions(DateTime from, DateTime to, int count, TimeSpan recordsDelay)
+        private IPartition[] CreatePartitions(DateTime from, DateTime to, int count, TimeSpan recordsDelay)
         {
-            var res = new List<IPartitionCore>();
+            var res = new List<IPartition>();
             var tsmp = DateUtils.DateTimeToUnixTimeStamp(from);
             var end = DateUtils.DateTimeToUnixTimeStamp(to);
             var partStart = tsmp;
@@ -149,9 +149,9 @@ namespace Apaf.NFSdb.Tests.Query
             return res.ToArray();
         }
 
-        private IPartitionCore MockPartition(List<long> partTsmps, long start, long end, int id)
+        private IPartition MockPartition(List<long> partTsmps, long start, long end, int id)
         {
-            var part = new Mock<IPartitionCore>();
+            var part = new Mock<IPartition>();
             part.Setup(p => p.StartDate).Returns(DateUtils.UnixTimestampToDateTime(start));
             part.Setup(p => p.EndDate).Returns(DateUtils.UnixTimestampToDateTime(end));
             part.Setup(p => p.PartitionID).Returns(id);

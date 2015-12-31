@@ -85,7 +85,7 @@ namespace Apaf.NFSdb.Core.Writes
             }
             catch (Exception ex)
             {
-                Trace.WriteLine("Error disposing writer in Finalize." + ex, "WARN");
+                Trace.TraceWarning("Error disposing writer in Finalize." + ex);
             }
         }
     }

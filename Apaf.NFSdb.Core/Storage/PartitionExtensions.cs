@@ -22,7 +22,7 @@ namespace Apaf.NFSdb.Core.Storage
 {
     public static class PartitionExtensions
     {
-        public static bool IsInsidePartition(this IPartitionCore partition, DateTime timestamp)
+        public static bool IsInsidePartition(this IPartition partition, DateTime timestamp)
         {
             return timestamp >= partition.StartDate && timestamp < partition.EndDate;
         }

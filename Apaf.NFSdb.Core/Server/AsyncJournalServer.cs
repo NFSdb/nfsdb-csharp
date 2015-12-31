@@ -103,12 +103,12 @@ namespace Apaf.NFSdb.Core.Server
             }
         }
         
-        public void SignalUnusedPartition(IPartitionCore partitionCore, int offloadTimeoutTtl)
+        public void SignalUnusedPartition(IPartition partition, int offloadTimeoutTtl)
         {
             if (offloadTimeoutTtl >= 0)
             {
                 _serverTasks.Enqueue(new ScheduleAction(DateTime.UtcNow.AddMilliseconds(offloadTimeoutTtl),
-                    () => ExecuteOffloadPartition(partitionCore), string.Format("Offload partition '{0}'", partitionCore.StartDate)));
+                    () => ExecuteOffloadPartition(partition), string.Format("Offload partition '{0}'", partition.StartDate)));
 
                 if (Interlocked.Increment(ref _tasksInQueue) == 1)
                 {
@@ -117,9 +117,9 @@ namespace Apaf.NFSdb.Core.Server
             }
         }
 
-        private void ExecuteOffloadPartition(IPartitionCore partitionCore)
+        private void ExecuteOffloadPartition(IPartition partition)
         {
-            partitionCore.TryCloseFiles();
+            partition.TryCloseFiles();
         }
 
         public void SoftStop()

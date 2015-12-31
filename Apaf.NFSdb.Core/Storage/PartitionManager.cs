@@ -38,7 +38,7 @@ namespace Apaf.NFSdb.Core.Storage
         private readonly ICompositeFileFactory _fileFactory;
         private readonly IJournalServer _server;
         private readonly IJournalMetadata _metadata;
-        private readonly List<IPartitionCore> _partitions = new List<IPartitionCore>();
+        private readonly List<IPartition> _partitions = new List<IPartition>();
         private readonly JournalSettings _settings;
         private readonly ColumnStorage _symbolStorage;
         private readonly FileTxSupport _symbolTxSupport;
@@ -78,16 +78,16 @@ namespace Apaf.NFSdb.Core.Storage
 
         public EFileAccess Access { get; private set; }
 
-        public IPartitionCore GetPartition(int paritionID)
+        public IPartition GetPartition(int paritionID)
         {
             return GetPartitionByID(paritionID);
         }
 
-        public IPartitionCore[] GetOpenPartitions()
+        public IPartition[] GetOpenPartitions()
         {
             lock (_partitions)
             {
-                return _partitions.Cast<IPartitionCore>().ToArray();
+                return _partitions.Cast<IPartition>().ToArray();
             }
         }
 
@@ -96,7 +96,7 @@ namespace Apaf.NFSdb.Core.Storage
             get { return _symbolStorage; }
         }
 
-        private IPartitionCore GetPartitionByID(int partitionID)
+        private IPartition GetPartitionByID(int partitionID)
         {
             // Partition IDs are 1 based. 
             // 0 is reserved for symbols "parition".
@@ -155,7 +155,7 @@ namespace Apaf.NFSdb.Core.Storage
                 state = new TxState();
                 state.ReadContext = new ReadContext();
                 int capacity = PartitionSize + RESERVED_PARTITION_COUNT;
-                state.Partitions = new List<IPartitionCore>(capacity);
+                state.Partitions = new List<IPartition>(capacity);
                 state.Locks = new List<bool>();
                 state.PartitionDataStorage = new PartitionTxData[capacity];
             }
@@ -215,7 +215,7 @@ namespace Apaf.NFSdb.Core.Storage
             _lastTransactionLog = tx;
         }
 
-        public IPartitionCore GetAppendPartition(DateTime dateTime, ITransactionContext tx)
+        public IPartition GetAppendPartition(DateTime dateTime, ITransactionContext tx)
         {
             var lastUsedPartition = tx.GetPartitionTx();
             if (tx.LastAppendTimestamp <= dateTime && lastUsedPartition != null)
@@ -332,7 +332,7 @@ namespace Apaf.NFSdb.Core.Storage
             return symbolStorage;
         }
 
-        private void ReconcilePartitionsWithTxRec(List<IPartitionCore> partitions, TxRec txRec)
+        private void ReconcilePartitionsWithTxRec(List<IPartition> partitions, TxRec txRec)
         {
             partitions.Clear();
 
@@ -360,7 +360,7 @@ namespace Apaf.NFSdb.Core.Storage
             }
         }
 
-        private void AddNewPartitions(TxRec txRec, string defaultPath, List<IPartitionCore> partitions)
+        private void AddNewPartitions(TxRec txRec, string defaultPath, List<IPartition> partitions)
         {
             var nextPartitionID = 1;
             var lastPartitionStart = DateTime.MinValue;

@@ -16,11 +16,21 @@
  */
 #endregion
 
+using System;
 using Apaf.NFSdb.Core.Tx;
 
 namespace Apaf.NFSdb.Core.Storage
 {
-    public interface IPartition : IPartitionCore
+    public interface IPartition : IPartitionReader, IDisposable
     {
+        string DirectoryPath { get; }
+        void TryCloseFiles();
+        int AddRef();
+        int RemoveRef(int partitionOffloadMs);
+
+        DateTime StartDate { get; }
+        DateTime EndDate { get; }
+
+        void Append(object item, ITransactionContext tx);
     }
 }

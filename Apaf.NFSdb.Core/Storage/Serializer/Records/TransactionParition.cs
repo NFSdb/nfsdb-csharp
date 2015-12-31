@@ -7,10 +7,10 @@ namespace Apaf.NFSdb.Core.Storage.Serializer.Records
     {
         private readonly IJournalMetadata _metadata;
 
-        public readonly IPartitionCore Partition;
+        public readonly IPartition Partition;
         public readonly IReadContext ReadContext;
 
-        public TransactionParition(IPartitionCore partition, 
+        public TransactionParition(IPartition partition, 
             IReadContext readContext, IJournalMetadata metadata)
         {
             Partition = partition;

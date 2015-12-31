@@ -13,6 +13,6 @@ namespace Apaf.NFSdb.Core.Storage
 
         void Commit(ITransactionContext transaction, int partitionTtl);
 
-        IPartitionCore GetAppendPartition(DateTime dateTime, ITransactionContext tx);
+        IPartition GetAppendPartition(DateTime dateTime, ITransactionContext tx);
     }
 }

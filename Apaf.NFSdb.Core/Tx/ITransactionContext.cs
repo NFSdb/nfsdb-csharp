@@ -24,10 +24,10 @@ namespace Apaf.NFSdb.Core.Tx
 {
     public interface ITransactionContext : IReadTransactionContext
     {
-        void AddPartition(IPartitionCore parition);
+        void AddPartition(IPartition parition);
         long PrevTxAddress { get; set; }
         bool IsParitionUpdated(int partitionID, ITransactionContext lastTransactionLog);
         DateTime LastAppendTimestamp { get; set; }
-        IList<IPartitionCore> Partitions { get; }
+        IList<IPartition> Partitions { get; }
     }
 }

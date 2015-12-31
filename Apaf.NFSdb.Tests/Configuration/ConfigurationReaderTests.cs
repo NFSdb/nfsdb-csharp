@@ -59,6 +59,22 @@ namespace Apaf.NFSdb.Tests.Configuration
         }
 
         [Test]
+        public void ShouldParseUnknownAttributes()
+        {
+            var config =
+                @"<?xml version=""1.0""?>
+                  <db>
+                    <journal class=""namespace.model.Model1"" defaultPath=""m1"">
+                        <col name=""colName"" attr1=""value1"" />
+                    </journal>
+                  </db>";
+
+            DbElement db = Parse(config);
+            Assert.That(db.Journals.First().Columns.First().Attributes.First(a => a.Name == "attr1").Value, 
+                Is.EqualTo("value1"));
+        }
+
+        [Test]
         public void ShouldParseSymbolsAndStrings()
         {
             var config =

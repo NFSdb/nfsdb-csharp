@@ -135,6 +135,7 @@
     <Reference Include="IQToolkit.Data">
       <HintPath>..\Lib\IQTookit\IQToolkit.Data.dll</HintPath>
     </Reference>
+    <Reference Include="System.Xml.Linq" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Collections\ArraySlice.cs" />
@@ -277,7 +278,7 @@
     <Compile Include="Queries\Queryable\Expressions\EJournalExpressionType.cs" />
     <Compile Include="Queries\Queryable\NJournalQuaryableNotSupportedException.cs" />
     <Compile Include="Configuration\IJournalMetadata.cs" />
-    <Compile Include="Storage\IPartitionCore.cs" />
+    <Compile Include="Storage\IPartition.cs" />
     <Compile Include="Storage\IPartitionManagerFactory.cs" />
     <Compile Include="Storage\PartitionExtensions.cs" />
     <Compile Include="Queries\ColumnValueBinarySearch.cs" />
@@ -338,7 +339,6 @@
     <Compile Include="Exceptions\NJournalConfigurationException.cs" />
     <Compile Include="Column\IFieldSerializer.cs" />
     <Compile Include="IJournal.cs" />
-    <Compile Include="Storage\IPartition.cs" />
     <Compile Include="Journal.cs" />
     <Compile Include="Configuration\JournalSettings.cs" />
     <Compile Include="Storage\Partition.cs" />

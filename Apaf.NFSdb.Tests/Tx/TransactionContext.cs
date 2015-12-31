@@ -27,12 +27,12 @@ namespace Apaf.NFSdb.Tests.Tx
     public class TransactionContext : ITransactionContext
     {
         private readonly int _columnCount;
-        private readonly IPartitionCore[] _partitions;
+        private readonly IPartition[] _partitions;
         private readonly ITxPartitionLock _partitionLock;
         private readonly ReadContext _readCatch = new ReadContext();
         private PartitionTxData _currentPartitionTx;
 
-        public TransactionContext(int columnCount, PartitionTxData[] partitionData, IPartitionCore[] partitions, ITxPartitionLock partitionLock)
+        public TransactionContext(int columnCount, PartitionTxData[] partitionData, IPartition[] partitions, ITxPartitionLock partitionLock)
         {
             _columnCount = columnCount;
             _partitions = partitions;
@@ -89,7 +89,7 @@ namespace Apaf.NFSdb.Tests.Tx
             throw new NotImplementedException();
         }
 
-        public IList<IPartitionCore> Partitions
+        public IList<IPartition> Partitions
         {
             get { return _partitions; }
         }
@@ -163,7 +163,7 @@ namespace Apaf.NFSdb.Tests.Tx
             }
         }
 
-        public void AddPartition(IPartitionCore parition)
+        public void AddPartition(IPartition parition)
         {
             throw new NotImplementedException();
         }

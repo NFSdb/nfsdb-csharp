@@ -4,6 +4,6 @@ namespace Apaf.NFSdb.Core.Server
 {
     public interface IJournalServer
     {
-        void SignalUnusedPartition(IPartitionCore partitionCore, int offloadTimeoutTtl);
+        void SignalUnusedPartition(IPartition partition, int offloadTimeoutTtl);
     }
 }

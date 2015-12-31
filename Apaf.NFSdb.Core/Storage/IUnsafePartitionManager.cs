@@ -5,8 +5,8 @@ namespace Apaf.NFSdb.Core.Storage
     internal interface IUnsafePartitionManager : IPartitionManager
     {
         IColumnStorage SymbolFileStorage { get; }
-        IPartitionCore GetPartition(int paritionID);
-        IPartitionCore[] GetOpenPartitions();
+        IPartition GetPartition(int paritionID);
+        IPartition[] GetOpenPartitions();
         void Recycle(TxState state);
         void DetachPartition(int partitionID);
         void ClearTxLog();
