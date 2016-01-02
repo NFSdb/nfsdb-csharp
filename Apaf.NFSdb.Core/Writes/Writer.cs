@@ -75,6 +75,7 @@ namespace Apaf.NFSdb.Core.Writes
                 }
                 Monitor.Exit(lck);
             }
+            _transaction.Dispose();
         }
 
         ~Writer()

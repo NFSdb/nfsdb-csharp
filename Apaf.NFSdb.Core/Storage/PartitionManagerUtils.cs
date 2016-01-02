@@ -1,4 +1,5 @@
 ﻿#region copyright
+
 /*
  * Copyright (c) 2014. APAF http://apafltd.co.uk
  *
@@ -14,6 +15,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 #endregion
 
 using System;
@@ -54,7 +56,8 @@ namespace Apaf.NFSdb.Core.Storage
                 case EPartitionType.Month:
                     return new DateTime(timestamp.Year, timestamp.Month, 1);
                 case EPartitionType.Year:
-                    return new DateTime(timestamp.Year, 1, 1);;
+                    return new DateTime(timestamp.Year, 1, 1);
+                    ;
                 default:
                     return DateTime.MinValue;
             }
@@ -85,9 +88,23 @@ namespace Apaf.NFSdb.Core.Storage
             }
         }
 
-        public static DateTime? ParseDateFromDirName(string subDir, EPartitionType partitionType)
+        public static PartitionDate? ParseDateFromDirName(string subDir, EPartitionType partitionType)
         {
-            var dateString = subDir;
+            string dateString = subDir;
+            int versionSepIndex = dateString.LastIndexOf(MetadataConstants.PARTITION_VERSION_SEPARATOR);
+            int version = 0;
+            if (versionSepIndex >= 0)
+            {
+                if (dateString.Length > versionSepIndex + 1)
+                {
+                    string versionPart = dateString.Substring(versionSepIndex + 1);
+                    if (!int.TryParse(versionPart, out version))
+                    {
+                        return null;
+                    }
+                }
+                dateString = dateString.Substring(0, versionSepIndex);
+            }
             switch (partitionType)
             {
                 case EPartitionType.Day:
@@ -100,19 +117,19 @@ namespace Apaf.NFSdb.Core.Storage
                     break;
                 default:
                     if (MetadataConstants.DEFAULT_PARTITION_DIR
-                        .Equals(subDir, StringComparison.OrdinalIgnoreCase))
+                        .Equals(dateString, StringComparison.OrdinalIgnoreCase))
                     {
-                        return DateTime.MinValue;
+                        return new PartitionDate(DateTime.MinValue, version, partitionType, subDir);
                     }
                     return null;
             }
             DateTime date;
-            if (!DateTime.TryParseExact(dateString, "yyyy-MM-dd", 
+            if (!DateTime.TryParseExact(dateString, MetadataConstants.PARTITION_DATE_FORMAT,
                 CultureInfo.InvariantCulture, DateTimeStyles.AssumeUniversal, out date))
             {
                 return null;
             }
-            return date.Date;
+            return new PartitionDate(date.Date, version, partitionType, subDir);
         }
     }
 }

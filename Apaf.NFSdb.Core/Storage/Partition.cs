@@ -20,6 +20,8 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
+using System.IO;
 using System.Linq;
 using System.Threading;
 using Apaf.NFSdb.Core.Column;
@@ -46,11 +48,13 @@ namespace Apaf.NFSdb.Core.Storage
         private readonly object _syncRoot = new object();
         private int _refCount;
         private ColumnSource[] _columns;
+        private readonly PartitionDate _partitionDate;
+        private bool _isOverwritten;
 
         public Partition(IJournalMetadata metadata,
             ICompositeFileFactory memeorymMappedFileFactory,
             EFileAccess access,
-            DateTime startDate, int partitionID,
+            PartitionDate partitionDate, int partitionID,
             string path, 
             IJournalServer journalServer)
         {
@@ -59,15 +63,23 @@ namespace Apaf.NFSdb.Core.Storage
             _journalServer = journalServer;
             _metadata = metadata;
 
-            StartDate = startDate;
+            _partitionDate = partitionDate;
             EndDate = PartitionManagerUtils.GetPartitionEndDate(
-                startDate, metadata.Settings.PartitionType);
+                partitionDate.Date, partitionDate.PartitionType);
             PartitionID = partitionID;
             DirectoryPath = path;
         }
 
+        public DateTime StartDate
+        {
+            get { return _partitionDate.Date; }
+        }
 
-        public DateTime StartDate { get; private set; }
+        public int Version
+        {
+            get { return _partitionDate.Version; }
+        }
+
         public DateTime EndDate { get; private set; }
 
         public int GetOpenFileCount()
@@ -126,6 +138,23 @@ namespace Apaf.NFSdb.Core.Storage
             pd.IsAppended = true;
         }
 
+        public void MarkOverwritten()
+        {
+            _isOverwritten = true;
+            if (Interlocked.CompareExchange(ref _refCount, -1, 0) == 0)
+            {
+                TryDeletePartitionDirectory();
+
+                // Unlock.
+                _refCount = 0;
+            }
+        }
+
+        public bool IsOverwritten
+        {
+            get { return _isOverwritten; }
+        }
+
         public void TryCloseFiles()
         {
             // Try locking.
@@ -146,6 +175,32 @@ namespace Apaf.NFSdb.Core.Storage
 
             Thread.MemoryBarrier();
             localCopy.Dispose();
+
+            if (_isOverwritten)
+            {
+                TryDeletePartitionDirectory();
+            }
+        }
+
+        private void TryDeletePartitionDirectory()
+        {
+            if (_access != EFileAccess.ReadWrite)
+            {
+                return;
+            }
+
+            try
+            {
+                Directory.Delete(DirectoryPath, true);
+            }
+            catch (IOException ex)
+            {
+                Trace.TraceWarning("Error deleting outdated partition {0}. Error {1}", DirectoryPath, ex);
+            }
+            catch (UnauthorizedAccessException ex)
+            {
+                Trace.TraceWarning("Error deleting outdated partition {0}. Error {1}", DirectoryPath, ex);
+            }
         }
 
         public int AddRef()
@@ -292,7 +347,7 @@ namespace Apaf.NFSdb.Core.Storage
             {
                 if (!_isStorageInitialized)
                 {
-                    _columnStorage = new ColumnStorage(_metadata, StartDate,
+                    _columnStorage = new ColumnStorage(_metadata, DirectoryPath,
                         _access, PartitionID, _memeorymMappedFileFactory);
 
                     _columns = _metadata.GetPartitionColums(_columnStorage).ToArray();

@@ -78,7 +78,7 @@ namespace Apaf.NFSdb.Core.Tx
                 if (p != null)
                 {
                     p.RemoveRef(_partitionTtlMs);
-                    _locks.SetToIndex(partitionID, true);
+                    _locks.SetToIndex(partitionID, false);
                 }
             }
         }

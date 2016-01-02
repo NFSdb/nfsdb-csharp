@@ -136,7 +136,7 @@ namespace Apaf.NFSdb.TestShared
 
                 var part = new Partition(
                     metadata, new CompositeFileFactory(fileFlags),
-                    access, startDate, 0,
+                    access, new PartitionDate(startDate, 0, metadata.Settings.PartitionType), 0,
                     Path.Combine(jconf.DefaultPath, "2013-10"), new AsyncJournalServer(TimeSpan.FromSeconds(1)));
 
                 return new PartitionData<T>(part, metadata, journalStorage, journalPath);

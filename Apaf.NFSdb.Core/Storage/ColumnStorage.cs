@@ -34,20 +34,6 @@ namespace Apaf.NFSdb.Core.Storage
 
         public ColumnStorage(
             IJournalMetadata metadata,
-            DateTime start,
-            EFileAccess access,
-            int partitionID,
-            ICompositeFileFactory compositeFileFactory) :
-                this(metadata,
-                    GetPartitionDir(metadata.Settings, start),
-                    access,
-                    partitionID,
-                    compositeFileFactory)
-        {
-        }
-
-        public ColumnStorage(
-            IJournalMetadata metadata,
             string folder,
             EFileAccess access,
             int partitionID,
@@ -64,31 +50,6 @@ namespace Apaf.NFSdb.Core.Storage
         public int OpenFileCount
         {
             get { return _openedFiles.Length; }
-        }
-
-        private static string GetPartitionDir(JournalSettings settings, DateTime start)
-        {
-            string dirName;
-            switch (settings.PartitionType)
-            {
-                case EPartitionType.Day:
-                    dirName = start.ToString("yyyy-MM-dd");
-                    break;
-                case EPartitionType.Month:
-                    dirName = start.ToString("yyyy-MM");
-                    break;
-                case EPartitionType.Year:
-                    dirName = start.ToString("yyyy");
-                    break;
-                case EPartitionType.None:
-                case EPartitionType.Default:
-                    dirName = MetadataConstants.DEFAULT_PARTITION_DIR;
-                    break;
-                default:
-                    throw new ArgumentOutOfRangeException();
-            }
-            dirName = Path.Combine(settings.DefaultPath, dirName);
-            return dirName;
         }
 
         private IRawFile Open(string filename, int fileID, int columnID, EDataType dataType, int bitHint)

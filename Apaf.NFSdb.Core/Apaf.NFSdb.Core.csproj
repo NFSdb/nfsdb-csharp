@@ -196,6 +196,7 @@
     <Compile Include="Queries\Queryable\QueryExceptionExtensions.cs" />
     <Compile Include="Queries\Queryable\QueryRowsResult.cs" />
     <Compile Include="Queries\IRecordQuery.cs" />
+    <Compile Include="Storage\PartitionDate.cs" />
     <Compile Include="Storage\Serializer\FixedColumnDataType.cs" />
     <Compile Include="Storage\Serializer\IColumnDataType.cs" />
     <Compile Include="Storage\Serializer\JournalColumnRegistry.cs" />

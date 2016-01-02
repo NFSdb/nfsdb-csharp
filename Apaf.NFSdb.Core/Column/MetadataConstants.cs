@@ -30,6 +30,10 @@ namespace Apaf.NFSdb.Core.Column
 
         public static readonly string NULLS_FILE_NAME = "_nulls";
         public static readonly string DEFAULT_PARTITION_DIR = "default";
+        public static readonly string PARTITION_DATE_FORMAT = "yyyy-MM-dd";
+        public static readonly string PARTITION_MONTH_FORMAT = "yyyy-MM";
+        public static readonly string PARTITION_YEAR_FORMAT = "yyyy";
+        public static readonly char PARTITION_VERSION_SEPARATOR = '.';
         public static readonly int ISSET_HEADER_LENGTH = 0; //4;
         public static readonly string THRIFT_ISSET_FIELD_NAME = "__isset";
         public static readonly string THRIFT_ISSET_FIELD_TYPE_SUFFIX = "Isset";

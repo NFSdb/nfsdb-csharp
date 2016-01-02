@@ -37,15 +37,12 @@ namespace Apaf.NFSdb.Core.Queries
             _journal = journal;
             _queryable = new Lazy<JournalQueryable<T>>(
                 () => new JournalQueryable<T>(new JournalQueryProvider<T>(_journal, transactionContext)));
-            _transactionContext.AddRefsAllPartitions();
             _recordQuery = new RecordQuery(journal, transactionContext);
         }
 
         public ResultSet<T> AllBySymbolValueOverInterval<TT>(string symbol, TT value, DateInterval interval)
         {
             var column = _journal.Metadata.GetColumnByPropertyName(symbol);
-            _transactionContext.AddRefsAllPartitions();
-
             var intervalFilter = new PartitionIntervalIterator();
             var symbolFilter = new SymbolFilter<TT>(column, value);
             var parititionsFiltered = intervalFilter.IteratePartitions(

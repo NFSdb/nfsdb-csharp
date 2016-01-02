@@ -160,5 +160,10 @@ namespace Apaf.NFSdb.Core.Server
                 return other.DueTime.CompareTo(DueTime);
             }
         }
+
+        public void DoEvents()
+        {
+            DoWork(null);
+        }
     }
 }

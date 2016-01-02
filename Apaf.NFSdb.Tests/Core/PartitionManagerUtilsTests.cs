@@ -27,16 +27,22 @@ namespace Apaf.NFSdb.Tests.Core
     public class PartitionManagerUtilsTests
     {
         [TestCase("2013", EPartitionType.Year, ExpectedResult = "2013-01-01 00:00:00")]
+        [TestCase("2013.123", EPartitionType.Year, ExpectedResult = "2013-01-01 00:00:00")]
+        [TestCase("2013.1-2", EPartitionType.Year, ExpectedException = typeof(InvalidOperationException))]
         [TestCase("2013-03", EPartitionType.Month, ExpectedResult = "2013-03-01 00:00:00")]
         [TestCase("2013-03-05", EPartitionType.Day, ExpectedResult = "2013-03-05 00:00:00")]
+        [TestCase("2013-03-05.1", EPartitionType.Day, ExpectedResult = "2013-03-05 00:00:00")]
+        [TestCase("2013-03-05.a", EPartitionType.Day, ExpectedException = typeof(InvalidOperationException))]
         [TestCase("default", EPartitionType.None, ExpectedResult = "0001-01-01 00:00:00")]
+        [TestCase("default.1", EPartitionType.None, ExpectedResult = "0001-01-01 00:00:00")]
+        [TestCase("default.0", EPartitionType.None, ExpectedResult = "0001-01-01 00:00:00")]
         [TestCase("2013-03-05", EPartitionType.Year, ExpectedException = typeof(InvalidOperationException))]
         [TestCase("2013", EPartitionType.None, ExpectedException = typeof(InvalidOperationException))]
         public string ShouldParseDirectoryNames(string directoryName,
             EPartitionType partitionType)
         {
             var date = PartitionManagerUtils.ParseDateFromDirName(directoryName, partitionType);
-            return date.Value.ToString("yyyy-MM-dd HH:mm:ss", CultureInfo.InvariantCulture);
+            return date.Value.Date.ToString("yyyy-MM-dd HH:mm:ss", CultureInfo.InvariantCulture);
         }
     }
 }

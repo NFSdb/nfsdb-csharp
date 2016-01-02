@@ -29,8 +29,11 @@ namespace Apaf.NFSdb.Core.Storage
         int RemoveRef(int partitionOffloadMs);
 
         DateTime StartDate { get; }
+        int Version { get; }
         DateTime EndDate { get; }
 
         void Append(object item, ITransactionContext tx);
+        void MarkOverwritten();
+        bool IsOverwritten { get; }
     }
 }
