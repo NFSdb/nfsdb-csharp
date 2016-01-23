@@ -94,7 +94,7 @@ namespace Apaf.NFSdb.Tests.Core
         }
 
         [TestCase(true, 40, Result = 40 - 31)]
-        public long ShouldUseNewPartitionOnReCreate(bool clearPartition1, int days)
+        public long ShouldUseNewPartitionOnRecreate(bool clearPartition1, int days)
         {
             var server = new AsyncJournalServer(TimeSpan.FromSeconds(1));
             using (IJournal<PocoType> journal = WriteJournal(EPartitionType.Month, TimeSpan.FromDays(1), days, server))

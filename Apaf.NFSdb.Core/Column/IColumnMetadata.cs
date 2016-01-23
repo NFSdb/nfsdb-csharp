@@ -31,6 +31,7 @@ namespace Apaf.NFSdb.Core.Column
         int HintDistinctCount { get; }
         IColumnDataType DataType { get; }
         int AvgSize { get; }
+        string FileName { get; }
         IColumnSerializerMetadata SerializerMetadata { get; }
         IComparer<long> GetColumnComparer(IReadTransactionContext tx, bool asc);
         object ToTypedValue(object literal);

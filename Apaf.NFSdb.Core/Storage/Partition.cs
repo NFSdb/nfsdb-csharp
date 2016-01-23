@@ -39,6 +39,7 @@ namespace Apaf.NFSdb.Core.Storage
         private readonly ICompositeFileFactory _memeorymMappedFileFactory;
         private readonly EFileAccess _access;
         private readonly IJournalServer _journalServer;
+        private readonly Lazy<JournalElement> _settingOverrides;
         private IFieldSerializer _fieldSerializer;
         private ColumnStorage _columnStorage;
         private FileTxSupport _txSupport;
@@ -68,6 +69,12 @@ namespace Apaf.NFSdb.Core.Storage
                 partitionDate.Date, partitionDate.PartitionType);
             PartitionID = partitionID;
             DirectoryPath = path;
+            _settingOverrides = new Lazy<JournalElement>(ReadPartitionConfig);
+        }
+
+        private JournalElement ReadPartitionConfig()
+        {
+            throw new NotImplementedException();
         }
 
         public DateTime StartDate
@@ -350,7 +357,7 @@ namespace Apaf.NFSdb.Core.Storage
                     _columnStorage = new ColumnStorage(_metadata, DirectoryPath,
                         _access, PartitionID, _memeorymMappedFileFactory);
 
-                    _columns = _metadata.GetPartitionColums(_columnStorage).ToArray();
+                    _columns = _metadata.GetPartitionColumns(_columnStorage).ToArray();
 
                     if (_metadata.TimestampColumnID.HasValue)
                     {

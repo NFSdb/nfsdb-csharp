@@ -53,7 +53,8 @@ namespace Apaf.NFSdb.Tests.Storage
                 var storage = CreateStorage(journal);
 
                 // Act.
-                storage.GetFile(fieldName, 1, 1, EDataType.Data);
+                var col = journal.Metadata.GetColumnByPropertyName(fieldName);
+                storage.GetFile(col, 1, EDataType.Data, journal.Metadata.Settings.RecordHint);
 
                 return _bitHint;
             }
@@ -92,7 +93,8 @@ namespace Apaf.NFSdb.Tests.Storage
                 var storage = CreateStorage(journal);
 
                 // Act.
-                storage.GetFile(fieldName, 1, 1, EDataType.Data);
+                var col = journal.Metadata.GetColumnByPropertyName(fieldName);
+                storage.GetFile(col, 1, EDataType.Data, journal.Metadata.Settings.RecordHint);
 
                 return _bitHint;
             }
@@ -133,7 +135,8 @@ namespace Apaf.NFSdb.Tests.Storage
                 var storage = CreateStorage(journal);
 
                 // Act.
-                storage.GetFile(fieldName, 1, 1, dataType);
+                var col = journal.Metadata.GetColumnByPropertyName(fieldName);
+                storage.GetFile(col, 1, dataType, journal.Metadata.Settings.RecordHint);
 
                 return _bitHint;
             }

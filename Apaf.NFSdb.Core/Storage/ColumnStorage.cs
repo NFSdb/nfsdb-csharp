@@ -25,7 +25,6 @@ namespace Apaf.NFSdb.Core.Storage
 {
     public class ColumnStorage : IColumnStorage, IDisposable
     {
-        private readonly JournalSettings _settings;
         private readonly ICompositeFileFactory _compositeFileFactory;
         private readonly IRawFile[] _openedFiles;
         private readonly string _folder;
@@ -39,7 +38,6 @@ namespace Apaf.NFSdb.Core.Storage
             int partitionID,
             ICompositeFileFactory compositeFileFactory)
         {
-            _settings = metadata.Settings;
             _access = access;
             _partitionID = partitionID;
             _compositeFileFactory = compositeFileFactory;
@@ -78,8 +76,9 @@ namespace Apaf.NFSdb.Core.Storage
             CloseFiles();
         }
 
-        public IRawFile GetFile(string fieldName, int fileID, int columnID, EDataType dataType)
+        public IRawFile GetFile(IColumnMetadata column, int fileID, EDataType dataType, long recordHint)
         {
+            var fieldName = column.FileName;
             var filename = fieldName + GetExtension(dataType);
 
             Thread.MemoryBarrier();
@@ -87,23 +86,25 @@ namespace Apaf.NFSdb.Core.Storage
             if (file == null)
             {
                 // Size of read chunks. Rounded to power of 2.
-                var bitHint = GetBitHint(fieldName, dataType);
+                var bitHint = GetBitHint(dataType, recordHint, column.HintDistinctCount, column.AvgSize);
 
-                file = Open(filename, fileID, columnID, dataType, bitHint);
+                file = Open(filename, fileID, column.ColumnID, dataType, bitHint);
                 _openedFiles[fileID] = file;
             }
             return file;
         }
 
-        private int GetBitHint(string fieldName, EDataType dataType) 
+        private int GetBitHint(EDataType dataType, long recordHint, int distinctHint, int avgCount) 
         {
             int avgRecSize;
-            var recordCount = _settings.RecordHint;
-            var columnDistinctCount = Math.Max(_settings.GetColumn(fieldName).HintDistinctCount, 1);
+            var recordCount = recordHint;
+            var columnDistinctCount = Math.Max(distinctHint, 1);
+            if (avgCount < 0) avgCount = MetadataConstants.DEFAULT_AVG_RECORD_SIZE;
+
             switch (dataType)
             {
                 case EDataType.Data:
-                    avgRecSize = _settings.GetAvgSize(fieldName);
+                    avgRecSize = avgCount;
                     break;
 
                 case EDataType.Index:
@@ -127,7 +128,7 @@ namespace Apaf.NFSdb.Core.Storage
                     break;
 
                 case EDataType.Symd:
-                    avgRecSize = _settings.GetAvgSize(fieldName);
+                    avgRecSize = avgCount;
                     recordCount = columnDistinctCount;
                     break;
 

@@ -168,6 +168,7 @@
     <Compile Include="Configuration\IPocoClassSerializerMetadata.cs" />
     <Compile Include="Configuration\JournalBuilder.cs" />
     <Compile Include="Configuration\JournalMetadata.cs" />
+    <Compile Include="Configuration\PartitionConfig.cs" />
     <Compile Include="EPartitionCloseStrategy.cs" />
     <Compile Include="Exceptions\NFSdbArgumentException.cs" />
     <Compile Include="Exceptions\NFSdbEmptyFileException.cs" />

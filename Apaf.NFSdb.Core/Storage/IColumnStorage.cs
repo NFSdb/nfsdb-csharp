@@ -16,12 +16,14 @@
  */
 #endregion
 
+using Apaf.NFSdb.Core.Column;
+
 namespace Apaf.NFSdb.Core.Storage
 {
     public interface IColumnStorage
     {
         int OpenFileCount { get; }
-        IRawFile GetFile(string fieldName, int fileID, int columnID, EDataType dataType);
+        IRawFile GetFile(IColumnMetadata column, int fileID, EDataType dataType, long recordHint);
         IRawFile GetOpenedFileByID(int fileID);
     }
 }
