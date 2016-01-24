@@ -126,9 +126,6 @@
     <Reference Include="IQToolkit">
       <HintPath>..\Lib\IQTookit\IQToolkit.dll</HintPath>
     </Reference>
-    <Reference Include="log4net">
-      <HintPath>..\packages\log4net.2.0.3\lib\net40-full\log4net.dll</HintPath>
-    </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core" />
     <Reference Include="System.Xml" />
@@ -400,6 +397,6 @@
     </ItemGroup>
     <ILRepack Parallel="true" Internalize="true" InternalizeExclude="@(DoNotInternalizeAssemblies)" InputAssemblies="@(InputAssemblies)" TargetKind="Dll" OutputFile="$(OutputPath)\$(AssemblyName).dll" AttributeFile="$(OutputPath)\$(AssemblyName).dll" />
   </Target>
-  <Import Project="..\packages\Antlr4.4.3.0\build\Antlr4.targets" Condition="Exists('..\packages\Antlr4.4.3.0\build\Antlr4.targets')" />
+  <Import Project="..\packages\Antlr4.4.3.0\build\Antlr4.targets" />
   <!-- /ILRepack -->
 </Project>
