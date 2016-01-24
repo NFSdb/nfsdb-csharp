@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Collections;
 using System.Collections.Generic;
 using Apaf.NFSdb.Core.Writes;
 using NUnit.Framework;
@@ -16,7 +15,6 @@ namespace Apaf.NFSdb.Tests.Columns
             var date2 = new DateTime(2014, 6, 1, 0, 0, 0, 0, DateTimeKind.Utc);
 
             Assert.IsTrue(date1 > date2);
-            Assert.IsTrue(date1.ToUniversalTime() < date2.ToUniversalTime());
         }
 
         [TestCaseSource("AllKindDateTimes")]
