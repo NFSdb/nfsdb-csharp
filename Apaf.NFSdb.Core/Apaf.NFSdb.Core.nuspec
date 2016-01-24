@@ -1,0 +1,17 @@
+<?xml version="1.0"?>
+<package >
+  <metadata>
+    <id>$id$</id>
+    <version>$version$</version>
+    <title>$title$</title>
+    <authors>$author$</authors>
+    <owners>$author$</owners>
+    <licenseUrl>http://www.apache.org/licenses/LICENSE-2.0</licenseUrl>
+    <projectUrl>https://github.com/NFSdb</projectUrl>
+    <requireLicenseAcceptance>false</requireLicenseAcceptance>
+    <description>Embedded in-proc C# database with LINQ and Query Language support.</description>
+    <releaseNotes>Need For Speed Database beta release.</releaseNotes>
+    <copyright>Copyright (c) 2014-2016. The NFSdb project and its contributors.</copyright>
+    <tags>Embedded Database Memory Map</tags>
+  </metadata>
+</package>
