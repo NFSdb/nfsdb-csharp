@@ -9,6 +9,7 @@ using NUnit.Framework;
 namespace Apaf.NFSdb.TestRunner.IntegrationTests
 {
     [TestFixture]
+    [Category("Integration")]
     public class JavaReadTests
     {
         [Test]

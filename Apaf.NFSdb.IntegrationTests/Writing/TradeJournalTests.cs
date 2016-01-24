@@ -181,7 +181,6 @@ namespace Apaf.NFSdb.IntegrationTests.Writing
         }
 
         [Test]
-        [Category("Performance")]
         public void Append_1M_trades_speed()
         {
             Utils.ClearJournal<Trade>();

@@ -61,7 +61,6 @@ namespace Apaf.NFSdb.IntegrationTests.Reading
         }
 
         [Test]
-        [Category("Performance")]
         public void Should_read_all_rows()
         {
             var totalCount = (int)(5*GENERATE_RECORDS_COUNT);
