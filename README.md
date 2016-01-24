@@ -1,4 +1,4 @@
-NFSdb (www.nfsdb.org) [![Build Status](https://ci.appveyor.com/api/projects/status/kqttxqhf4vlcjgw8?svg=true)
+NFSdb (www.nfsdb.org) [![Build status](https://ci.appveyor.com/api/projects/status/kqttxqhf4vlcjgw8?svg=true)](https://ci.appveyor.com/project/ideoma/nfsdb-csharp)
 =====================
 
 NFSdb is a low latency, high throughput embeded database. There are two binary compatible versions written entirely in Java and in C#. 
