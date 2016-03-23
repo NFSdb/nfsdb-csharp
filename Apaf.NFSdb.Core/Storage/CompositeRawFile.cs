@@ -33,11 +33,14 @@ namespace Apaf.NFSdb.Core.Storage
         private IRawFilePart[] _buffers = new IRawFilePart[INITIAL_PARTS_COLLECTION_SIZE];
         private byte** _pointersArray;
         private long _pointersArrayLen;
+        private long _pointersArrayFixedLen;
+
         private const long FILE_HEADER_LENGTH = MetadataConstants.FILE_HEADER_LENGTH;
         private const int ADDITIONAL_BUFFER_ARRAY_CAPACITY = 10;
         private ICompositeFile _compositeFile;
         private readonly object _buffSync = new object();
         private long _mappedSize;
+        private bool _incompleteBufferMapped;
 
         public CompositeRawFile(string fileName,
             int bitHint,
@@ -55,7 +58,7 @@ namespace Apaf.NFSdb.Core.Storage
                 fileID,
                 columnID,
                 dataType,
-                MetadataConstants.MIN_FILE_BIT_HINT)
+                MetadataConstants.MIN_FILE_BIT_HINT_NON_DATA)
         {
         }
 
@@ -176,7 +179,7 @@ namespace Apaf.NFSdb.Core.Storage
             var bufferIndex = ((offset + FILE_HEADER_LENGTH) >> _bitHint);
 
             // Check exists.
-            if (bufferIndex < _pointersArrayLen)
+            if (bufferIndex < _pointersArrayFixedLen)
             {
                 var ptr = _pointersArray[bufferIndex];
                 if (ptr != null)
@@ -185,10 +188,34 @@ namespace Apaf.NFSdb.Core.Storage
                 }
             }
 
-            return GetBufferCore(bufferIndex) + offset;
+            return GetBufferCore(bufferIndex, offset);
         }
 
-        public byte* GetBufferCore(long bufferIndex)
+        public byte* GetBufferCore(long bufferIndex, long offset)
+        {
+            if (bufferIndex < _pointersArrayLen)
+            {
+                var view = _buffers[bufferIndex];
+                if (view != null)
+                {
+                    var bufferSize = 1 << _bitHint;
+                    var viewOffset = offset - bufferIndex * bufferSize + FILE_HEADER_LENGTH;
+                    if (viewOffset < view.BufferSize)
+                    {
+                        return view.Pointer + viewOffset;
+                    }
+
+                    // The file should be re-mapped on higher level.
+                    throw new NFSdbInvalidReadException(
+                        "Attempt to read file {0} at offset {1} while it is mapped only to {2}",
+                        Filename, view.BufferOffset + offset, view.BufferOffset + view.BufferSize);
+                }
+            }
+
+            return MapBuffer(bufferIndex, offset);
+        }
+
+        private byte* MapBuffer(long bufferIndex, long offset)
         {
             lock (_buffSync)
             {
@@ -197,7 +224,7 @@ namespace Apaf.NFSdb.Core.Storage
                     var ptr = _pointersArray[bufferIndex];
                     if (ptr != null)
                     {
-                        return ptr;
+                        return ptr + offset;
                     }
                 }
                 else
@@ -207,27 +234,55 @@ namespace Apaf.NFSdb.Core.Storage
                     var newBuffers = new IRawFilePart[newLen];
                     Array.Copy(_buffers, 0, newBuffers, 0, _pointersArrayLen);
 
-                    var newPtrArray = LongAllocate((int)newLen);
+                    var newPtrArray = LongAllocate((int) newLen);
 
-                    AccessorHelper.Memcpy((byte*)newPtrArray, (byte*)_pointersArray, (int)(sizeof(byte*) * _pointersArrayLen));
+                    AccessorHelper.Memcpy((byte*) newPtrArray, (byte*) _pointersArray, (int) (sizeof (byte*)*_pointersArrayLen));
 
                     var oldPtrArray = _pointersArray;
-                    
+
                     Thread.MemoryBarrier();
                     _pointersArray = newPtrArray;
 
                     Thread.MemoryBarrier();
                     _pointersArrayLen = newLen;
+                    _pointersArrayFixedLen = newLen - 1;
                     _buffers = newBuffers;
 
-                    Marshal.FreeHGlobal((IntPtr)oldPtrArray);
+                    Marshal.FreeHGlobal((IntPtr) oldPtrArray);
                 }
 
                 // Create.
                 int bufferSize = 1 << _bitHint;
                 long bufferOffset = bufferIndex*bufferSize;
 
-                var view = _compositeFile.CreateViewAccessor(bufferOffset, bufferSize); 
+                IRawFilePart view;
+
+                var maxSize = _compositeFile.CheckSize();
+                if (Access == EFileAccess.Read && bufferOffset + bufferSize > maxSize)
+                {
+                    if (maxSize < bufferOffset)
+                    {
+                        // Only last buffer can be incompletely mapped.
+                        // The file should be re-mapped on higher level.
+                        throw new NFSdbInvalidReadException(
+                            "Attempt to read chunk in the middle of the file '{0}' with mismatched offset. File size {1}, buffer offset {2}.",
+                            Filename, maxSize, bufferOffset);
+                    }
+
+                    if (_incompleteBufferMapped)
+                    {
+                        // Only last buffer can be incompletely mapped.
+                        // The file should be re-mapped on higher level.
+                        throw new NFSdbInvalidReadException(
+                            "Attempt to read file '{0}' at {1}. Only one incomplete buffer allowed.",
+                            Filename, bufferOffset + offset);
+                    }
+
+                    bufferSize = (int) (maxSize - bufferOffset);
+                    _incompleteBufferMapped = true;
+                }
+                view = _compositeFile.CreateViewAccessor(bufferOffset, bufferSize);
+
                 _buffers[bufferIndex] = view;
                 var address = view.Pointer - view.BufferOffset + FILE_HEADER_LENGTH;
 
@@ -235,7 +290,7 @@ namespace Apaf.NFSdb.Core.Storage
                 _pointersArray[bufferIndex] = address;
 
                 Interlocked.Add(ref _mappedSize, bufferSize);
-                return _pointersArray[bufferIndex];
+                return _pointersArray[bufferIndex] + offset;
             }
         }
 

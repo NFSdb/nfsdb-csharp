@@ -23,6 +23,6 @@ namespace Apaf.NFSdb.Core.Storage
     {
         IRawFilePart CreateViewAccessor(long offset, long size);
         string Filename { get; }
-        long Size { get; }
+        long CheckSize();
     }
 }

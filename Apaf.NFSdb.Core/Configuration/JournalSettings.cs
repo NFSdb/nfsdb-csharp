@@ -51,7 +51,13 @@ namespace Apaf.NFSdb.Core.Configuration
 
         public void SaveTo(Stream stream)
         {
-            var existingConfig = new JournalElement
+            var existingConfig = GetConfig();
+            ConfigurationSerializer.WriteJournalConfiguration(stream, existingConfig);
+        }
+
+        public JournalElement GetConfig()
+        {
+            return new JournalElement
             {
                 DefaultPath = ".",
                 TimestampColumn = TimestampColumn,
@@ -61,12 +67,16 @@ namespace Apaf.NFSdb.Core.Configuration
                 MaxOpenPartitions = MaxOpenPartitions,
                 RecordHint = RecordHint,
                 SerializerName = null,
-                Columns = _columns
-                    .Where(c => c.ColumnType != EFieldType.BitSet)
-                    .Select(CreateColumnElement)
-                    .ToList()
+                Columns = BuildColumns()
             };
-            ConfigurationSerializer.WriteJournalConfiguration(stream, existingConfig);
+        }
+
+        public List<ColumnElement> BuildColumns()
+        {
+            return _columns
+                .Where(c => c.ColumnType != EFieldType.BitSet)
+                .Select(CreateColumnElement)
+                .ToList();
         }
 
         private ColumnElement CreateColumnElement(ColumnMetadata meta)

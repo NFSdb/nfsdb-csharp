@@ -36,9 +36,11 @@ namespace Apaf.NFSdb.Core.Storage
 {
     public class Partition : IPartition
     {
+        private static readonly string PartitionSettingsFileName = MetadataConstants.PartitionSettingsFileName;
         private readonly ICompositeFileFactory _memeorymMappedFileFactory;
         private readonly EFileAccess _access;
         private readonly IJournalServer _journalServer;
+        private PartitionConfig _config;
         private readonly Lazy<JournalElement> _settingOverrides;
         private IFieldSerializer _fieldSerializer;
         private ColumnStorage _columnStorage;
@@ -57,11 +59,13 @@ namespace Apaf.NFSdb.Core.Storage
             EFileAccess access,
             PartitionDate partitionDate, int partitionID,
             string path, 
-            IJournalServer journalServer)
+            IJournalServer journalServer,
+            PartitionConfig config = null)
         {
             _memeorymMappedFileFactory = memeorymMappedFileFactory;
             _access = access;
             _journalServer = journalServer;
+            _config = config;
             _metadata = metadata;
 
             _partitionDate = partitionDate;
@@ -348,6 +352,33 @@ namespace Apaf.NFSdb.Core.Storage
             return symb.GetCount(key, tx);
         }
 
+        public void SaveConfig(IReadTransactionContext tx = null)
+        {
+            if (_access != EFileAccess.ReadWrite)
+            {
+                throw new NFSdbIOException("Attempt to save partition {0} config in read-only state", DirectoryPath);
+            }
+
+            if (!Directory.Exists(DirectoryPath))
+            {
+                Directory.CreateDirectory(DirectoryPath);
+            }
+
+            var config = _config;
+            if (config == null)
+            {
+                config = new PartitionConfig();
+                config.Columns = _metadata.Settings.BuildColumns();
+            }
+            config.PartitionID = PartitionID;
+            config.RecordHint = tx != null ? tx.GetPartitionTx(PartitionID).NextRowID : _metadata.Settings.RecordHint;
+            using (var fs = File.Open(Path.Combine(DirectoryPath, PartitionSettingsFileName), FileMode.Create, FileAccess.ReadWrite))
+            {
+                ConfigurationSerializer.WritePartitionConfiguration(fs, config);
+            }
+            _config = config;
+        }
+
         private void InitializeStorage()
         {
             lock (_syncRoot)
@@ -357,7 +388,7 @@ namespace Apaf.NFSdb.Core.Storage
                     _columnStorage = new ColumnStorage(_metadata, DirectoryPath,
                         _access, PartitionID, _memeorymMappedFileFactory);
 
-                    _columns = _metadata.GetPartitionColumns(_columnStorage).ToArray();
+                    _columns = _metadata.GetPartitionColumns(_columnStorage, _config).ToArray();
 
                     if (_metadata.TimestampColumnID.HasValue)
                     {

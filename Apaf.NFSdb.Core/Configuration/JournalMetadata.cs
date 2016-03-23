@@ -382,12 +382,12 @@ namespace Apaf.NFSdb.Core.Configuration
                         break;
 
                     case EFieldType.DateTime:
+                    case EFieldType.DateTimeEpochMs:
                         // Check config.
                         var dateTimeConfig = columns
                             .FirstOrDefault(c => c.Name.Equals(field.PropertyName, StringComparison.OrdinalIgnoreCase));
 
-                        if (dateTimeConfig != null
-                            && dateTimeConfig.ColumnType == EFieldType.DateTimeEpochMs)
+                        if (dateTimeConfig != null && dateTimeConfig.ColumnType == EFieldType.DateTimeEpochMs)
                         {
                             field.ColumnType = EFieldType.DateTimeEpochMs;
                         }

@@ -260,7 +260,7 @@ namespace Apaf.NFSdb.Core.Storage
             // 0 reserved for symbols.
             var partition = CreateNewParition(
                 new PartitionDate(startDate, 0, _settings.PartitionType), lastPartitionID,
-                paritionDir);
+                paritionDir, null);
 
             var lazy = new Lazy<IPartition>(() => partition);
             _partitions[startDate] = lazy;
@@ -307,6 +307,7 @@ namespace Apaf.NFSdb.Core.Storage
                 if (deref != null)
                 {
                     tx.RemoveRef(prevPartitionTx.PartitionID);
+                    pp.SaveConfig(tx);
                 }
             }
         }
@@ -335,18 +336,37 @@ namespace Apaf.NFSdb.Core.Storage
                 var fullPath = Path.Combine(defaultPath, subDir.Name);
                 var startDate = subDir.Date;
                 var partitionDir = subDir;
+                PartitionConfig config = PartitionManagerUtils.ReadPartitionConfig(fullPath);
+                if (config != null)
+                {
+                    nextPartitionID = config.PartitionID;
+                }
+
                 if (txRec.IsCommited(startDate, nextPartitionID))
                 {
                     var partitionID = nextPartitionID;
                     var partition = _partitions.AddOrUpdate(startDate,
                         // Add.
-                        sd => new Lazy<IPartition>(() => CreateNewParition(partitionDir, partitionID, fullPath)),
+                        sd =>
+                        {
+                            var p = new Lazy<IPartition>(() => CreateNewParition(partitionDir, partitionID, fullPath, config));
+                            if (config == null && Access == EFileAccess.ReadWrite)
+                            {
+                                p.Value.SaveConfig();
+                            }
+                            return p;
+                        },
                         // Update.
                         (sd, existing) =>
                         {
                             if (existing.Value.Version == subDir.Version) return existing;
                             existing.Value.MarkOverwritten();
-                            return new Lazy<IPartition>(() => CreateNewParition(partitionDir, partitionID, fullPath));
+                            var p = new Lazy<IPartition>(() => CreateNewParition(partitionDir, partitionID, fullPath, config));
+                            if (config == null && Access == EFileAccess.ReadWrite)
+                            {
+                                p.Value.SaveConfig();
+                            }
+                            return p;
                         });
 
 
@@ -371,9 +391,14 @@ namespace Apaf.NFSdb.Core.Storage
             }
         }
 
-        private IPartition CreateNewParition(PartitionDate partitionDir, int partitionID, string fullPath)
+
+        private IPartition CreateNewParition(PartitionDate partitionDir, int partitionID, string fullPath, PartitionConfig config)
         {
-            var newParition = new Partition(_metadata, _fileFactory, Access, partitionDir, partitionID, fullPath, _server);
+            var newParition = new Partition(_metadata, _fileFactory, Access, partitionDir, partitionID, fullPath, _server, config);
+            if (config == null && Access == EFileAccess.ReadWrite)
+            {
+                newParition.SaveConfig();
+            }
             _allPartitions.Enqueue(newParition);
             return newParition;
         }

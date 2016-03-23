@@ -33,18 +33,36 @@ namespace Apaf.NFSdb.Core.Queries.Queryable.PlanItem
         public IEnumerable<long> Execute(IJournalCore journal, IReadTransactionContext tx, ERowIDSortDirection sort)
         {
             var intervalFilter = new PartitionIntervalIterator();
-            return Timestamps.AllIntervals.Reverse().SelectMany(
-                interval => GetIds(
-                    intervalFilter.IteratePartitions(
-                        tx.ReadPartitions.Reverse(), interval, tx))
-            );
+            if (sort == ERowIDSortDirection.Desc)
+            {
+                return Timestamps.AllIntervals.Reverse().SelectMany(
+                    interval => GetIdsDesc(
+                        intervalFilter.IteratePartitions(
+                            tx.ReadPartitions.Reverse(), interval, tx))
+                    );
+            }
+            return Timestamps.AllIntervals.SelectMany(
+                interval => GetIdsAsc(
+                    intervalFilter.IteratePartitions(tx.ReadPartitions, interval, tx))
+                );
         }
 
-        private IEnumerable<long> GetIds(IEnumerable<PartitionRowIDRange> parititionsFiltered)
+        private static IEnumerable<long> GetIdsDesc(IEnumerable<PartitionRowIDRange> parititionsFiltered)
         {
             foreach (var idRange in parititionsFiltered)
             {
                 for (long l = idRange.High; l >= idRange.Low; l--)
+                {
+                    yield return RowIDUtil.ToRowID(idRange.PartitionID, l);
+                }
+            }
+        }
+
+        private static IEnumerable<long> GetIdsAsc(IEnumerable<PartitionRowIDRange> parititionsFiltered)
+        {
+            foreach (var idRange in parititionsFiltered)
+            {
+                for (long l = idRange.Low; l <= idRange.High; l++)
                 {
                     yield return RowIDUtil.ToRowID(idRange.PartitionID, l);
                 }

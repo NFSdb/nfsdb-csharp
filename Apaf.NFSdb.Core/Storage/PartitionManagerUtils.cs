@@ -21,13 +21,36 @@
 using System;
 using System.Diagnostics;
 using System.Globalization;
+using System.IO;
 using Apaf.NFSdb.Core.Column;
+using Apaf.NFSdb.Core.Configuration;
 using Apaf.NFSdb.Core.Exceptions;
 
 namespace Apaf.NFSdb.Core.Storage
 {
     public static class PartitionManagerUtils
     {
+        public static PartitionConfig ReadPartitionConfig(string fullPath)
+        {
+            PartitionConfig config = null;
+            var configPath = Path.Combine(fullPath, MetadataConstants.PartitionSettingsFileName);
+            if (File.Exists(configPath))
+            {
+                try
+                {
+                    using (var fs = File.OpenRead(configPath))
+                    {
+                        config = ConfigurationSerializer.ReadPartitionConfiguration(fs);
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Trace.TraceWarning("Failed to read partiton config from {0}. Error {1}", fullPath, ex);
+                }
+            }
+            return config;
+        }
+
         public static DateTime GetPartitionEndDate(DateTime startDate,
             EPartitionType partitionType)
         {

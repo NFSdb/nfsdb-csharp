@@ -54,6 +54,7 @@
     <Compile Include="IntegrationTestConstants.cs" />
     <Compile Include="Columns\PocoDateTimeTests.cs" />
     <Compile Include="Partition\LargeJournalPerformance.cs" />
+    <Compile Include="Partition\MultiParition.cs" />
     <Compile Include="Reading\PocoQuoteJournalTests.cs" />
     <Compile Include="Reading\QuoteJournalTests.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />

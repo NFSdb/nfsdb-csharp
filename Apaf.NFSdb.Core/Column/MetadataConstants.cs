@@ -77,6 +77,7 @@ namespace Apaf.NFSdb.Core.Column
         public static readonly string DEFAULT_SERIALIZER_NAME = "thrift";
         public static readonly int CREATE_FILE_RETRIES = 3;
         public static readonly string IQUERYABLE_TOKEN_EXPRESSION = "IQueryable query";
+        public static readonly string PartitionSettingsFileName = "settings.xml";
 
         public const int K_FILE_KEY_BLOCK_HEADER_SIZE = 16;
         public const int K_FILE_KEY_BLOCK_OFFSET = 8;
@@ -86,6 +87,9 @@ namespace Apaf.NFSdb.Core.Column
 
         // 64k is memory mapping granularity for x64 i7
         public const int MIN_FILE_BIT_HINT = 16;
+        public const int MIN_FILE_BIT_HINT_NON_DATA = 8;
+
+
         // 128MB max
         public const int MAX_FILE_BIT_HINT = 27;
         public const string JOURNAL_SETTINGS_FILE_NAME = "settings.xml";

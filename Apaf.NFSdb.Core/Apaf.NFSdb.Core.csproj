@@ -90,6 +90,7 @@
     <Compile Include="EPartitionCloseStrategy.cs" />
     <Compile Include="Exceptions\NFSdbArgumentException.cs" />
     <Compile Include="Exceptions\NFSdbEmptyFileException.cs" />
+    <Compile Include="Exceptions\NFsdbFileMapSizeException.cs" />
     <Compile Include="Exceptions\NFSdbIOException.cs" />
     <Compile Include="Exceptions\NFSdbLockException.cs" />
     <Compile Include="Exceptions\NFSdbLockTimeoutException.cs" />

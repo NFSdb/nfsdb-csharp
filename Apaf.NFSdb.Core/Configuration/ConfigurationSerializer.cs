@@ -24,6 +24,7 @@ namespace Apaf.NFSdb.Core.Configuration
     {
         private static readonly XmlSerializer SERIALIZER = new XmlSerializer(typeof(DbElement));
         private static readonly XmlSerializer JOURNAL_SERIALIZER = new XmlSerializer(typeof(JournalElement));
+        private static readonly XmlSerializer PARTITION_SERIALIZER = new XmlSerializer(typeof(PartitionConfig));
 
         public static DbElement ReadConfiguration(Stream input)
         {
@@ -35,9 +36,19 @@ namespace Apaf.NFSdb.Core.Configuration
             JOURNAL_SERIALIZER.Serialize(output, element);
         }
 
-        public static JournalElement ReadJournalConfiguration(FileStream input)
+        public static JournalElement ReadJournalConfiguration(Stream input)
         {
             return (JournalElement)JOURNAL_SERIALIZER.Deserialize(input);
+        }
+
+        public static void WritePartitionConfiguration(Stream output, PartitionConfig element)
+        {
+            PARTITION_SERIALIZER.Serialize(output, element);
+        }
+
+        public static PartitionConfig ReadPartitionConfiguration(Stream input)
+        {
+            return (PartitionConfig)PARTITION_SERIALIZER.Deserialize(input);
         }
     }
 }

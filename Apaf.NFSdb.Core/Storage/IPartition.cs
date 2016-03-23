@@ -27,6 +27,7 @@ namespace Apaf.NFSdb.Core.Storage
         void TryCloseFiles();
         int AddRef();
         int RemoveRef(int partitionOffloadMs);
+        void SaveConfig(IReadTransactionContext tx = null);
 
         DateTime StartDate { get; }
         int Version { get; }

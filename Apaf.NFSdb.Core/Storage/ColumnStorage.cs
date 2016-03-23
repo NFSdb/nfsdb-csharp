@@ -107,8 +107,12 @@ namespace Apaf.NFSdb.Core.Storage
                     avgRecSize = avgCount;
                     break;
 
-                case EDataType.Index:
                 case EDataType.Symi:
+                    recordCount = columnDistinctCount;
+                    avgRecSize = MetadataConstants.STRING_INDEX_FILE_RECORD_SIZE;
+                    break;
+                    
+                case EDataType.Index:
                     avgRecSize = MetadataConstants.STRING_INDEX_FILE_RECORD_SIZE;
                     break;
 
@@ -136,10 +140,15 @@ namespace Apaf.NFSdb.Core.Storage
                     throw new ArgumentOutOfRangeException("dataType");
             }
             var bitHint = CalculateHint(avgRecSize, recordCount);
-            if (bitHint < MetadataConstants.MIN_FILE_BIT_HINT)
+            if (dataType == EDataType.Data)
             {
-                bitHint = MetadataConstants.MIN_FILE_BIT_HINT;
+                bitHint = Math.Max(bitHint, MetadataConstants.MIN_FILE_BIT_HINT);
             }
+            else
+            {
+                bitHint = Math.Max(bitHint, MetadataConstants.MIN_FILE_BIT_HINT_NON_DATA);
+            }
+
             if (bitHint > MetadataConstants.MAX_FILE_BIT_HINT)
             {
                 bitHint = MetadataConstants.MAX_FILE_BIT_HINT;

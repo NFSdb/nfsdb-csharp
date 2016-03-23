@@ -363,7 +363,7 @@ namespace Apaf.NFSdb.Tests.Storage
             _compositeFile = new Mock<ICompositeFile>();
             _copositeFileFactory.Setup(c => c.OpenFile(It.IsAny<string>(), bitHint, EFileAccess.Read))
                 .Returns(_compositeFile.Object);
-            _compositeFile.Setup(m => m.Size).Returns(fileLen);
+            _compositeFile.Setup(m => m.CheckSize()).Returns(fileLen);
 
             var lengthFilePart = new Mock<IRawFilePart>();
             lengthFilePart.Setup(p => p.ReadInt64(0)).Returns(fileLen);

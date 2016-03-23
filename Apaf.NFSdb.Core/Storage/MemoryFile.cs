@@ -47,7 +47,7 @@ namespace Apaf.NFSdb.Core.Storage
             _fullName = Path.GetFullPath(fileName);
         }
 
-        private void CheckFileSize(int retry)
+        private void CreateFileSize(int retry)
         {
             try
             {
@@ -68,27 +68,31 @@ namespace Apaf.NFSdb.Core.Storage
                             ProcessFileFlags(newFile.SafeFileHandle);
                             newFile.SetLength(size);
                         }
-                        Size = size;
                     }
                     else
                     {
                         throw new NFSdbInvalidReadException("File {0} does not exists", _fullName);
                     }
                 }
-                else
-                {
-                    Size = fi.Length;
-                }
             }
             catch (IOException ex)
             {
                 if (retry > 0)
                 {
-                    CheckFileSize(retry - 1);
+                    CreateFileSize(retry - 1);
                     return;
                 }
                 throw new NFSdbIOException("Unable to create file or directory for path {0}", ex, Filename);
             }
+        }
+
+        
+        public long CheckSize()
+        {
+            var fi = new FileInfo(_fullName);
+            if (!fi.Exists) return 0L;
+
+            return fi.Length;
         }
 
         [DllImport("Kernel32.dll", SetLastError = true, CharSet = CharSet.Auto)]
@@ -126,8 +130,6 @@ namespace Apaf.NFSdb.Core.Storage
             }
         }
 
-        public long Size { get; private set; }
-
         public void Dispose()
         {
         }
@@ -137,7 +139,7 @@ namespace Apaf.NFSdb.Core.Storage
             // First chunk (0 offset).
             if (!_fileOpened)
             {
-                CheckFileSize(MetadataConstants.CREATE_FILE_RETRIES);
+                CreateFileSize(MetadataConstants.CREATE_FILE_RETRIES);
             }
 
             if (_access == EFileAccess.Read)

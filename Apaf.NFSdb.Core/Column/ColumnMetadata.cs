@@ -103,6 +103,8 @@ namespace Apaf.NFSdb.Core.Column
                 case EFieldType.Symbol:
                     metadata.ColumnType = EFieldType.Symbol;
                     return new ColumnMetadata(metadata, (SymbolElement)colElement, fieldID, nullIndex);
+                case EFieldType.Binary:
+                    return new ColumnMetadata(metadata, colElement, fieldID, nullIndex);
                 default:
                     throw new ArgumentOutOfRangeException("colElement",
                         "ColumnType.ColumnType expected to be Symbol or String but was " +
