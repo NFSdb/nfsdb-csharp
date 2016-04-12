@@ -15,7 +15,6 @@
  * limitations under the License.
  */
 #endregion
-using System;
 using System.Collections.Generic;
 using System.Linq;
 using Apaf.NFSdb.Core.Collections;
@@ -96,39 +95,95 @@ namespace Apaf.NFSdb.Core.Queries
         private IEnumerable<long> GetLatestByIndexedSymbol(IEnumerable<PartitionRowIDRange> partitions,
             IReadTransactionContext tx, ERowIDSortDirection sort)
         {
-            int keysCount;
-            int[] keysMap = null;
-            if (_keys == null)
+            List<long> latestRowIDs;
+            if (_keys != null)
             {
-                keysCount = _journal.QueryStatistics.GetSymbolCount(tx, _column);
+                latestRowIDs = GetLatestByIndexedSymbolByKeys(partitions, tx);
             }
             else
             {
-                keysCount = _keys.Count;
+                latestRowIDs = GetAllLatestByIndexedSymbolByKeys(partitions, tx);
+            }
+            
+           
+            // RowID sort asc.
+            latestRowIDs.Sort();
+            int startIndex = latestRowIDs.BinarySearch(1L);
+            if (startIndex < 0)
+            {
+                startIndex = ~startIndex;
             }
 
-            // Todo: use tx.ReadContext
-            var latestRowIDs = new long[keysCount];
+            var result = new ArraySlice<long>(latestRowIDs, startIndex, latestRowIDs.Count - startIndex,
+                sort == ERowIDSortDirection.Asc);
+            return result;
+        }
+
+        private List<long> GetAllLatestByIndexedSymbolByKeys(IEnumerable<PartitionRowIDRange> partitions, IReadTransactionContext tx)
+        {
+            var allKeys = tx.ReadCache.AllocateStringHash();
+            var latestRowIDs = new List<long>();
+
             foreach (var part in partitions)
             {
                 var partition = tx.Read(part.PartitionID);
+                var symbolColumn = (ISymbolMapColumn)partition.ReadColumn(Column.ColumnID);
+
                 // Key mapping.
-                if (_keys != null && keysMap == null)
+                var partitionTxData = tx.GetPartitionTx(part.PartitionID);
+                var distinctCount = symbolColumn.GetDistinctCount(partitionTxData);
+
+                for (int i = 0; i < distinctCount; i++)
                 {
-                    keysMap = new int[_keys.Count];
-                    for (int i = 0; i < _keys.Count; i++)
+                    var key = i;
+                    var symbolValue = symbolColumn.GetKeyValue(key, partitionTxData);
+                    if (symbolValue == null)
                     {
-                        keysMap[i] = partition.GetSymbolKey(_column.ColumnID, _keys[i], tx);
+                        key = MetadataConstants.NULL_SYMBOL_VALUE;
                     }
+                    var existing = allKeys.Get(symbolValue);
+                    if (existing == MetadataConstants.SYMBOL_NOT_FOUND_VALUE)
+                    {
+                        var rowIDs = partition.GetSymbolRowsByKey(_column.ColumnID, key, tx);
+
+                        foreach (var rowID in rowIDs)
+                        {
+                            if (rowID >= part.Low && rowID <= part.High)
+                            {
+                                // Stop search the key.
+                                latestRowIDs.Add(RowIDUtil.ToRowID(part.PartitionID, rowID));
+                                allKeys.Put(symbolValue, 1);
+                                break;
+                            }
+                        }
+                    }
+                }
+            }
+
+            return latestRowIDs;
+        }
+
+        private List<long> GetLatestByIndexedSymbolByKeys(IEnumerable<PartitionRowIDRange> partitions, IReadTransactionContext tx)
+        {
+            var latestRowIDs = new List<long>(_keys.Count);
+            foreach (var part in partitions)
+            {
+                var partition = tx.Read(part.PartitionID);
+                int[] keysMap = new int[_keys.Count];
+
+                // Key mapping.
+                for (int i = 0; i < _keys.Count; i++)
+                {
+                    keysMap[i] = partition.GetSymbolKey(_column.ColumnID, _keys[i], tx);
                 }
 
                 var allFound = true;
-                for (int i = 0; i < keysCount; i++)
+                for (int i = 0; i < _keys.Count; i++)
                 {
                     if (latestRowIDs[i] == 0)
                     {
                         // Symbol D file key.
-                        var key = keysMap == null ? i : keysMap[i];
+                        var key = keysMap[i];
                         if (key != MetadataConstants.SYMBOL_NOT_FOUND_VALUE)
                         {
                             var rowIDs = partition.GetSymbolRowsByKey(_column.ColumnID, key, tx);
@@ -159,17 +214,7 @@ namespace Apaf.NFSdb.Core.Queries
                 }
             }
 
-            // RowID sort asc.
-            Array.Sort(latestRowIDs);
-            int startIndex = Array.BinarySearch(latestRowIDs, 1L);
-            if (startIndex < 0)
-            {
-                startIndex = ~startIndex;
-            }
-
-            var result = new ArraySlice<long>(latestRowIDs, startIndex, latestRowIDs.Length - startIndex,
-                sort == ERowIDSortDirection.Asc);
-            return result;
+            return latestRowIDs;
         }
 
         public override string ToString()

@@ -101,24 +101,24 @@ namespace Apaf.NFSdb.Tests.Storage
         }
 
         // Datak
-        [TestCase(1000, 50, 100, EDataType.Datak, Result = MetadataConstants.MIN_FILE_BIT_HINT)]
-        [TestCase((int)1E6, (int)1E6, (int)1E6, EDataType.Datak, Result = MetadataConstants.MIN_FILE_BIT_HINT)]
+        [TestCase(1000, 50, 100, EDataType.Datak, Result = 11)]
+        [TestCase((int)1E6, (int)1E6, (int)1E6, EDataType.Datak, Result = 11)]
 
         // Datar
         [TestCase((int)1E6, (int)1E6, 100, EDataType.Datar, Result = 20)]
         [TestCase((int)1E6, (int)2E6, 100, EDataType.Datar, Result = 20)]
 
         // Symd
-        [TestCase((int)2E6, 10, 100, EDataType.Symd, Result =  MetadataConstants.MIN_FILE_BIT_HINT)]
+        [TestCase((int)2E6, 100, 5, EDataType.Symd, Result = MetadataConstants.MIN_FILE_BIT_HINT_NON_DATA)]
         [TestCase(100, (int)1E6, 4, EDataType.Symd, Result = 21)]
         [TestCase(100, (int)1E6, 16, EDataType.Symd, Result = 23)]
 
         // Symrk
-        [TestCase((int)1E6, (int)1E6, (int)1E6, EDataType.Symrk, Result = MetadataConstants.MIN_FILE_BIT_HINT)]
+        [TestCase((int)1E6, (int)1E6, (int)1E6, EDataType.Symrk, Result = 11)]
 
         // Symrr
-        [TestCase((int)2E6, 10, 16, EDataType.Symrr, Result = MetadataConstants.MIN_FILE_BIT_HINT)]
-        [TestCase((int)2E6, 10, (int)2E6, EDataType.Symrr, Result = MetadataConstants.MIN_FILE_BIT_HINT)]
+        [TestCase((int)2E6, 100, 16, EDataType.Symrr, Result = MetadataConstants.MIN_FILE_BIT_HINT_NON_DATA)]
+        [TestCase((int)2E6, 10, (int)2E6, EDataType.Symrr, Result = MetadataConstants.MIN_FILE_BIT_HINT_NON_DATA)]
         [TestCase((int)1E6, (int)1E6, 10, EDataType.Symrr, Result = 20)]
         public int Should_calculate_bit_hint_for_symbol_columns(
             int recordCount, int distinctCount, int avgSize, EDataType dataType)

@@ -57,7 +57,7 @@ namespace Apaf.NFSdb.Tests.Columns.ThriftModel
             return _columnByteValue;
         }
 
-        public void SetValue(long rowID, byte[] bitArray, ITransactionContext readContext)
+        public void SetValue(long rowID, byte[] bitArray, PartitionTxData readContext)
         {
             _columnByteValue = bitArray;
         }

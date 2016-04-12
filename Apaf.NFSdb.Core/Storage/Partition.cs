@@ -41,7 +41,6 @@ namespace Apaf.NFSdb.Core.Storage
         private readonly EFileAccess _access;
         private readonly IJournalServer _journalServer;
         private PartitionConfig _config;
-        private readonly Lazy<JournalElement> _settingOverrides;
         private IFieldSerializer _fieldSerializer;
         private ColumnStorage _columnStorage;
         private FileTxSupport _txSupport;
@@ -73,12 +72,6 @@ namespace Apaf.NFSdb.Core.Storage
                 partitionDate.Date, partitionDate.PartitionType);
             PartitionID = partitionID;
             DirectoryPath = path;
-            _settingOverrides = new Lazy<JournalElement>(ReadPartitionConfig);
-        }
-
-        private JournalElement ReadPartitionConfig()
-        {
-            throw new NotImplementedException();
         }
 
         public DateTime StartDate
@@ -139,16 +132,14 @@ namespace Apaf.NFSdb.Core.Storage
             return (TT)_fieldSerializer.Read(rowID, readContext);
         }
 
-        public void Append(object item, ITransactionContext tx)
+        public void Append(object item, PartitionTxData pd)
         {
             if (!_isStorageInitialized) InitializeStorage();
-
-            var pd = tx.GetPartitionTx();
-            _fieldSerializer.Write(item, pd.NextRowID, tx);
+            _fieldSerializer.Write(item, pd.NextRowID, pd);
             pd.NextRowID++;
             pd.IsAppended = true;
         }
-
+        
         public void MarkOverwritten()
         {
             _isOverwritten = true;
@@ -256,20 +247,19 @@ namespace Apaf.NFSdb.Core.Storage
             }
         }
 
-        public PartitionTxData ReadTxLogFromPartition(TxRec txRec = null)
+        public PartitionTxData ReadTxLogFromPartition(IReadContext readCache, TxRec txRec = null)
         {
             if (!_isStorageInitialized) InitializeStorage();
 
-            return _txSupport.ReadTxLogFromPartition(txRec);
+            return _txSupport.ReadTxLogFromPartition(readCache, txRec);
         }
 
-        public IRollback Commit(ITransactionContext tx)
+        public IRollback Commit(PartitionTxData pd)
         {
             if (!_isStorageInitialized) return null;
 
             // Set respective append offset.
             // Some serializers can skip null fields.
-            var pd = tx.GetPartitionTx(PartitionID);
             var count = pd.NextRowID;
 
             for (int i = 0; i < _columnStorage.OpenFileCount; i++)
@@ -285,7 +275,7 @@ namespace Apaf.NFSdb.Core.Storage
                     }
                 }
             }
-            return _txSupport.Commit(tx);
+            return _txSupport.Commit(pd);
         }
 
         public void SetTxRec(ITransactionContext tx, TxRec rec)
@@ -317,15 +307,15 @@ namespace Apaf.NFSdb.Core.Storage
         {
             if (!_isStorageInitialized) InitializeStorage();
             var symb = (IIndexedColumn<TT>)(_columns[fileID].Column);
-            var key = symb.CheckKeyQuick(value, tx);
-            return symb.GetValues(key, tx);
+            var key = symb.CheckKeyQuick(value, tx.GetPartitionTx(PartitionID));
+            return symb.GetValues(key, tx.GetPartitionTx(PartitionID));
         }
 
         public int GetSymbolKey<TT>(int fieldID, TT value, IReadTransactionContext tx)
         {
             if (!_isStorageInitialized) InitializeStorage();
             var symb = (IIndexedColumn<TT>)(_columns[fieldID].Column);
-            var key = symb.CheckKeyQuick(value, tx);
+            var key = symb.CheckKeyQuick(value, tx.GetPartitionTx(PartitionID));
             return key;
         }
 
@@ -334,7 +324,7 @@ namespace Apaf.NFSdb.Core.Storage
             if (!_isStorageInitialized) InitializeStorage();
 
             var symb = (IIndexedColumnCore)(_columns[fieldID].Column);
-            return symb.GetValues(valueKey, tx);
+            return symb.GetValues(valueKey, tx.GetPartitionTx(PartitionID));
         }
 
         public IColumn ReadColumn(int columnID)
@@ -348,8 +338,8 @@ namespace Apaf.NFSdb.Core.Storage
             if (!_isStorageInitialized) return 0;
 
             var symb = (IIndexedColumn<TT>)(_columns[fieldID].Column);
-            var key = symb.CheckKeyQuick(value, tx);
-            return symb.GetCount(key, tx);
+            var key = symb.CheckKeyQuick(value, tx.GetPartitionTx(PartitionID));
+            return symb.GetCount(key, tx.GetPartitionTx(PartitionID));
         }
 
         public void SaveConfig(IReadTransactionContext tx = null)
@@ -388,7 +378,7 @@ namespace Apaf.NFSdb.Core.Storage
                     _columnStorage = new ColumnStorage(_metadata, DirectoryPath,
                         _access, PartitionID, _memeorymMappedFileFactory);
 
-                    _columns = _metadata.GetPartitionColumns(_columnStorage, _config).ToArray();
+                    _columns = _metadata.GetPartitionColumns(PartitionID, _columnStorage, _config).ToArray();
 
                     if (_metadata.TimestampColumnID.HasValue)
                     {

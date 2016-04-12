@@ -230,14 +230,14 @@ namespace Apaf.NFSdb.Core.Configuration
             if (_server != null)
             {
                 var partMan = new PartitionManager(meta, _access, fileFactory, _server);
-                return new Journal<T>(meta, partMan);
+                return new Journal<T>(meta, partMan, _server);
             }
             else
             {
                 var server = new AsyncJournalServer(_serverTasksLatency);
                 var partMan = new PartitionManager(meta, _access, fileFactory, server);
                 partMan.OnDisposed += server.Dispose;
-                return new Journal<T>(meta, partMan);
+                return new Journal<T>(meta, partMan, _server);
             }
         }
 

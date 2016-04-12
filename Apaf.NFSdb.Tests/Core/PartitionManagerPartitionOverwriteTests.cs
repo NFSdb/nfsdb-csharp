@@ -44,6 +44,31 @@ namespace Apaf.NFSdb.Tests.Core
             }
         }
 
+        [TestCase(true, 40, Result = 40 - 31)]
+        [TestCase(false, 40, Result = 40)]
+        public long ShouldHandleDeletedPartitoinAfterRestart(bool clearPartition1, int days)
+        {
+            using (WriteJournal(EPartitionType.Month, TimeSpan.FromDays(1), days))
+            {
+            }
+
+            if (clearPartition1)
+            {
+                var newVersion = new PartitionDate(START_DATE, 0, EPartitionType.Month).Name;
+                Directory.Delete(Path.Combine(_directoryPath, newVersion), true);
+            }
+
+            using (IJournal<PocoType> journal = new JournalBuilder()
+                .WithLocation(_directoryPath)
+                .ToJournal<PocoType>())
+            {
+                using (var rtx = journal.OpenReadTx())
+                {
+                    return rtx.All().Length ?? 0L;
+                }
+            }
+        }
+
         [Test]
         public void ShouldKeepBothPartitionVersionWhenInUse()
         {

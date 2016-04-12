@@ -38,12 +38,12 @@ namespace Apaf.NFSdb.Core.Column
         double GetDouble(long rowID);
         DateTime GetDateTime(long rowID);
 
-        void SetInt32(long rowID, int value, ITransactionContext readContext);
-        void SetInt64(long rowID, long value, ITransactionContext readContext);
-        void SetInt16(long rowID, short value, ITransactionContext readContext);
-        void SetByte(long rowID, byte value, ITransactionContext readContext);
-        void SetBool(long rowID, bool value, ITransactionContext readContext);
-        void SetDouble(long rowID, double value, ITransactionContext readContext);
-        void SetDateTime(long rowID, DateTime value, ITransactionContext readContext);
+        void SetInt32(long rowID, int value);
+        void SetInt64(long rowID, long value);
+        void SetInt16(long rowID, short value);
+        void SetByte(long rowID, byte value);
+        void SetBool(long rowID, bool value);
+        void SetDouble(long rowID, double value);
+        void SetDateTime(long rowID, DateTime value);
     }
 }

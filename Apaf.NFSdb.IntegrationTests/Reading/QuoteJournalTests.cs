@@ -140,38 +140,6 @@ namespace Apaf.NFSdb.IntegrationTests.Reading
         }
 
         [Test]
-        public void Read_all_records_parallel()
-        {
-            const int partitionCount = 3;
-            const int totalCount = (int)(6 * GENERATE_RECORDS_COUNT);
-            // GenerateRecords(totalCount, partitionCount);
-
-            using (var j = CreateJournal(EFileAccess.Read))
-            {
-                var q = j.OpenReadTx();
-                var increment = GetTimestampIncrement(totalCount, partitionCount);
-                var writtenRec = new Quote();
-                var all =  q.All().ToRandomAccess();
-                var part = Partitioner.Create(0, all.Length.Value);
-
-                var sw = new Stopwatch();
-                sw.Start();
-
-                Parallel.ForEach(part,
-                    (fromto, state, a) =>
-                    {
-                        for (long i = fromto.Item1; i < fromto.Item2; i++)
-                        {
-                            var num = all.Read((int)i);
-                        }
-                    });
-
-                sw.Stop();
-                Console.WriteLine(sw.Elapsed);                
-            }
-        }
-
-        [Test]
         public void Read_records_reverse()
         {
             const int partitionCount = 3;
@@ -184,13 +152,12 @@ namespace Apaf.NFSdb.IntegrationTests.Reading
             using (var j = Utils.CreateJournal<Quote>(config, EFileAccess.ReadWrite))
             {
                 var q = j.OpenReadTx();
-                var increment = GetTimestampIncrement(totalCount, partitionCount);
-                var writtenRec = new Quote();
-                var all = q.All().ToRandomAccess();
-                for (long i =0; i < all.Length.Value; i++)
+                int count = 0;
+                foreach (var quote in q.All().Reverse())
                 {
-                    all.Read((int)i);
+                    count++;
                 }
+                Assert.That(count, Is.EqualTo(totalCount));
             }
         }
         

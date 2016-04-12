@@ -72,23 +72,39 @@ namespace Apaf.NFSdb.Tests.Columns
             Assert.That(result1, Is.EqualTo("0"));
 
             // Act.
-            var tx = new TransactionContext(tx1);
+            var pd = DeepClone(tx1);
             var vals = Enumerable.Range(1, 10).Select(i => (long)i);
             foreach (var val in vals)
             {
-                id.Add(key, val, tx);
+                id.Add(key, val, pd);
             }
 
             // Verify.
-            var result = string.Join("|", id.GetValues(key, tx).OrderBy(i => i)
+            var result = string.Join("|", id.GetValues(key, pd).OrderBy(i => i)
                 .Select(i => i.ToString(CultureInfo.InvariantCulture)));
 
             Assert.That(result, Is.EqualTo("0"));
         }
 
-        private void Commit(TransactionContext tx1, int rowcount)
+        private static PartitionTxData DeepClone(PartitionTxData p)
         {
-            var pd = tx1.PartitionTx[_symrk.Object.PartitionID];
+            var r = new PartitionTxData(p.AppendOffset.Length, p.PartitionID, p.StartDate, p.EndDate, new ReadContext())
+            {
+                LastTimestamp = p.LastTimestamp,
+                NextRowID = p.NextRowID,
+                IsPartitionUpdated = p.IsPartitionUpdated
+            };
+
+            for (int i = 0; i < p.AppendOffset.Length; i++)
+            {
+                r.AppendOffset[i] = p.AppendOffset[i];
+                r.SymbolData[i] = p.SymbolData[i].DeepClone();
+            }
+            return r;
+        }
+
+        private void Commit(PartitionTxData pd, int rowcount)
+        {
             var sd = pd.SymbolData[_symrk.Object.FileID];
 
             var keyBockOffset = sd.KeyBlockOffset;
@@ -107,12 +123,11 @@ namespace Apaf.NFSdb.Tests.Columns
             _symrr.Object.SetAppendOffset(symrAppendOffset);
         }
 
-        private IndexColumn CreateIndex(int size, TransactionContext tx)
+        private IndexColumn CreateIndex(int size, PartitionTxData pd)
         {
             int fileID = 0;
             _symrk = RawFileStub.InMemoryFile(size, fileID++);
             _symrr = RawFileStub.InMemoryFile(size, fileID);
-            PartitionTxData pd = tx.PartitionTx[_symrk.Object.PartitionID];
             pd.AppendOffset[_symrk.Object.FileID] = 28;
             pd.SymbolData[_symrk.Object.FileID].KeyBlockOffset = 12;
             pd.NextRowID = long.MaxValue;

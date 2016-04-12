@@ -35,9 +35,9 @@ namespace Apaf.NFSdb.Tests.Storage
         // Reading 0 chunk
         [TestCase(0x100, (long)1E9, 0, 0, 0x100)]
         [TestCase(0x400 * 0x400, (long)1E9, 0, 0, 0x400 * 0x400)]
-        [TestCase(0x400 * 0x400, 0x400 * 20, 0, 0, 0x400 * 0x400)]
+        [TestCase(0x400 * 0x400, 0x400 * 20, 0, 0, 0x400 * 20)]
         // Reading 1 chunk
-        [TestCase(0x400, 0x400 + 367, 0x400, 0x400, 0x400)]
+        [TestCase(0x400, 0x400 + 367, 0x400, 0x400, 367)]
         // Reading 2nd chunk
         [TestCase(0x400, (long)1E9, 0x801, 0x800, 0x400)]
         public void ShouldCalculateChunkLenghtCorrectly(int recordsSize, long fileLength, long readOffset, long chunkStart, long chunkSize)

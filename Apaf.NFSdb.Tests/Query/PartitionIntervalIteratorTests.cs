@@ -126,7 +126,7 @@ namespace Apaf.NFSdb.Tests.Query
             var recIncr = (long)recordsDelay.TotalMilliseconds;
             var partId = 1;
             var partTxs = new List<PartitionTxData>();
-            partTxs.Add(new PartitionTxData(100, 0, DateTime.MinValue, DateTime.MaxValue));
+            partTxs.Add(new PartitionTxData(100, 0, DateTime.MinValue, DateTime.MaxValue, new ReadContext()));
 
             while (tsmp < end)
             {
@@ -138,7 +138,7 @@ namespace Apaf.NFSdb.Tests.Query
                 }
                 partTxs.Add(new PartitionTxData(100, partId,
                     DateUtils.UnixTimestampToDateTime(partStart), 
-                    DateUtils.UnixTimestampToDateTime(partStart + partIncr)));
+                    DateUtils.UnixTimestampToDateTime(partStart + partIncr), new ReadContext()));
 
                 partTxs[partId].NextRowID = partTsmps.Count;
                 res.Add(MockPartition(partTsmps, partStart, partStart + partIncr, partId++));

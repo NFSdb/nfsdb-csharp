@@ -117,6 +117,20 @@ namespace Apaf.NFSdb.Core.Server
             }
         }
 
+        public void Execute(Action task, string name, int timeoutMs)
+        {
+            if (timeoutMs >= 0)
+            {
+                _serverTasks.Enqueue(new ScheduleAction(DateTime.UtcNow.AddMilliseconds(timeoutMs),
+                    task, name));
+
+                if (Interlocked.Increment(ref _tasksInQueue) == 1)
+                {
+                    StartJobThread();
+                }
+            }
+        }
+
         private void ExecuteOffloadPartition(IPartition partition)
         {
             partition.TryCloseFiles();

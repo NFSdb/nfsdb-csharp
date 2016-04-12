@@ -32,6 +32,13 @@ namespace Apaf.NFSdb.Tests.Query
         }
 
         [Test]
+        public void Should_return_correct_latest_with_nulls()
+        {
+            var latestIds = ExecuteLatestBySymUtil.ExecuteLambda(items => items, 1, true);
+            Assert.That(latestIds, Is.EqualTo("299,298,297,296,295,294,293,292,291,290,289,288,287,286,285,284,283,282,281,280"));
+        }
+
+        [Test]
         public void Should_return_correct_latest_limted_timestamps()
         {
             var latestIds = ExecuteLatestBySymUtil.ExecuteLambda(items =>

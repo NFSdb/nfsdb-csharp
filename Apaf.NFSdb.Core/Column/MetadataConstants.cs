@@ -78,6 +78,7 @@ namespace Apaf.NFSdb.Core.Column
         public static readonly int CREATE_FILE_RETRIES = 3;
         public static readonly string IQUERYABLE_TOKEN_EXPRESSION = "IQueryable query";
         public static readonly string PartitionSettingsFileName = "settings.xml";
+        public static readonly string DEFAULT_TEMP_PARITION_PREFIX = "temp_";
 
         public const int K_FILE_KEY_BLOCK_HEADER_SIZE = 16;
         public const int K_FILE_KEY_BLOCK_OFFSET = 8;

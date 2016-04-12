@@ -15,7 +15,9 @@
  * limitations under the License.
  */
 #endregion
-﻿using System.Collections.Generic;
+
+using System.Collections;
+using System.Collections.Generic;
 
 namespace Apaf.NFSdb.Core.Collections
 {
@@ -32,6 +34,23 @@ namespace Apaf.NFSdb.Core.Collections
                 while (list.Count < index)
                 {
                     list.Add(default(T));
+                }
+
+                list.Add(value);
+            }
+        }
+
+        public static void SetToIndex(this ArrayList list, int index, object value)
+        {
+            if (list.Count > index)
+            {
+                list[index] = value;
+            }
+            else
+            {
+                while (list.Count < index)
+                {
+                    list.Add(null);
                 }
 
                 list.Add(value);

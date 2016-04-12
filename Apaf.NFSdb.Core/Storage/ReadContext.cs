@@ -16,14 +16,18 @@
  */
 #endregion
 
+using System.Collections;
 using Apaf.NFSdb.Core.Collections;
+using Apaf.NFSdb.Core.Column;
 
 namespace Apaf.NFSdb.Core.Storage
 {
     public class ReadContext : IReadContext
     {
         private byte[] _arr1;
-        private readonly ObjIntHashMap _columnNames = new ObjIntHashMap();
+        private byte[] _arr3;
+        private ObjIntHashMap _columnNames = new ObjIntHashMap();
+        private readonly ArrayList _symbolCaches = new ArrayList();
 
         public byte[] AllocateByteArray(int size)
         {
@@ -37,12 +41,55 @@ namespace Apaf.NFSdb.Core.Storage
 
         public byte[] AllocateByteArray3(int size)
         {
-            return new byte[size];
+            return _arr3 != null && _arr3.Length >= size ? _arr3 : (_arr3 = new byte[size]);
         }
 
-        public IObjIntHashMap ColumnNames
+        public SymbolCache GetCache(int partitionId, int columnId, int capacity)
         {
-            get { return _columnNames; }
+            if (partitionId < _symbolCaches.Count)
+            {
+                var caches = (ArrayList)_symbolCaches[partitionId];
+                if (caches != null && columnId < caches.Count)
+                {
+                    SymbolCache cache;
+                    if ((cache = (SymbolCache)caches[columnId]) != null) return cache;
+                }
+            }
+            return GetCache0(partitionId, columnId, capacity);
+        }
+
+        private SymbolCache GetCache0(int partitionId, int columnId, int capacity)
+        {
+            ArrayList columns;
+            if (_symbolCaches.Count <= partitionId || _symbolCaches[partitionId] == null)
+            {
+                columns = new ArrayList();
+                _symbolCaches.SetToIndex(partitionId, columns);
+            }
+            else
+            {
+                columns = (ArrayList)_symbolCaches[partitionId];
+            }
+
+            SymbolCache cache;
+            if (columns.Count <= columnId || (cache = (SymbolCache)columns[columnId]) == null)
+            {
+                cache = new SymbolCache();
+                cache.SetValueCacheCapacity(capacity);
+                columns.SetToIndex(columnId, cache);
+                return cache;
+            }
+            return cache;
+        }
+        
+        public ObjIntHashMap AllocateStringHash()
+        {
+            if (_columnNames != null)
+            {
+                _columnNames.Clear();
+                return _columnNames;
+            }
+            return _columnNames = new ObjIntHashMap();
         }
     }
 }

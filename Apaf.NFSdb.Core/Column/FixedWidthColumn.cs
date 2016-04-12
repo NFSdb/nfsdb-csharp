@@ -78,49 +78,49 @@ namespace Apaf.NFSdb.Core.Column
             return ((DateTime*)l)[0];
         }
 
-        public void SetInt32(long rowID, int value, ITransactionContext tx)
+        public void SetInt32(long rowID, int value)
         {
             var offset = rowID*_sizeBytes;
             _storage.WriteInt32(offset, value);
         }
 
-        public void SetInt64(long rowID, long value, ITransactionContext tx)
+        public void SetInt64(long rowID, long value)
         {
             var offset = rowID * _sizeBytes;
             _storage.WriteInt64(offset, value);
         }
 
-        public void SetInt16(long rowID, short value, ITransactionContext tx)
+        public void SetInt16(long rowID, short value)
         {
             var offset = rowID * _sizeBytes;
             _storage.WriteInt16(offset, value);
         }
 
-        public void SetByte(long rowID, byte value, ITransactionContext tx)
+        public void SetByte(long rowID, byte value)
         {
             var offset = rowID * _sizeBytes;
             _storage.WriteByte(offset, value);
         }
 
-        public void SetBool(long rowID, bool value, ITransactionContext tx)
+        public void SetBool(long rowID, bool value)
         {
             var offset = rowID * _sizeBytes;
             _storage.WriteBool(offset, value);
         }
 
-        public void SetDouble(long rowID, double value, ITransactionContext tx)
+        public void SetDouble(long rowID, double value)
         {
             var offset = rowID * _sizeBytes;
             _storage.WriteDouble(offset, value);
         }
 
-        public void SetDateTime(long rowID, DateTime value, ITransactionContext readContext)
+        public void SetDateTime(long rowID, DateTime value)
         {
             var toLong = _fieldType == EFieldType.DateTimeEpochMs
                 ? DateUtils.DateTimeToUnixTimeStamp(value)
                 : DateUtils.ToUnspecifiedDateTicks(value);
 
-            SetInt64(rowID, toLong, readContext);
+            SetInt64(rowID, toLong);
         }
 
         public EFieldType FieldType

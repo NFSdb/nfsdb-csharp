@@ -75,9 +75,7 @@ namespace Apaf.NFSdb.Tests
         private JournalMetadata CreateMetadata<T>(JournalElement conf = null, string[] privateFields = null)
         {
             var settings = conf ?? new JournalElement();
-            var journalStorage = new Mock<IColumnStorage>();
             var meta = JournalBuilder.CreateNewJournalMetadata(settings, typeof(T));
-            meta.InitializeSymbols(journalStorage.Object);
             return meta;
         }
     }

@@ -8,7 +8,7 @@ namespace Apaf.NFSdb.Core.Configuration
     public class ColumnElement
     {
         [OnDeserializing]
-        private void OnDeserializing()
+        private void OnDeserializing(StreamingContext context)
         {
             IsNull = true;
         }

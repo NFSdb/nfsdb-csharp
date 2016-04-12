@@ -12,12 +12,13 @@ namespace Apaf.NFSdb.Core
     {
         private readonly IPartitionManager _partitionManager;
         private readonly JournalSettings _settings;
+        private IPartitionCompressorCore _compressor;
 
         internal JournalCore(IJournalMetadata metadata, IPartitionManager partitionManager)
         {
             _settings = metadata.Settings;
             _partitionManager = partitionManager;
-            Metadata= metadata;
+            Metadata = metadata;
             var unsafePartitionManager = (IUnsafePartitionManager)partitionManager;
             QueryStatistics = new JournalStatistics(Metadata, unsafePartitionManager);
             Diagnostics = new JournalDiagnostics(unsafePartitionManager);
@@ -97,6 +98,11 @@ namespace Apaf.NFSdb.Core
         {
             var txCntx = _partitionManager.ReadTxLog(Metadata.PartitionTtl.Milliseconds);
             return new RecordQuery(this, txCntx);
+        }
+
+        public void SetCompression(IPartitionCompressorCore compressor)
+        {
+            _compressor = compressor;
         }
 
         public void Dispose()

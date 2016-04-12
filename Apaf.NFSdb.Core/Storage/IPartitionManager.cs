@@ -3,7 +3,7 @@ using Apaf.NFSdb.Core.Tx;
 
 namespace Apaf.NFSdb.Core.Storage
 {
-    public interface IPartitionManager : IDisposable
+    internal interface IPartitionManager : IDisposable
     {
         EFileAccess Access { get; }
 
@@ -14,5 +14,13 @@ namespace Apaf.NFSdb.Core.Storage
         void Commit(ITransactionContext transaction, int partitionTtl);
 
         IPartition GetAppendPartition(DateTime dateTime, ITransactionContext tx);
+
+        event Action<long, long> OnCommited;
+
+        IPartition CreateTempPartition(int partitionID, DateTime startDateTime, int lastVersion);
+
+        void RemoveTempPartition(IPartition partition);
+
+        void CommitTempPartition(IPartition tempPartition, PartitionTxData txData);
     }
 }

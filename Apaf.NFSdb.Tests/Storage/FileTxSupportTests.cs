@@ -28,7 +28,7 @@ namespace Apaf.NFSdb.Tests.Storage
             var ftx = CreateFileTxSupport(CreateFileMocks("i.d-8|s.d-8"), partitionID);
             var tx = new Mock<ITransactionContext>();
             tx.Setup(t => t.LastAppendTimestamp).Returns(DateUtils.UnixTimestampToDateTime(timestamp));
-            tx.Setup(t => t.GetPartitionTx(partitionID)).Returns(new PartitionTxData(2, partitionID));
+            tx.Setup(t => t.GetPartitionTx(partitionID)).Returns(new PartitionTxData(2, partitionID, new ReadContext()));
             var txRec = new TxRec();
             
             // Act.
@@ -46,7 +46,7 @@ namespace Apaf.NFSdb.Tests.Storage
 
             var ftx = CreateFileTxSupport(CreateFileMocks("i.d-8|s.d-8"), partitionID);
             var tx = new Mock<ITransactionContext>();
-            tx.Setup(t => t.GetPartitionTx(partitionID)).Returns(new PartitionTxData(2, partitionID)
+            tx.Setup(t => t.GetPartitionTx(partitionID)).Returns(new PartitionTxData(2, partitionID, new ReadContext())
             {
                 NextRowID = localRowID
             });
@@ -78,7 +78,7 @@ namespace Apaf.NFSdb.Tests.Storage
             try
             {
                 // Act.
-                ftx.Commit(tx);
+                ftx.Commit(new PartitionTxData(100, 100));
             }
             catch (NFSdbCommitFailedException)
             {
@@ -111,7 +111,7 @@ namespace Apaf.NFSdb.Tests.Storage
             try
             {
                 // Act.
-                ftx.Commit(tx);
+                ftx.Commit(new PartitionTxData(100, 100));
             }
             catch (NFSdbCommitFailedException)
             {
@@ -135,7 +135,7 @@ namespace Apaf.NFSdb.Tests.Storage
         private ITransactionContext CreateNewTxContext(int fileCount)
         {
             var tx = new TransactionContext(fileCount);
-            var pd = new PartitionTxData(fileCount, 1);
+            var pd = new PartitionTxData(fileCount, 1, new ReadContext());
 
             tx.AddPartition(pd, 0);
             return tx;

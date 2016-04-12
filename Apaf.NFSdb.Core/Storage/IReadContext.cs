@@ -17,14 +17,15 @@
 #endregion
 
 using Apaf.NFSdb.Core.Collections;
+using Apaf.NFSdb.Core.Column;
 
 namespace Apaf.NFSdb.Core.Storage
 {
-    public interface IReadContext 
+    public interface IReadContext
     {
         byte[] AllocateByteArray(int size);
-        byte[] AllocateByteArray2(int size);
         byte[] AllocateByteArray3(int size);
-        IObjIntHashMap ColumnNames { get; }
+        SymbolCache GetCache(int partitionId, int columnId, int capacity);
+        ObjIntHashMap AllocateStringHash();
     }
 }

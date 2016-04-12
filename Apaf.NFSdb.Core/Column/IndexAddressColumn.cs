@@ -141,11 +141,11 @@ namespace Apaf.NFSdb.Core.Column
             _kData.WriteInt64(rowBlockDet.KeyOffset, rowBlockDet.BlockOffset);
             _kData.WriteInt64(rowBlockDet.KeyOffset + 8, rowBlockDet.RowCount);
         }
-        
-        public long ReadOnlyKeyRecordOffset(int key, IReadTransactionContext tx)
+
+        public long ReadOnlyKeyRecordOffset(int key, PartitionTxData tx)
         {
             // Check transaction.
-            var sd = tx.GetPartitionTx(_partitionID).SymbolData[_fileID];
+            var sd = tx.SymbolData[_fileID];
             long keyBlockOffset = sd.KeyBlockOffset;
             CheckKeyBlockOffset(keyBlockOffset);
 
@@ -162,10 +162,10 @@ namespace Apaf.NFSdb.Core.Column
             return keyOffset;
         }
 
-        public long ReadKeyRecordOffset(int key, ITransactionContext tx)
+        public long ReadKeyRecordOffset(int key, PartitionTxData tx)
         {
             // Check transaction.
-            var sd = tx.GetPartitionTx(_partitionID).SymbolData[_fileID];
+            var sd = tx.SymbolData[_fileID];
             if (!sd.KeyBlockCreated)
             {
                 CopyKeyBlock(tx);
@@ -197,10 +197,10 @@ namespace Apaf.NFSdb.Core.Column
             return keyOffset;
         }
 
-        private void CopyKeyBlock(ITransactionContext tx)
+        private void CopyKeyBlock(PartitionTxData pd)
         {
-            var sd = tx.GetPartitionTx(_partitionID).SymbolData[_fileID];
-            var newBlockOffset = tx.GetPartitionTx(_partitionID).AppendOffset[_fileID];
+            var sd = pd.SymbolData[_fileID];
+            var newBlockOffset = pd.AppendOffset[_fileID];
             
             var currentBlockOffset = sd.KeyBlockOffset;
             CheckKeyBlockOffset(currentBlockOffset);
@@ -208,8 +208,8 @@ namespace Apaf.NFSdb.Core.Column
             var currentBlockLen = sd.KeyBlockSize;
             if (currentBlockLen > 0)
             {
-                var keyBlockBuff = tx.ReadCache.AllocateByteArray3(currentBlockLen);
-                _kData.ReadBytes(currentBlockOffset, keyBlockBuff, 0, keyBlockBuff.Length);
+                var keyBlockBuff = pd.ReadCache.AllocateByteArray3(currentBlockLen);
+                _kData.ReadBytes(currentBlockOffset, keyBlockBuff, 0, currentBlockLen);
                 _kData.WriteBytes(newBlockOffset, keyBlockBuff, 0, currentBlockLen);
 
                 sd.KeyBlockOffset = newBlockOffset;

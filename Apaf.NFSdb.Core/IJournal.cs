@@ -15,6 +15,10 @@
  * limitations under the License.
  */
 #endregion
+
+using System;
+using System.Collections.Generic;
+using System.Linq;
 using Apaf.NFSdb.Core.Queries;
 using Apaf.NFSdb.Core.Writes;
 
@@ -26,5 +30,6 @@ namespace Apaf.NFSdb.Core
         IWriter OpenWriteTx();
         IWriter OpenWriteTx(int partitionTtlMs);
         void Truncate();
+        void SetCompression(Func<IQueryable<T>, IEnumerable<T>> compressor);
     }
 }

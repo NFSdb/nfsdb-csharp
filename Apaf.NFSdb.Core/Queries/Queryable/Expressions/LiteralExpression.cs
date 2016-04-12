@@ -26,7 +26,7 @@ namespace Apaf.NFSdb.Core.Queries.Queryable.Expressions
             Constant = constant;
         }
 
-        public ConstantExpression Constant { get; private set; }
+        public new ConstantExpression Constant { get; private set; }
 
         public EJournalExpressionType Operation
         {

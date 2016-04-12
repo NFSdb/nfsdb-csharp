@@ -33,7 +33,7 @@ namespace Apaf.NFSdb.Core.Storage
         int Version { get; }
         DateTime EndDate { get; }
 
-        void Append(object item, ITransactionContext tx);
+        void Append(object item, PartitionTxData tx);
         void MarkOverwritten();
         bool IsOverwritten { get; }
     }

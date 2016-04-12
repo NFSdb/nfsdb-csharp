@@ -12,7 +12,6 @@ namespace Apaf.NFSdb.Core.Queries
             return f.Method;
         }
  
-
         public static IQueryable<TSource> LatestBy<TSource, TKey>(this IQueryable<TSource> source, 
             Expression<Func<TSource, TKey>> keySelector)
         {
@@ -26,6 +25,21 @@ namespace Apaf.NFSdb.Core.Queries
                     null,
                     GetMethodInfo(LatestBy, source, keySelector),
                     new[] {source.Expression, Expression.Quote(keySelector)})
+                );
+        }
+
+        internal static IQueryable<TSource> ByPartitionId<TSource>(this IQueryable<TSource> source, int partition)
+        {
+            if (source == null)
+            {
+                throw new ArgumentNullException("source");
+            }
+
+            return source.Provider.CreateQuery<TSource>(
+                Expression.Call(
+                    null,
+                    GetMethodInfo(ByPartitionId, source, partition),
+                    new[] { source.Expression, Expression.Constant(partition) })
                 );
         }
     }

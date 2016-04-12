@@ -28,6 +28,7 @@ using Apaf.NFSdb.Core.Configuration;
 using Apaf.NFSdb.Core.Exceptions;
 using Apaf.NFSdb.Core.Server;
 using Apaf.NFSdb.Core.Tx;
+using Apaf.NFSdb.Core.Writes;
 
 namespace Apaf.NFSdb.Core.Storage
 {
@@ -41,8 +42,8 @@ namespace Apaf.NFSdb.Core.Storage
         private readonly ConcurrentDictionary<DateTime, Lazy<IPartition>> _partitions = new ConcurrentDictionary<DateTime, Lazy<IPartition>>();
         private readonly ConcurrentQueue<IPartition> _allPartitions = new ConcurrentQueue<IPartition>();
         private readonly JournalSettings _settings;
-        private readonly ColumnStorage _symbolStorage;
-        private readonly FileTxSupport _symbolTxSupport;
+        // private readonly ColumnStorage _symbolStorage;
+        // private readonly FileTxSupport _symbolTxSupport;
         private readonly CompositeRawFile _txLogFile;
         private readonly ITxLog _txLog;
         private ITransactionContext _lastTransactionLog;
@@ -59,9 +60,7 @@ namespace Apaf.NFSdb.Core.Storage
             _settings = metadata.Settings;
             _fileFactory = fileFactory;
             _server = server;
-
-            _symbolStorage = InitializeSymbolStorage();
-            _symbolTxSupport = new FileTxSupport(SYMBOL_PARTITION_ID, _symbolStorage, _metadata, DateTime.MinValue, DateTime.MinValue);
+            Server = server;
 
             if (txLog == null)
             {
@@ -75,7 +74,69 @@ namespace Apaf.NFSdb.Core.Storage
             _txLog = txLog;
         }
 
+        public IJournalServer Server { get; private set; }
         internal event Action OnDisposed;
+        public event Action<long, long> OnCommited;
+
+        public IPartition CreateTempPartition(int partitionID, DateTime startDateTime, int lastVersion)
+        {
+            var defaultPath = _metadata.Settings.DefaultPath;
+            if (Access != EFileAccess.ReadWrite)
+            {
+                throw new NFSdbAccessException("Journal {0} is open as read only, unable to create temp partitions.", 
+                    defaultPath);
+            }
+            var partitionType = _metadata.Settings.PartitionType;
+            var newVersion = new PartitionDate(startDateTime, lastVersion + 1, partitionType);
+            var path = Path.Combine(defaultPath, MetadataConstants.DEFAULT_TEMP_PARITION_PREFIX + newVersion.Name);
+            var newPartition = new Partition(_metadata, _fileFactory, EFileAccess.ReadWrite,
+                newVersion, partitionID, path, _server);
+
+            return newPartition;
+        }
+
+        public void RemoveTempPartition(IPartition partition)
+        {
+            var defaultPath = _metadata.Settings.DefaultPath;
+            if (Access != EFileAccess.ReadWrite)
+            {
+                throw new NFSdbAccessException("Journal {0} is open as read only, unable to create temp partitions.",
+                    defaultPath);
+            }
+
+            try
+            {
+                // Close the files
+                partition.Dispose();
+            }
+            catch (Exception ex)
+            {
+                Trace.TraceWarning("Error diposing temp partition " + partition.DirectoryPath, ex);
+            }
+
+            try
+            {
+                Directory.Delete(partition.DirectoryPath, true);
+            }
+            catch (Exception ex)
+            {
+                Trace.TraceWarning("Error deleting temp partition " + partition.DirectoryPath, ex);
+            }
+        }
+
+        public void CommitTempPartition(IPartition partition, PartitionTxData txData)
+        {
+            // partition.Commit();
+
+            // Close the files
+            partition.Dispose();
+
+            var partitionVersion = new PartitionDate(partition.StartDate, partition.Version,
+                _metadata.Settings.PartitionType);
+            var path = Path.Combine(_metadata.Settings.DefaultPath, partitionVersion.Name);
+
+            Directory.Move(partition.DirectoryPath, path);
+        }
 
         public EFileAccess Access { get; private set; }
         
@@ -86,11 +147,6 @@ namespace Apaf.NFSdb.Core.Storage
                 return _partitions.Values.Where(p => p.IsValueCreated)
                     .Select(p => p.Value).ToArray();
             }
-        }
-
-        public IColumnStorage SymbolFileStorage
-        {
-            get { return _symbolStorage; }
         }
 
         private IPartition GetPartitionByID(ITransactionContext tx, int partitionID)
@@ -118,7 +174,7 @@ namespace Apaf.NFSdb.Core.Storage
 
             var state = GetTxState();
             ReconcilePartitionsWithTxRec(state.Partitions, _lastTxRec);
-            var tx = new DeferredTransactionContext(state, _symbolTxSupport, this, _lastTxRec, partitionTtlMs);
+            var tx = new DeferredTransactionContext(state, this, _lastTxRec, partitionTtlMs);
 
             if (_lastTxRec != null)
             {
@@ -165,6 +221,8 @@ namespace Apaf.NFSdb.Core.Storage
                 if (lastAppendPartition != null)
                 {
                     var lastPartitionID = lastAppendPartition.PartitionID;
+                    var rowIdFrom = _lastTxRec != null ? _lastTxRec.JournalMaxRowID : 0;
+
                     for (int i = tx.Partitions.Count - 1; i >= 0; i--)
                     {
                         var partition = tx.Partitions[i];
@@ -172,7 +230,7 @@ namespace Apaf.NFSdb.Core.Storage
                         {
                             if (tx.IsParitionUpdated(partition.PartitionID, _lastTransactionLog))
                             {
-                                partition.Commit(tx);
+                                partition.Commit(tx.GetPartitionTx(partition.PartitionID));
                                 tx.RemoveRef(partitionTtl);
                                 isUpdated = true;
                             }
@@ -181,15 +239,20 @@ namespace Apaf.NFSdb.Core.Storage
 
                     if (isUpdated)
                     {
-                        _symbolTxSupport.Commit(tx);
-
                         var lastPartition = GetPartitionByID(tx, lastPartitionID);
                         var rec = new TxRec();
                         lastPartition.SetTxRec(tx, rec);
-                        _symbolTxSupport.SetTxRec(tx, rec);
+                        // _symbolTxSupport.SetTxRec(tx, rec);
                         _txLog.Create(rec);
                         _lastTxRec = rec;
+
+                        var onCommited = OnCommited;
+                        if (onCommited != null)
+                        {
+                            onCommited(rowIdFrom, _lastTxRec.JournalMaxRowID);
+                        }
                     }
+                    tx.SetCommited();
                 }
             }
             catch (Exception ex)
@@ -301,7 +364,7 @@ namespace Apaf.NFSdb.Core.Storage
             {
                 // Write append offsets in all the files.
                 var pp = GetPartitionByID(tx, prevPartitionTx.PartitionID);
-                pp.Commit(tx);
+                pp.Commit(tx.GetPartitionTx(prevPartitionTx.PartitionID));
 
                 var deref = tx.Partitions[prevPartitionTx.PartitionID];
                 if (deref != null)
@@ -310,15 +373,6 @@ namespace Apaf.NFSdb.Core.Storage
                     pp.SaveConfig(tx);
                 }
             }
-        }
-
-        private ColumnStorage InitializeSymbolStorage()
-        {
-            var symbolStorage = new ColumnStorage(
-                _metadata, _metadata.Settings.DefaultPath, 
-                Access, SYMBOL_PARTITION_ID, _fileFactory);
-            _metadata.InitializeSymbols(symbolStorage);
-            return symbolStorage;
         }
 
         private void ReconcilePartitionsWithTxRec(List<IPartition> partitions, TxRec txRec)
@@ -391,7 +445,6 @@ namespace Apaf.NFSdb.Core.Storage
             }
         }
 
-
         private IPartition CreateNewParition(PartitionDate partitionDir, int partitionID, string fullPath, PartitionConfig config)
         {
             var newParition = new Partition(_metadata, _fileFactory, Access, partitionDir, partitionID, fullPath, _server, config);
@@ -459,7 +512,6 @@ namespace Apaf.NFSdb.Core.Storage
                 partition.Dispose();
             }
             _partitions.Clear();
-            _symbolStorage.Dispose();
 
             if (OnDisposed != null)
             {

@@ -49,11 +49,11 @@ namespace Apaf.NFSdb.Core.Column
             return byteArray;
         }
 
-        public void SetValue(long rowID, byte[] bitArray, ITransactionContext tx)
+        public void SetValue(long rowID, byte[] bitArray, PartitionTxData tx)
         {
             var offset = rowID * _sizeBytes + ISSET_HEADER_LENGTH;
             _storage.WriteBytes(offset, bitArray, 0, _sizeBytes);
-            tx.GetPartitionTx().AppendOffset[_fileID] = offset + _sizeBytes;
+            tx.AppendOffset[_fileID] = offset + _sizeBytes;
         }
 
         public int GetByteSize()

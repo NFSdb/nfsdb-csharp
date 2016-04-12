@@ -138,33 +138,34 @@ namespace Apaf.NFSdb.Tests.Columns
                 ITransactionContext readContext)
             {
                 var q = (QuotePoco)obj;
-                fixedCols[0].SetInt64(rowid, q._timestamp, readContext);
+                fixedCols[0].SetInt64(rowid, q._timestamp);
 
+                var pd = readContext.GetPartitionTx();
                 bitset.Set(0, q._sym == null);
-                stringColumns[0].SetValue(rowid, q._sym, readContext);
+                stringColumns[0].SetValue(rowid, q._sym, pd);
 
                 bool isnull = !q._ask.hasValue;
                 bitset.Set(1, isnull);
                 if (!isnull)
                 {
-                    fixedCols[0].SetDouble(rowid, q._ask.value, readContext);
+                    fixedCols[0].SetDouble(rowid, q._ask.value);
                 }
 
                 isnull = !q._bid.hasValue;
                 bitset.Set(2, isnull);
                 if (!isnull)
                 {
-                    fixedCols[1].SetDouble(rowid, q._bid.value, readContext);
+                    fixedCols[1].SetDouble(rowid, q._bid.value);
                 }
 
-                fixedCols[2].SetInt32(rowid, q._bidSize, readContext);
-                fixedCols[3].SetInt32(rowid, q._askSize, readContext);
+                fixedCols[2].SetInt32(rowid, q._bidSize);
+                fixedCols[3].SetInt32(rowid, q._askSize);
 
                 bitset.Set(2, q._mode == null);
-                stringColumns[1].SetValue(rowid, q._mode, readContext);
+                stringColumns[1].SetValue(rowid, q._mode, pd);
 
                 bitset.Set(3, q._ex == null);
-                stringColumns[1].SetValue(rowid, q._ex, readContext);
+                stringColumns[1].SetValue(rowid, q._ex, pd);
             }
         }
 
@@ -337,13 +338,13 @@ namespace Apaf.NFSdb.Tests.Columns
         {
             var q = (Quote) obj;
             bitset.Set(0, !q.__isset.timestamp);
-            fixedCols[0].SetInt64(rowid, q.Timestamp, readContext);
+            fixedCols[0].SetInt64(rowid, q.Timestamp);
          
             bitset.Set(1, !q.__isset.bid);
-            fixedCols[1].SetDouble(rowid, q.Bid, readContext);
+            fixedCols[1].SetDouble(rowid, q.Bid);
 
             bitset.Set(2, !q.__isset.bid);
-            stringColumns[0].SetValue(rowid, q.Mode, readContext);
+            stringColumns[0].SetValue(rowid, q.Mode, readContext.GetPartitionTx());
         }
 
         public void Set(Quote q, double val)

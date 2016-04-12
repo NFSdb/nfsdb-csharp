@@ -132,7 +132,6 @@ namespace Apaf.NFSdb.TestShared
                 var startDate = new DateTime(2013, 10, 1);
                 var journalStorage = new ColumnStorage(metadata, jconf.DefaultPath,
                     access, 0, mmFactory);
-                metadata.InitializeSymbols(journalStorage);
 
                 var part = new Partition(
                     metadata, new CompositeFileFactory(fileFlags),

@@ -7,11 +7,11 @@ namespace Apaf.NFSdb.Core.Configuration
     {
         public BinaryElement()
         {
-            OnDeserializing();
+            OnDeserializing(new StreamingContext());
         }
 
         [OnDeserializing]
-        private void OnDeserializing()
+        private void OnDeserializing(StreamingContext streamingContext)
         {
             AvgSize = MetadataConstants.DEFAULT_BINARY_AVG_SIZE;
             MaxSize = MetadataConstants.DEFAULT_BINARY_MAX_SIZE;

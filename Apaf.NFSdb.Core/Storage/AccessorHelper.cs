@@ -26,7 +26,7 @@ namespace Apaf.NFSdb.Core.Storage
 
         static AccessorHelper()
         {
-            GetSystemInfo(ref Info);
+            NativeMethods.GetSystemInfo(ref Info);
         }
 
         public static void ReadData(byte* viewAddress, long offset, byte[] array, int arrayOffset,
@@ -101,10 +101,14 @@ namespace Apaf.NFSdb.Core.Storage
                     *dest++ = *src++;
             }
 
-        } 
+        }
 
-        [DllImport("kernel32.dll", SetLastError = true)]
-        internal static extern void GetSystemInfo(ref SYSTEM_INFO lpSystemInfo);
+        private class NativeMethods
+        {
+            [DllImport("kernel32.dll", SetLastError = true)]
+            internal static extern void GetSystemInfo(ref SYSTEM_INFO lpSystemInfo);
+        }
+
 
         public struct SYSTEM_INFO
         {

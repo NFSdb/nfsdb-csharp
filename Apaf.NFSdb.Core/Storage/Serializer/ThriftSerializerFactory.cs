@@ -37,8 +37,8 @@ namespace Apaf.NFSdb.Core.Storage.Serializer
         private Func<ByteArray, IFixedWidthColumn[], long, 
             IRefTypeColumn[], IReadContext, object> _readMethod;
 
-        private Action<object, ByteArray, IFixedWidthColumn[], long, 
-            IRefTypeColumn[], ITransactionContext> _writeMethod;
+        private Action<object, ByteArray, IFixedWidthColumn[], long,
+            IRefTypeColumn[], PartitionTxData> _writeMethod;
 
         private IList<IClassColumnSerializerMetadata> _allColumns;
 
@@ -193,7 +193,7 @@ namespace Apaf.NFSdb.Core.Storage.Serializer
 
 */
 
-        private Action<object, ByteArray, IFixedWidthColumn[], long, IRefTypeColumn[], ITransactionContext> GenerateWriteMethod(IList<ColumnSource> columns)
+        private Action<object, ByteArray, IFixedWidthColumn[], long, IRefTypeColumn[], PartitionTxData> GenerateWriteMethod(IList<ColumnSource> columns)
         {
             var methodSet = typeof(ByteArray).GetMethod("Set");
             var issetType = _objectType.GetNestedType("Isset");
@@ -201,7 +201,7 @@ namespace Apaf.NFSdb.Core.Storage.Serializer
             var argTypes = new[]
             {
                 typeof (object), typeof (ByteArray), typeof (IFixedWidthColumn[]),
-                typeof (long), typeof (IRefTypeColumn[]), typeof (ITransactionContext)
+                typeof (long), typeof (IRefTypeColumn[]), typeof (PartitionTxData)
             };
             var method = new DynamicMethod("WriteFromColumns" + _objectType.Name + Guid.NewGuid(), null, argTypes, GetType());
             ILGenerator il = method.GetILGenerator();
@@ -240,7 +240,6 @@ namespace Apaf.NFSdb.Core.Storage.Serializer
                         il.Emit(OpCodes.Ldarg_3);
                         il.Emit(OpCodes.Ldloc_0);
                         il.Emit(OpCodes.Call, _objectType.GetProperty(columnMeta.PropertyName).GetGetMethod());
-                        il.Emit(OpCodes.Ldarg_S, (byte)5);
                         il.Emit(OpCodes.Callvirt, columnMeta.GetSetMethod());
 
                         fci++;
@@ -277,9 +276,9 @@ namespace Apaf.NFSdb.Core.Storage.Serializer
             }
             il.Emit(OpCodes.Ret);
 
-            return (Action<object, ByteArray, IFixedWidthColumn[], long, IRefTypeColumn[], ITransactionContext>)
+            return (Action<object, ByteArray, IFixedWidthColumn[], long, IRefTypeColumn[], PartitionTxData>)
                 method.CreateDelegate(
-                    typeof(Action<object, ByteArray, IFixedWidthColumn[], long, IRefTypeColumn[], ITransactionContext>));
+                    typeof(Action<object, ByteArray, IFixedWidthColumn[], long, IRefTypeColumn[], PartitionTxData>));
         }
 
 

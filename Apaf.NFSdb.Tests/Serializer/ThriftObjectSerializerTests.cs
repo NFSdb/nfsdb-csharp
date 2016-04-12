@@ -25,6 +25,7 @@ using Apaf.NFSdb.Core.Column;
 using Apaf.NFSdb.Core.Configuration;
 using Apaf.NFSdb.Core.Storage;
 using Apaf.NFSdb.Core.Storage.Serializer;
+using Apaf.NFSdb.Core.Tx;
 using Apaf.NFSdb.Tests.Columns.ThriftModel;
 using Apaf.NFSdb.Tests.Tx;
 using NUnit.Framework;
@@ -181,7 +182,7 @@ namespace Apaf.NFSdb.Tests.Serializer
             var serializer = CreateWriter(columns);
             
             // Act.
-            serializer.Write(s, 0, TestTxLog.TestContext());
+            serializer.Write(s, 0, new PartitionTxData(100, 1));
             
             // Verify.
             var resultCol = (IColumnStub)columns

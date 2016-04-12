@@ -23,7 +23,7 @@ using Apaf.NFSdb.Core.Configuration;
 
 namespace Apaf.NFSdb.Core.Storage
 {
-    public class ColumnStorage : IColumnStorage, IDisposable
+    public sealed class ColumnStorage : IColumnStorage, IDisposable
     {
         private readonly ICompositeFileFactory _compositeFileFactory;
         private readonly IRawFile[] _openedFiles;

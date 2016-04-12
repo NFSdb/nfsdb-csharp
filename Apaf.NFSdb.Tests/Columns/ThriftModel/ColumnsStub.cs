@@ -97,7 +97,7 @@ namespace Apaf.NFSdb.Tests.Columns.ThriftModel
                 return GetValue<string>(rowID);
             }
 
-            public void SetString(long rowID, string value, ITransactionContext readContext)
+            public void SetString(long rowID, string value, PartitionTxData readContext)
             {
                 SetValue(value);
             }
@@ -112,7 +112,7 @@ namespace Apaf.NFSdb.Tests.Columns.ThriftModel
                 throw new System.NotImplementedException();
             }
 
-            public void SetValue(long rowID, object value, ITransactionContext readContext)
+            public void SetValue(long rowID, object value, PartitionTxData readContext)
             {
                 if (FieldType == EFieldType.String
                     || FieldType == EFieldType.Symbol)
@@ -123,37 +123,37 @@ namespace Apaf.NFSdb.Tests.Columns.ThriftModel
                 throw new System.NotImplementedException();
             }
 
-            public void SetInt32(long rowID, int value, ITransactionContext readContext)
+            public void SetInt32(long rowID, int value)
             {
                 SetValue(value);
             }
 
-            public void SetInt64(long rowID, long value, ITransactionContext readContext)
+            public void SetInt64(long rowID, long value)
             {
                 SetValue(value);
             }
 
-            public void SetInt16(long rowID, short value, ITransactionContext readContext)
+            public void SetInt16(long rowID, short value)
             {
                 SetValue(value);
             }
 
-            public void SetByte(long rowID, byte value, ITransactionContext readContext)
+            public void SetByte(long rowID, byte value)
             {
                 SetValue(value);
             }
 
-            public void SetBool(long rowID, bool value, ITransactionContext readContext)
+            public void SetBool(long rowID, bool value)
             {
                 SetValue(value);
             }
 
-            public void SetDouble(long rowID, double value, ITransactionContext readContext)
+            public void SetDouble(long rowID, double value)
             {
                 SetValue(value);
             }
 
-            public void SetDateTime(long rowID, DateTime value, ITransactionContext readContext)
+            public void SetDateTime(long rowID, DateTime value)
             {
                 SetValue(value);
             }

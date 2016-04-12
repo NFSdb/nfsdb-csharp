@@ -57,7 +57,7 @@ namespace Apaf.NFSdb.Core.Column
             _rData = rData;
         }
 
-        public IEnumerable<long> GetValues(int hashKey, IReadTransactionContext tx)
+        public IEnumerable<long> GetValues(int hashKey, PartitionTxData tx)
         {
             var keyRecOffset = _indexAddress.ReadOnlyKeyRecordOffset(hashKey, tx);
             if (keyRecOffset < 0)
@@ -78,7 +78,7 @@ namespace Apaf.NFSdb.Core.Column
             }
 
             var rowBlockOffset = blockOffset;
-            var partMaxRowId = tx.GetPartitionTx(_rData.PartitionID).NextRowID;
+            var partMaxRowId = tx.NextRowID;
 
             // Loop blocks.
             for (int i = rowBlockCount - 1; i >=0 ; i--)
@@ -102,7 +102,7 @@ namespace Apaf.NFSdb.Core.Column
             }
         }
 
-        public long GetCount(int valueKey, IReadTransactionContext tx)
+        public long GetCount(int valueKey, PartitionTxData tx)
         {
             var keyRecOffset = _indexAddress.ReadOnlyKeyRecordOffset(valueKey, tx);
             if (keyRecOffset < 0)
@@ -115,7 +115,7 @@ namespace Apaf.NFSdb.Core.Column
             return rowCount;
         }
 
-        public void Add(int key, long value, ITransactionContext tx)
+        public void Add(int key, long value, PartitionTxData tx)
         {
             var keyRecOffset = _indexAddress.ReadKeyRecordOffset(key, tx);
             var blockOffset = _kData.ReadInt64(keyRecOffset);
@@ -126,8 +126,8 @@ namespace Apaf.NFSdb.Core.Column
             if (blockOffset == 0 || cellIndex == 0)
             {
                 var prevRowBlockOffset = blockOffset;
-                blockOffset = tx.GetPartitionTx(_rData.PartitionID).AppendOffset[_rFileID] + _rowBlockSize;
-                tx.GetPartitionTx(_rData.PartitionID).AppendOffset[_rFileID] = blockOffset;
+                blockOffset = tx.AppendOffset[_rFileID] + _rowBlockSize;
+                tx.AppendOffset[_rFileID] = blockOffset;
                 _rData.WriteInt64(blockOffset - 8, prevRowBlockOffset);
                 
                 // Save block offset in k file

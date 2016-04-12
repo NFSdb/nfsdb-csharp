@@ -83,7 +83,7 @@ namespace Apaf.NFSdb.Tests.Columns
 
         }
 
-        private SymbolMapColumn CreateSymbolColumn(TransactionContext tx)
+        private SymbolMapColumn CreateSymbolColumn(PartitionTxData tx)
         {
             int fileID = 0;
             _symTestD =  RawFileStub.InMemoryFile(4096, fileID++);
@@ -95,6 +95,8 @@ namespace Apaf.NFSdb.Tests.Columns
             _symrr = RawFileStub.InMemoryFile(4096, fileID);
             _symbolCatch = new SymbolCache();
             var smc = new SymbolMapColumn(
+                0,
+                0,
                 data: _symTestD.Object,
                 datak: _symTestK.Object,
                 datar:_symTestR.Object,
@@ -105,20 +107,12 @@ namespace Apaf.NFSdb.Tests.Columns
                 propertyName: "symTest",
                 capacity: 24,
                 recordCountHint: 100,
-                maxLen: 56,
-                symbolCache:_symbolCatch);
+                maxLen: 56);
 
-            tx.PartitionTx[_symTestK.Object.PartitionID]
-                .SymbolData[_symTestK.Object.FileID].KeyBlockOffset = 16;
-
-            tx.PartitionTx[_symTestK.Object.PartitionID]
-                .AppendOffset[_symTestK.Object.FileID] = 28;
-
-            tx.PartitionTx[_symrk.Object.PartitionID]
-                .SymbolData[_symrk.Object.FileID].KeyBlockOffset = 16;
-
-            tx.PartitionTx[_symrk.Object.PartitionID]
-                .AppendOffset[_symrk.Object.FileID] = 28;
+            tx.SymbolData[_symTestK.Object.FileID].KeyBlockOffset = 16;
+            tx.AppendOffset[_symTestK.Object.FileID] = 28;
+            tx.SymbolData[_symrk.Object.FileID].KeyBlockOffset = 16;
+            tx.AppendOffset[_symrk.Object.FileID] = 28;
 
             return smc;
         }

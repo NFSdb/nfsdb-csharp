@@ -21,8 +21,8 @@ namespace Apaf.NFSdb.Core.Storage
 {
     public interface IFileTxSupport
     {
-        PartitionTxData ReadTxLogFromPartition(TxRec txRec = null);
-        IRollback Commit(ITransactionContext newTx);
+        PartitionTxData ReadTxLogFromPartition(IReadContext readCache, TxRec txRec = null);
+        IRollback Commit(PartitionTxData partitionTxData);
         void SetTxRec(ITransactionContext tx, TxRec rec);
     }
 }

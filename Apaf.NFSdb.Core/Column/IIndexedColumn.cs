@@ -2,8 +2,10 @@
 
 namespace Apaf.NFSdb.Core.Column
 {
-    public interface IIndexedColumn<in T> : IIndexedColumnCore
+    public interface IIndexedColumn<T> : IIndexedColumnCore
     {
-        int CheckKeyQuick(T value, IReadTransactionContext tx);
+        int CheckKeyQuick(T value, PartitionTxData tx);
+        int GetDistinctCount(PartitionTxData tx);
+        T GetKeyValue(int key, PartitionTxData rc);
     }
 }

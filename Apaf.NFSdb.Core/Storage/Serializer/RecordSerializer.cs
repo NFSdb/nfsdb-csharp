@@ -11,7 +11,7 @@ namespace Apaf.NFSdb.Core.Storage.Serializer
             throw new NotSupportedException();
         }
 
-        public void Write(object item, long rowID, ITransactionContext readContext)
+        public void Write(object item, long rowID, PartitionTxData readContext)
         {
             throw new NotImplementedException();
         }

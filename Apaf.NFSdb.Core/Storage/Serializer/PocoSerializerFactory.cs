@@ -34,7 +34,7 @@ namespace Apaf.NFSdb.Core.Storage.Serializer
     {
         private Type _objectType;
         private Func<ByteArray, IFixedWidthColumn[], long, IRefTypeColumn[], IReadContext, object> _readMethod;
-        private Action<object, ByteArray, IFixedWidthColumn[], long, IRefTypeColumn[], ITransactionContext> _writeMethod;
+        private Action<object, ByteArray, IFixedWidthColumn[], long, IRefTypeColumn[], PartitionTxData> _writeMethod;
         private static readonly Guid GENERATOR_MARK_GUID = Guid.NewGuid();
         private bool _isAnonymouse;
 
@@ -442,12 +442,12 @@ namespace Apaf.NFSdb.Core.Storage.Serializer
 } // end of method QuotePoco::WriteItemPoco
 
          * */
-        private Action<object, ByteArray, IFixedWidthColumn[], long, IRefTypeColumn[], ITransactionContext> GenerateWriteMethod(IList<ColumnSource> columns)
+        private Action<object, ByteArray, IFixedWidthColumn[], long, IRefTypeColumn[], PartitionTxData> GenerateWriteMethod(IList<ColumnSource> columns)
         {
             var argTypes = new[]
             {
                 typeof (object), typeof (ByteArray), typeof (IFixedWidthColumn[]), 
-                typeof (long), typeof (IRefTypeColumn[]), typeof (ITransactionContext)
+                typeof (long), typeof (IRefTypeColumn[]), typeof (PartitionTxData)
             };
             var setMethod = typeof(ByteArray).GetMethod("Set");
             var method = new DynamicMethod("Wt" + _objectType.GUID + GENERATOR_MARK_GUID,
@@ -479,7 +479,7 @@ namespace Apaf.NFSdb.Core.Storage.Serializer
                         il.Emit(OpCodes.Ldarg_3);
                         il.Emit(OpCodes.Ldloc_0);
                         il.Emit(OpCodes.Ldfld, GetFieldInfo(columnMeta.FieldName));
-                        il.Emit(OpCodes.Ldarg_S, (byte) 5);
+                        // il.Emit(OpCodes.Ldarg_S, (byte) 5);
                         il.Emit(OpCodes.Callvirt, columnMeta.GetSetMethod());
                     }
                     else if (columnMeta.ColumnType == EFieldType.String
@@ -523,7 +523,7 @@ namespace Apaf.NFSdb.Core.Storage.Serializer
                         il.Emit(OpCodes.Ldloc_0);
                         il.Emit(OpCodes.Ldflda, GetFieldInfo(columnMeta.FieldName));
                         il.Emit(OpCodes.Ldfld, columnMeta.GetNullableValueField());
-                        il.Emit(OpCodes.Ldarg_S, 5);
+                        // il.Emit(OpCodes.Ldarg_S, 5);
                         il.Emit(OpCodes.Callvirt, columnMeta.GetSetMethod());
                         il.MarkLabel(notSetLabels[i]);
                     }
@@ -532,10 +532,10 @@ namespace Apaf.NFSdb.Core.Storage.Serializer
             il.Emit(OpCodes.Ret);
 
             return (Action<object, ByteArray, IFixedWidthColumn[],
-                long, IRefTypeColumn[], ITransactionContext>)
+                long, IRefTypeColumn[], PartitionTxData>)
                 method.CreateDelegate(
-                    typeof(Action<object, ByteArray, IFixedWidthColumn[], 
-                    long, IRefTypeColumn[], ITransactionContext>));
+                    typeof(Action<object, ByteArray, IFixedWidthColumn[],
+                    long, IRefTypeColumn[], PartitionTxData>));
 
         }
 

@@ -18,24 +18,21 @@
 
 using System;
 using System.Linq;
+using Apaf.NFSdb.Core.Storage;
 using Apaf.NFSdb.Core.Tx;
 
 namespace Apaf.NFSdb.Tests.Tx
 {
     public class TestTxLog
     {
-        public static TransactionContext TestContext()
+        public static PartitionTxData TestContext()
         {
             const int partitions = 100;
             const int files = 100;
             var today = DateTime.Now.Date;
 
-            var paritionTx = Enumerable.Range(0, partitions)
-                .Select(p => new PartitionTxData(files, 1, today.AddDays(-200 + p),
-                    today.AddDays(-200 + p + 1))).ToArray();
-
-            var tx = new TransactionContext(100, paritionTx, null, null);
-            return tx;
+            return new PartitionTxData(files, 1, today.AddDays(-200),
+                today.AddDays(-200+ 1), new ReadContext());
         }
     }
 }

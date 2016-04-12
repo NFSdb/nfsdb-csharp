@@ -1,5 +1,4 @@
-﻿using System;
-using Apaf.NFSdb.Core.Column;
+﻿using Apaf.NFSdb.Core.Column;
 using Apaf.NFSdb.Core.Tx;
 
 namespace Apaf.NFSdb.Core.Storage.Serializer
@@ -19,7 +18,7 @@ namespace Apaf.NFSdb.Core.Storage.Serializer
         {
             if (value.HasValue)
             {
-                _column.SetInt32(rowID, value.GetValueOrDefault(), readContext);
+                _column.SetInt32(rowID, value.GetValueOrDefault());
             }
             isNull.Set(_bitsetIndex, !value.HasValue);
         }
@@ -37,7 +36,7 @@ namespace Apaf.NFSdb.Core.Storage.Serializer
         {
             if (value.HasValue)
             {
-                _column.SetInt64(rowID, value.GetValueOrDefault(), readContext);
+                _column.SetInt64(rowID, value.GetValueOrDefault());
             }
             isNull.Set(_bitsetIndex, !value.HasValue);
         }
@@ -55,7 +54,7 @@ namespace Apaf.NFSdb.Core.Storage.Serializer
         {
             if (value.HasValue)
             {
-                _column.SetInt16(rowID, value.GetValueOrDefault(), readContext);
+                _column.SetInt16(rowID, value.GetValueOrDefault());
             }
             isNull.Set(_bitsetIndex, !value.HasValue);
         }
@@ -73,7 +72,7 @@ namespace Apaf.NFSdb.Core.Storage.Serializer
         {
             if (value.HasValue)
             {
-                _column.SetByte(rowID, value.GetValueOrDefault(), readContext);
+                _column.SetByte(rowID, value.GetValueOrDefault());
             }
             isNull.Set(_bitsetIndex, !value.HasValue);
         }
@@ -91,7 +90,7 @@ namespace Apaf.NFSdb.Core.Storage.Serializer
         {
             if (value.HasValue)
             {
-                _column.SetBool(rowID, value.GetValueOrDefault(), readContext);
+                _column.SetBool(rowID, value.GetValueOrDefault());
             }
             isNull.Set(_bitsetIndex, !value.HasValue);
         }
@@ -109,7 +108,7 @@ namespace Apaf.NFSdb.Core.Storage.Serializer
         {
             if (value.HasValue)
             {
-                _column.SetDouble(rowID, value.GetValueOrDefault(), readContext);
+                _column.SetDouble(rowID, value.GetValueOrDefault());
             }
             isNull.Set(_bitsetIndex, !value.HasValue);
         }

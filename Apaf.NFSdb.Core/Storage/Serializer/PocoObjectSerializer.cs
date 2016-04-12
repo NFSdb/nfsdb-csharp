@@ -15,12 +15,12 @@ namespace Apaf.NFSdb.Core.Storage.Serializer
         private readonly IRefTypeColumn[] _stringColumns;
 
         private readonly Func<ByteArray, IFixedWidthColumn[], long, IRefTypeColumn[], IReadContext, object> _readMethod;
-        private readonly Action<object, ByteArray, IFixedWidthColumn[], long, IRefTypeColumn[], ITransactionContext>
+        private readonly Action<object, ByteArray, IFixedWidthColumn[], long, IRefTypeColumn[], PartitionTxData>
             _writeMethod;
 
         public PocoObjectSerializer(IEnumerable<ColumnSource> columns, 
             Func<ByteArray, IFixedWidthColumn[], long, IRefTypeColumn[], IReadContext, object> readMethod,
-            Action<object, ByteArray, IFixedWidthColumn[], long, IRefTypeColumn[], ITransactionContext> writeMethod)
+            Action<object, ByteArray, IFixedWidthColumn[], long, IRefTypeColumn[], PartitionTxData> writeMethod)
         {
             var allColumns = columns.ToArray();
             _fixedColumns = allColumns
@@ -63,20 +63,20 @@ namespace Apaf.NFSdb.Core.Storage.Serializer
             }
         }
 
-        public void Write(object item, long rowID, ITransactionContext tx)
+        public void Write(object item, long rowID, PartitionTxData pd)
         {
-            IReadContext readCache = tx.ReadCache;
+            IReadContext readCache = pd.ReadCache;
             if (_issetColumn != null)
             {
                 byte[] bitSetAddress = readCache.AllocateByteArray(_bitsetColSize);
                 var byteArray = new ByteArray(bitSetAddress);
-                _writeMethod(item, byteArray, _fixedColumns, rowID, _stringColumns, tx);
-                _issetColumn.SetValue(rowID, bitSetAddress, tx);
+                _writeMethod(item, byteArray, _fixedColumns, rowID, _stringColumns, pd);
+                _issetColumn.SetValue(rowID, bitSetAddress, pd);
             }
             else
             {
                 var byteArray = new ByteArray();
-                _writeMethod(item, byteArray, _fixedColumns, rowID, _stringColumns, tx);
+                _writeMethod(item, byteArray, _fixedColumns, rowID, _stringColumns, pd);
             }
         }
     }

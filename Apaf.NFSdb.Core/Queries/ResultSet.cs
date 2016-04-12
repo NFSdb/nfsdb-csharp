@@ -78,11 +78,5 @@ namespace Apaf.NFSdb.Core.Queries
         {
             return new ResultSet<T>(_rowIDs.Reverse(), _tx, Length);
         }
-
-        public RandomAccessResultSet<T> ToRandomAccess()
-        {
-            long[] rowIDs = _rowIDs.ToArray();
-            return new RandomAccessResultSet<T>(rowIDs, _tx);
-        }
     }
 }

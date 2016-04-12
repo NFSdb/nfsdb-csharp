@@ -31,6 +31,7 @@ namespace Apaf.NFSdb.Tests.Tx
         private readonly ITxPartitionLock _partitionLock;
         private readonly ReadContext _readCatch = new ReadContext();
         private PartitionTxData _currentPartitionTx;
+        private bool _isCommited;
 
         public TransactionContext(int columnCount, PartitionTxData[] partitionData, IPartition[] partitions, ITxPartitionLock partitionLock)
         {
@@ -57,7 +58,7 @@ namespace Apaf.NFSdb.Tests.Tx
 
         private static PartitionTxData DeepClone(PartitionTxData p)
         {
-            var r = new PartitionTxData(p.AppendOffset.Length, p.PartitionID, p.StartDate, p.EndDate)
+            var r = new PartitionTxData(p.AppendOffset.Length, p.PartitionID, p.StartDate, p.EndDate, new ReadContext())
             {
                 LastTimestamp = p.LastTimestamp,
                 NextRowID = p.NextRowID,
@@ -92,6 +93,11 @@ namespace Apaf.NFSdb.Tests.Tx
         public IList<IPartition> Partitions
         {
             get { return _partitions; }
+        }
+
+        public void SetCommited()
+        {
+            _isCommited = true;
         }
 
         public IList<int> PartitionIDs

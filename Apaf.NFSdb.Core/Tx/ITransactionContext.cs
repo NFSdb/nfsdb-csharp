@@ -29,5 +29,6 @@ namespace Apaf.NFSdb.Core.Tx
         bool IsParitionUpdated(int partitionID, ITransactionContext lastTransactionLog);
         DateTime LastAppendTimestamp { get; set; }
         IList<IPartition> Partitions { get; }
+        void SetCommited();
     }
 }

@@ -20,7 +20,6 @@ using System.Collections.Generic;
 using System.Linq;
 using Apaf.NFSdb.Core.Column;
 using Apaf.NFSdb.Core.Configuration;
-using Apaf.NFSdb.Core.Queries.Queryable;
 using Apaf.NFSdb.Core.Storage;
 using Apaf.NFSdb.Core.Tx;
 
@@ -52,42 +51,7 @@ namespace Apaf.NFSdb.Core.Queries
 
         public int GetColumnDistinctCardinality(IReadTransactionContext tx, IColumnMetadata column)
         {
-            if (column.Indexed)
-            {
-                return GetSymbolCount(tx, column);
-            }
             return column.HintDistinctCount;
-        }
-
-        public int GetSymbolCount(IReadTransactionContext tx, IColumnMetadata column)
-        {
-            var storage = _partitionManager.SymbolFileStorage;
-
-            IRawFile symiFile = null;
-            if (column.Indexed)
-            {
-                for (int i = 0; i < storage.OpenFileCount; i++)
-                {
-                    IRawFile file = storage.GetOpenedFileByID(i);
-                    if (file != null && file.ColumnID == column.ColumnID
-                        && file.DataType == EDataType.Symi)
-                    {
-                        symiFile = file;
-                        break;
-                    }
-                }
-
-                if (symiFile == null)
-                {
-                    return 0;
-                }
-
-                return (int)(
-                    tx.GetPartitionTx(MetadataConstants.SYMBOL_PARTITION_ID).AppendOffset[symiFile.FileID]
-                    / MetadataConstants.STRING_INDEX_FILE_RECORD_SIZE);
-            }
-            throw QueryExceptionExtensions.NotSupported("Column {0} is not indexed and presice distinct count is not available",
-                column.PropertyName);
         }
     }
 }

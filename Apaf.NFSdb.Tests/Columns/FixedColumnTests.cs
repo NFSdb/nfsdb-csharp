@@ -19,9 +19,7 @@ using System;
 using System.Collections.Generic;
 using Apaf.NFSdb.Core.Column;
 using Apaf.NFSdb.Core.Storage;
-using Apaf.NFSdb.Core.Writes;
 using Apaf.NFSdb.Tests.Columns.ThriftModel;
-using Apaf.NFSdb.Tests.Tx;
 using Moq;
 using NUnit.Framework;
 
@@ -95,7 +93,7 @@ namespace Apaf.NFSdb.Tests.Columns
             var col = CreateCol(EFieldType.Double);
 
             // Act.
-            col.SetDouble(offset, value, TestTxLog.TestContext());
+            col.SetDouble(offset, value);
 
             Assert.That(col.GetDouble(offset), Is.EqualTo(value), "Offset " + offset);
             _mockStorage.Verify(m => m.WriteDouble(It.IsAny<long>(), It.IsAny<double>()), Times.Once);
@@ -109,7 +107,7 @@ namespace Apaf.NFSdb.Tests.Columns
         {
             var offset = DateTime.Now.Millisecond % 256;
             var col = CreateCol(EFieldType.Int64);
-            col.SetInt64(offset, value, TestTxLog.TestContext());
+            col.SetInt64(offset, value);
 
             Assert.That(col.GetInt64(offset), Is.EqualTo(value), "Offset " + offset);
             _mockStorage.Verify(m => m.WriteInt64(It.IsAny<long>(), It.IsAny<long>()), Times.Once);
@@ -120,7 +118,7 @@ namespace Apaf.NFSdb.Tests.Columns
         {
             var offset = DateTime.Now.Millisecond % 256;
             var col = CreateCol(EFieldType.Int64);
-            col.SetDateTime(offset, value, TestTxLog.TestContext());
+            col.SetDateTime(offset, value);
 
             DateTime result = col.GetDateTime(offset);
             Assert.That(result, Is.EqualTo(value), "Offset " + offset);
@@ -142,7 +140,7 @@ namespace Apaf.NFSdb.Tests.Columns
         {
             var offset = DateTime.Now.Millisecond % 256;
             var col = CreateCol(EFieldType.Int32);
-            col.SetInt32(offset, value, TestTxLog.TestContext());
+            col.SetInt32(offset, value);
 
             Assert.That(col.GetInt32(offset), Is.EqualTo(value), "Offset " + offset);
             _mockStorage.Verify(m => m.WriteInt32(It.IsAny<long>(), It.IsAny<int>()), Times.Once);
@@ -156,7 +154,7 @@ namespace Apaf.NFSdb.Tests.Columns
         {
             var offset = DateTime.Now.Millisecond % 256;
             var col = CreateCol(EFieldType.Int16);
-            col.SetInt16(offset, value, TestTxLog.TestContext());
+            col.SetInt16(offset, value);
 
             Assert.That(col.GetInt16(offset), Is.EqualTo(value), "Offset " + offset);
             _mockStorage.Verify(m => m.WriteInt16(It.IsAny<long>(), It.IsAny<short>()), Times.Once);
@@ -169,7 +167,7 @@ namespace Apaf.NFSdb.Tests.Columns
         {
             var offset = DateTime.Now.Millisecond % 256;
             var col = CreateCol(EFieldType.Byte);
-            col.SetByte(offset, value, TestTxLog.TestContext());
+            col.SetByte(offset, value);
 
             Assert.That(col.GetByte(offset), Is.EqualTo(value), "Offset " + offset);
             _mockStorage.Verify(m => m.WriteByte(It.IsAny<long>(), It.IsAny<byte>()), Times.Once);
@@ -181,7 +179,7 @@ namespace Apaf.NFSdb.Tests.Columns
         {
             var offset = DateTime.Now.Millisecond % 256;
             var col = CreateCol(EFieldType.Bool);
-            col.SetBool(offset, value, TestTxLog.TestContext());
+            col.SetBool(offset, value);
 
             Assert.That(col.GetBool(offset), Is.EqualTo(value), "Offset " + offset);
             _mockStorage.Verify(m => m.WriteBool(It.IsAny<long>(), It.IsAny<bool>()), Times.Once);

@@ -21,7 +21,7 @@ using System.IO.MemoryMappedFiles;
 
 namespace Apaf.NFSdb.Core.Storage
 {
-    public unsafe class AccessorBinaryReader : IRawFilePart
+    public unsafe sealed class AccessorBinaryReader : IRawFilePart
     {
         private readonly long _bufferOffset;
         private readonly long _bufferSize;
@@ -281,7 +281,7 @@ namespace Apaf.NFSdb.Core.Storage
             Dispose(true);
         }
 
-        public void Dispose(bool disposed)
+        private void Dispose(bool disposed)
         {
             if (_memoryPtr != null)
             {

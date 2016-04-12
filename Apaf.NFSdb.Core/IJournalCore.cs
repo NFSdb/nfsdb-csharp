@@ -29,5 +29,6 @@ namespace Apaf.NFSdb.Core
         IQueryStatistics QueryStatistics { get; }
         IJournalDiagnostics Diagnostics { get; }
         IRecordQuery OpenRecordReadTx();
+        void SetCompression(IPartitionCompressorCore compressor);
     }
 }

@@ -6,6 +6,6 @@ namespace Apaf.NFSdb.Core.Column
     public interface IStringColumn : IRefTypeColumn, ITypedColumn<string>
     {
         string GetString(long rowID, IReadContext readContext);
-        void SetString(long rowID, string value, ITransactionContext readContext); 
+        void SetString(long rowID, string value, PartitionTxData readContext); 
     }
 }

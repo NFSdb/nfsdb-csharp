@@ -24,7 +24,7 @@ using Apaf.NFSdb.Core.Exceptions;
 
 namespace Apaf.NFSdb.Core.Storage
 {
-    public unsafe class CompositeRawFile : IRawFile
+    public unsafe sealed class CompositeRawFile : IRawFile
     {
         private readonly int _bitHint;
         private const byte TRUE = 1;
@@ -107,6 +107,11 @@ namespace Apaf.NFSdb.Core.Storage
 
         public void Dispose()
         {
+            Dispose(true);
+        }
+
+        private void Dispose(bool isDispose)
+        {
             lock (_buffSync)
             {
                 if (_buffers == null)
@@ -127,10 +132,12 @@ namespace Apaf.NFSdb.Core.Storage
             }
 
             Marshal.FreeHGlobal((IntPtr)_pointersArray);
-
-            _compositeFile.Dispose();
             _compositeFile = null;
-            GC.SuppressFinalize(this);
+
+            if (isDispose)
+            {
+                GC.SuppressFinalize(this);
+            }
         }
 
         public void Flush()
@@ -165,7 +172,7 @@ namespace Apaf.NFSdb.Core.Storage
 
         ~CompositeRawFile()
         {
-            if (_compositeFile != null) _compositeFile.Dispose();
+            Dispose(false);
         }
 
         public byte* GetFilePart(long offset)

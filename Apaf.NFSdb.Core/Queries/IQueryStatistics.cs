@@ -26,6 +26,5 @@ namespace Apaf.NFSdb.Core.Queries
     {
         long GetCardinalityByColumnValue<T>(IReadTransactionContext tx, IColumnMetadata column, IList<T> value);
         int GetColumnDistinctCardinality(IReadTransactionContext tx, IColumnMetadata column);
-        int GetSymbolCount(IReadTransactionContext tx, IColumnMetadata column);
     }
 }

@@ -14,7 +14,23 @@ namespace Apaf.NFSdb.Core.Storage
             : this()
         {
             PartitionType = partitionType;
-            Date = date;
+
+            switch (PartitionType)
+            {
+                case EPartitionType.Day:
+                    Date = date.Date;
+                    break;
+                case EPartitionType.Month:
+                    Date = new DateTime(date.Year, date.Month, 1);
+                    break;
+                case EPartitionType.Year:
+                    Date = new DateTime(date.Year, 1, 1);
+                    break;
+                default:
+                    Date = DateTime.MinValue;
+                    break;
+            }
+
             Version = version;
         }
 

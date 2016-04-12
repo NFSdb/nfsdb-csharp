@@ -106,7 +106,6 @@ namespace Apaf.NFSdb.Tests.Tx
             }
         }
 
-
         [Test]
         public void ShouldNotReturnCorrectRowsAfterRollback()
         {

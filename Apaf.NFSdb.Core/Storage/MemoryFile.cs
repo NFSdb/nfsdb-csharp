@@ -130,10 +130,6 @@ namespace Apaf.NFSdb.Core.Storage
             }
         }
 
-        public void Dispose()
-        {
-        }
-
         public IRawFilePart CreateViewAccessor(long offset, long size)
         {
             // First chunk (0 offset).

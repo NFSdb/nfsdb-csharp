@@ -20,7 +20,7 @@ using Apaf.NFSdb.Core.Configuration;
 
 namespace Apaf.NFSdb.Core.Storage
 {
-    public interface IPartitionManagerFactory
+    internal interface IPartitionManagerFactory
     {
         IPartitionManager Create(IJournalMetadata metadata,
             JournalSettings settings, EFileAccess access);

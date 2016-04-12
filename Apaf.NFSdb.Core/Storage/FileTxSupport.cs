@@ -46,11 +46,11 @@ namespace Apaf.NFSdb.Core.Storage
             _endTime = endTime;
         }
 
-        public PartitionTxData ReadTxLogFromFile()
+        public PartitionTxData ReadTxLogFromFile(IReadContext readCache)
         {
             long nextRowID = -1L;
             string lastRowIDFilename = null;
-            var pd = new PartitionTxData(_metadata.FileCount, _partitionID, _startDate, _endTime);
+            var pd = new PartitionTxData(_metadata.FileCount, _partitionID, _startDate, _endTime, readCache);
 
             for (int i = 0; i < _storage.OpenFileCount; i++)
             {
@@ -111,19 +111,19 @@ namespace Apaf.NFSdb.Core.Storage
         }
 
 
-        public PartitionTxData ReadTxLogFromPartition(TxRec txRec = null)
+        public PartitionTxData ReadTxLogFromPartition(IReadContext readCache, TxRec txRec = null)
         {
             if (txRec == null)
             {
-                return ReadTxLogFromFile();
+                return ReadTxLogFromFile(readCache);
             }
-            return ReadTxLogFromFileAndTxRec(txRec);
+            return ReadTxLogFromFileAndTxRec(readCache, txRec);
         }
 
-        private PartitionTxData ReadTxLogFromFileAndTxRec(TxRec txRec)
+        private PartitionTxData ReadTxLogFromFileAndTxRec(IReadContext readCache, TxRec txRec)
         {
             int symrRead = 0;
-            var pd = new PartitionTxData(_metadata.FileCount, _partitionID, _startDate, _endTime);
+            var pd = new PartitionTxData(_metadata.FileCount, _partitionID, _startDate, _endTime, readCache);
             long nextRowID = RowIDUtil.ToLocalRowID(txRec.JournalMaxRowID - 1) + 1;
             pd.NextRowID = nextRowID;
 
@@ -197,7 +197,7 @@ namespace Apaf.NFSdb.Core.Storage
             return pd;
         }
 
-        public IRollback Commit(ITransactionContext newTx)
+        public IRollback Commit(PartitionTxData partitionTxData)
         {
             var processedFileOffsets = new List<CommitData>(_metadata.FileCount);
             var actionRollaback = new CommitRollback(processedFileOffsets);
@@ -208,9 +208,7 @@ namespace Apaf.NFSdb.Core.Storage
 
                 try
                 {
-                    int partitionID = file.PartitionID;
                     int fileID = file.FileID;
-                    var partitionTxData = newTx.GetPartitionTx(partitionID);
                     var oldOffset = file.GetAppendOffset();
                     var appendOffset = partitionTxData.AppendOffset[fileID];
 
@@ -256,30 +254,23 @@ namespace Apaf.NFSdb.Core.Storage
             var pd = tx.GetPartitionTx(_partitionID);
 
             var columCount = _metadata.Columns.Count();
-            if (_partitionID != MetadataConstants.SYMBOL_PARTITION_ID)
+            rec.LastPartitionTimestamp = DateUtils.DateTimeToUnixTimeStamp(tx.LastAppendTimestamp);
+
+            // Java NFSdb Journal has paritions from 0 with no reserved id for symbol parition.
+            // Max row ID is rowcount + 1 for compatibility
+            rec.JournalMaxRowID = RowIDUtil.ToRowID(_partitionID - 1, pd.NextRowID - 1) + 1;
+
+            rec.IndexPointers = new long[columCount];
+            var symbolTableSize = new List<int>();
+            var symbolTableIndexPointers = new List<long>();
+            for (int i = 0; i < _storage.OpenFileCount; i++)
             {
-                rec.LastPartitionTimestamp = DateUtils.DateTimeToUnixTimeStamp(tx.LastAppendTimestamp);
-
-                // Java NFSdb Journal has paritions from 0 with no reserved id for symbol parition.
-                // Max row ID is rowcount + 1 for compatibility
-                rec.JournalMaxRowID = RowIDUtil.ToRowID(_partitionID - 1, pd.NextRowID - 1) + 1;
-
-                rec.IndexPointers = new long[columCount];
-                for (int i = 0; i < _storage.OpenFileCount; i++)
+                var f = _storage.GetOpenedFileByID(i);
+                if (f != null && f.DataType == EDataType.Datak)
                 {
-                    var f = _storage.GetOpenedFileByID(i);
-                    if (f != null && f.DataType == EDataType.Datak)
-                    {
-                        rec.IndexPointers[f.ColumnID] = pd.SymbolData[f.FileID].KeyBlockOffset;
-                    }
+                    rec.IndexPointers[f.ColumnID] = pd.SymbolData[f.FileID].KeyBlockOffset;
                 }
-            }
-            else
-            {
-                var symbolTableSize = new List<int>();
-                var symbolTableIndexPointers = new List<long>();
-
-                for (int i = 0; i < _storage.OpenFileCount; i++)
+                else
                 {
                     var file = _storage.GetOpenedFileByID(i);
                     if (file == null) continue;
@@ -295,9 +286,9 @@ namespace Apaf.NFSdb.Core.Storage
                         symbolTableIndexPointers.Add(sd.KeyBlockOffset);
                     }
                 }
-                rec.SymbolTableIndexPointers = symbolTableIndexPointers.ToArray();
-                rec.SymbolTableSizes = symbolTableSize.ToArray();
             }
+            rec.SymbolTableIndexPointers = symbolTableIndexPointers.ToArray();
+            rec.SymbolTableSizes = symbolTableSize.ToArray();
         }
 
         private class CommitRollback : IRollback

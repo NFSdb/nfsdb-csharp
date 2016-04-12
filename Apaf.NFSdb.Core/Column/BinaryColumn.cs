@@ -62,7 +62,8 @@ namespace Apaf.NFSdb.Core.Column
             {
                 return EMPTY_BYTE_ARRAY;
             }
-            var byteArray = readContext.AllocateByteArray2(arrayLength);
+            //var byteArray = readContext.AllocateByteArray2(arrayLength);
+            var byteArray = new byte[arrayLength];
             _data.ReadBytes(beginOffset + HEADER_SIZE, byteArray, 0, arrayLength);
             return byteArray;
         }
@@ -84,18 +85,23 @@ namespace Apaf.NFSdb.Core.Column
             return arrayLength;
         }
 
-        public void SetBytes(long rowID, byte[] value, ITransactionContext tx)
+        public void SetBytes(long rowID, byte[] value, ITransactionContext readContext)
+        {
+            throw new System.NotImplementedException();
+        }
+
+        public void SetBytes(long rowID, byte[] value, PartitionTxData tx)
         {
             var offset = rowID * MetadataConstants.STRING_INDEX_FILE_RECORD_SIZE;
             if (value != null)
             {
-                var writeOffset = tx.GetPartitionTx().AppendOffset[_data.FileID];
+                var writeOffset = tx.AppendOffset[_data.FileID];
                 _index.WriteInt64(offset, writeOffset);
 
                 var size = value.Length;
                 WriteLength(writeOffset, size);
                 _data.WriteBytes(writeOffset + HEADER_SIZE, value, 0, size);
-                tx.GetPartitionTx().AppendOffset[_data.FileID] = writeOffset + HEADER_SIZE + size;
+                tx.AppendOffset[_data.FileID] = writeOffset + HEADER_SIZE + size;
             }
             else
             {
@@ -158,7 +164,7 @@ namespace Apaf.NFSdb.Core.Column
             return GetBytes(rowID, readContext);
         }
 
-        public virtual void SetValue(long rowID, object value, ITransactionContext readContext)
+        public virtual void SetValue(long rowID, object value, PartitionTxData readContext)
         {
             SetBytes(rowID, (byte[])value, readContext);
         }

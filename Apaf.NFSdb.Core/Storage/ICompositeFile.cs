@@ -15,11 +15,10 @@
  * limitations under the License.
  */
 #endregion
-using System;
 
 namespace Apaf.NFSdb.Core.Storage
 {
-    public interface ICompositeFile : IDisposable
+    public interface ICompositeFile 
     {
         IRawFilePart CreateViewAccessor(long offset, long size);
         string Filename { get; }

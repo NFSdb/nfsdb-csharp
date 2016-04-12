@@ -6,14 +6,14 @@ namespace Apaf.NFSdb.Core.Collections
 {
     public class ArraySlice<T> : IList<T>
     {
-        private readonly T[] _items;
+        private readonly IList<T> _items;
         private readonly int _startIndex;
         private readonly int _length;
         private readonly bool _asc;
 
-        public ArraySlice(T[] items, int startIndex, int length, bool ascending)
+        public ArraySlice(IList<T> items, int startIndex, int length, bool ascending)
         {
-            if (startIndex + length > items.Length)
+            if (startIndex + length > items.Count)
             {
                 throw new IndexOutOfRangeException();
             }
@@ -53,7 +53,28 @@ namespace Apaf.NFSdb.Core.Collections
         {
             if (_asc)
             {
-                Array.Copy(_items, _startIndex, array, arrayIndex, _length);
+                var list = _items as List<T>;
+                if (list != null)
+                {
+                    list.CopyTo(_startIndex, array, arrayIndex, _length);
+                }
+                else
+                {
+                    var sourceArray = _items as T[];
+                    if (sourceArray != null)
+                    {
+                        Array.Copy(sourceArray, _startIndex, array, arrayIndex, _length);
+                    }
+                    else
+                    {
+                        var len = _length;
+                        var items = _items;
+                        for (int i = 0; i < len; i++)
+                        {
+                            array[arrayIndex + i] = items[_startIndex + i];
+                        }
+                    }
+                }
             }
             else
             {
@@ -143,7 +164,7 @@ namespace Apaf.NFSdb.Core.Collections
 
             public void Reset()
             {
-                _index = _asc ? 0 : _arraySlice._items.Length - 1;
+                _index = _asc ? 0 : _arraySlice._items.Count - 1;
             }
 
             public T Current

@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using Apaf.NFSdb.Core.Collections;
 using Apaf.NFSdb.Core.Column;
 using Apaf.NFSdb.Core.Exceptions;
 using Apaf.NFSdb.Core.Storage;
@@ -14,9 +13,6 @@ namespace Apaf.NFSdb.Core.Configuration
     {
         private readonly IList<ColumnMetadata> _columns;
         private readonly JournalSettings _settings;
-
-        private readonly ExpandableList<SymbolCache> _symbolCaches = new ExpandableList<SymbolCache>(() => new SymbolCache());
-        private IColumnStorage _symbolStorage;
         private readonly ISerializerFactory _serializerFactory;
         private readonly ColumnMetadata _timestampColumn;
 
@@ -98,24 +94,6 @@ namespace Apaf.NFSdb.Core.Configuration
 
         public string Name { get; private set; }
 
-        public void InitializeSymbols(IColumnStorage symbolStorage)
-        {
-            if (_symbolStorage != null)
-            {
-                throw new NFSdbInitializationException("Symbols are alrady initialized");
-            }
-            // Create symbols.
-            _symbolStorage = symbolStorage;
-            foreach (var columnMetadata in _columns)
-            {
-                if (columnMetadata.ColumnType == EFieldType.Symbol)
-                {
-                    _symbolCaches[columnMetadata.ColumnID] = new SymbolCache(
-                        columnMetadata.HintDistinctCount);
-                }
-            }
-        }
-
         public IFieldSerializer GetSerializer(IEnumerable<ColumnSource> columns)
         {
             return _serializerFactory.CreateFieldSerializer(columns);
@@ -134,14 +112,9 @@ namespace Apaf.NFSdb.Core.Configuration
         public int? TimestampColumnID { get; private set; }
         public int? IsNullColumnID { get; private set; }
 
-        public IEnumerable<ColumnSource> GetPartitionColumns(IColumnStorage partitionStorage, PartitionConfig configOverride = null)
+        public IEnumerable<ColumnSource> GetPartitionColumns(int paritionID, IColumnStorage partitionStorage, PartitionConfig configOverride = null)
         {
-            if (_symbolStorage == null)
-            {
-                throw new NFSdbInitializationException(
-                    "Symbols are not initialized. Please call InitializeSymbols first");
-            }
-            return CreateColumnsFromColumnMetadata(_columns, partitionStorage, configOverride);
+            return CreateColumnsFromColumnMetadata(_columns, partitionStorage, configOverride, paritionID);
         }
 
         private static IEnumerable<IColumnSerializerMetadata> CheckColumnMatch(JournalElement jconf,
@@ -274,7 +247,7 @@ namespace Apaf.NFSdb.Core.Configuration
         public TimeSpan PartitionTtl { get; private set; }
 
         private IEnumerable<ColumnSource> CreateColumnsFromColumnMetadata(IEnumerable<ColumnMetadata> columns, 
-            IColumnStorage columnStorage, PartitionConfig configOverride)
+            IColumnStorage columnStorage, PartitionConfig configOverride, int partitionID)
         {
             var recordHint = _settings.RecordHint;
             if (configOverride != null)
@@ -284,6 +257,7 @@ namespace Apaf.NFSdb.Core.Configuration
             }
 
             int fileID = 0;
+            int columnID = 0;
             foreach (var cType in columns)
             {
                 // Build.
@@ -303,10 +277,10 @@ namespace Apaf.NFSdb.Core.Configuration
                 else if (cType.ColumnType == EFieldType.Symbol)
                 {
                     var colData = columnStorage.GetFile(cType, fileID++, EDataType.Data, recordHint);
-                    var symData = _symbolStorage.GetFile(cType, fileID++, EDataType.Symd, recordHint);
-                    var symi = _symbolStorage.GetFile(cType, fileID++, EDataType.Symi, recordHint);
-                    var symk = _symbolStorage.GetFile(cType, fileID++, EDataType.Symrk, recordHint);
-                    var symr = _symbolStorage.GetFile(cType, fileID++, EDataType.Symrr, recordHint);
+                    var symData = columnStorage.GetFile(cType, fileID++, EDataType.Symd, recordHint);
+                    var symi = columnStorage.GetFile(cType, fileID++, EDataType.Symi, recordHint);
+                    var symk = columnStorage.GetFile(cType, fileID++, EDataType.Symrk, recordHint);
+                    var symr = columnStorage.GetFile(cType, fileID++, EDataType.Symrr, recordHint);
                     int maxLen = cType.MaxSize;
                     int distinctHintCount = cType.HintDistinctCount;
                     if (cType.Indexed)
@@ -314,6 +288,8 @@ namespace Apaf.NFSdb.Core.Configuration
                         var colDataK = columnStorage.GetFile(cType, fileID++, EDataType.Datak, recordHint);
                         var colDataR = columnStorage.GetFile(cType, fileID++, EDataType.Datar, recordHint);
                         column = new SymbolMapColumn(
+                            columnID,
+                            partitionID,
                             data: colData,
                             datak: colDataK,
                             datar: colDataR,
@@ -324,12 +300,13 @@ namespace Apaf.NFSdb.Core.Configuration
                             propertyName: GetPropertyName(cType.FileName),
                             capacity: distinctHintCount,
                             recordCountHint: _settings.RecordHint,
-                            maxLen: maxLen,
-                            symbolCache: _symbolCaches[colData.FileID]);
+                            maxLen: maxLen);
                     }
                     else
                     {
                         column = new SymbolMapColumn(
+                            columnID,
+                            partitionID,
                             data: colData,
                             symd: symData,
                             symi: symi,
@@ -337,8 +314,7 @@ namespace Apaf.NFSdb.Core.Configuration
                             symr: symr,
                             propertyName: GetPropertyName(cType.FileName),
                             capacity: distinctHintCount,
-                            maxLen: maxLen,
-                            symbolCache: _symbolCaches[colData.FileID]);
+                            maxLen: maxLen);
                     }
                 }
                 else if (cType.ColumnType == EFieldType.Binary)
@@ -356,6 +332,7 @@ namespace Apaf.NFSdb.Core.Configuration
                     column = new FixedColumn(data, cType.ColumnType, GetPropertyName(cType.FileName));
                 }
 
+                columnID++;
                 yield return new ColumnSource(cType, column, fileID);
             }
         }

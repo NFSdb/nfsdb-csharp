@@ -56,7 +56,6 @@ namespace Apaf.NFSdb.Tests.Columns
         {
             var stringCol = CreateStringColumn(maxLen);
             var readContext = TestTxLog.TestContext();
-            readContext.SetCurrentPartition(1);
             stringCol.SetValue(0, value, readContext);
 
             Assert.That(stringCol.GetValue(0, readContext.ReadCache), Is.EqualTo(value));

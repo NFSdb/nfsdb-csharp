@@ -54,11 +54,17 @@ namespace Apaf.NFSdb.Core.Column
             _cache2.Clear();
         }
 
-        public bool IsValueCached(int cacheIndex)
+        public bool IsValueCached(int cacheIndex, out string value)
         {
             // 0 is default. Increment expected value by 1 to avoid array initialization.
             var index = cacheIndex & (_cacheCapacityBitHint - 1);
-            return _cachedKeys[index] == cacheIndex + 1;
+            if (_cachedKeys[index] == cacheIndex + 1)
+            {
+                value = _symbolCache[index];
+                return true;
+            }
+            value = null;
+            return false;
         }
 
         public string GetCachedValue(int cacheIndex)

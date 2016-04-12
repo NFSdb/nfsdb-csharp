@@ -40,11 +40,11 @@ namespace Apaf.NFSdb.Core.Storage.Serializer
         private readonly IRefTypeColumn[] _refTypeColumns;
 
         private readonly Action<object, ByteArray, IFixedWidthColumn[], long,
-            IRefTypeColumn[], ITransactionContext> _writeMethod;
+            IRefTypeColumn[], PartitionTxData> _writeMethod;
 
         public ObjectSerializer(IEnumerable<ColumnSource> columns, 
             Func<ByteArray, IFixedWidthColumn[], long, IRefTypeColumn[], IReadContext, object> readMethod,
-            Action<object, ByteArray, IFixedWidthColumn[], long, IRefTypeColumn[], ITransactionContext> writeMethod)
+            Action<object, ByteArray, IFixedWidthColumn[], long, IRefTypeColumn[], PartitionTxData> writeMethod)
         {
             var allColumns = columns.ToArray();
             _fixedColumns = allColumns
@@ -78,7 +78,7 @@ namespace Apaf.NFSdb.Core.Storage.Serializer
             return _fillItemMethod(byteArray, _fixedColumns, rowID, _refTypeColumns, readContext);
         }
 
-        public void Write(object item, long rowID, ITransactionContext tx)
+        public void Write(object item, long rowID, PartitionTxData tx)
         {
             var readCache = tx.ReadCache;
             var bitSetAddress = readCache.AllocateByteArray(_bitsetColSize);

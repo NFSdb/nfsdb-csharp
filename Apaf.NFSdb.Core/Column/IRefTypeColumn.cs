@@ -23,6 +23,6 @@ namespace Apaf.NFSdb.Core.Column
     public interface IRefTypeColumn : IColumn
     {
         object GetValue(long rowID, IReadContext readContext);
-        void SetValue(long rowID, object value, ITransactionContext readContext);
+        void SetValue(long rowID, object value, PartitionTxData readContext);
     }
 }

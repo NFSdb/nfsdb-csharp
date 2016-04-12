@@ -29,6 +29,7 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <PlatformTarget>AnyCPU</PlatformTarget>
     <NoWarn>3021</NoWarn>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
     <DebugType>pdbonly</DebugType>
@@ -39,6 +40,7 @@
     <WarningLevel>4</WarningLevel>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <NoWarn>3021</NoWarn>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="Antlr4.Runtime.net40">
@@ -88,6 +90,7 @@
     <Compile Include="Configuration\JournalMetadata.cs" />
     <Compile Include="Configuration\PartitionConfig.cs" />
     <Compile Include="EPartitionCloseStrategy.cs" />
+    <Compile Include="Exceptions\NFSdbAccessException.cs" />
     <Compile Include="Exceptions\NFSdbArgumentException.cs" />
     <Compile Include="Exceptions\NFSdbEmptyFileException.cs" />
     <Compile Include="Exceptions\NFsdbFileMapSizeException.cs" />
@@ -105,6 +108,7 @@
     <Compile Include="Queries\ILatestBySymbolFilter.cs" />
     <Compile Include="Queries\IRowFilter.cs" />
     <Compile Include="Queries\LambdaFilter.cs" />
+    <Compile Include="Queries\PartitionResultSet.cs" />
     <Compile Include="Queries\Queryable\Expressions\ExpressionExtensions.cs" />
     <Compile Include="Queries\Queryable\Expressions\LiteralExpression.cs" />
     <Compile Include="Queries\Queryable\Expressions\MapExpression.cs" />
@@ -116,7 +120,9 @@
     <Compile Include="Queries\Queryable\QueryExceptionExtensions.cs" />
     <Compile Include="Queries\Queryable\QueryRowsResult.cs" />
     <Compile Include="Queries\IRecordQuery.cs" />
+    <Compile Include="Storage\IPartitionCompressorCore.cs" />
     <Compile Include="Storage\PartitionDate.cs" />
+    <Compile Include="Storage\IPartitionCompressor.cs" />
     <Compile Include="Storage\Serializer\FixedColumnDataType.cs" />
     <Compile Include="Storage\Serializer\IColumnDataType.cs" />
     <Compile Include="Storage\Serializer\JournalColumnRegistry.cs" />
@@ -140,7 +146,6 @@
     <Compile Include="Storage\Serializer\Records\Record.cs" />
     <Compile Include="Storage\Serializer\Records\RecordQuery.cs" />
     <Compile Include="Storage\Serializer\Records\RecordSet.cs" />
-    <Compile Include="Storage\Serializer\Records\TransactionParition.cs" />
     <Compile Include="Queries\ResultSetFactory.cs" />
     <Compile Include="Server\IJournalServer.cs" />
     <Compile Include="Server\AsyncJournalServer.cs" />
@@ -231,7 +236,6 @@
     <Compile Include="Queries\IQuery.cs" />
     <Compile Include="Queries\RowIDUtil.cs" />
     <Compile Include="Queries\Query.cs" />
-    <Compile Include="Queries\RandomAccessResultSet.cs" />
     <Compile Include="Queries\ResultSet.cs" />
     <Compile Include="Storage\AccessorBinaryReader.cs" />
     <Compile Include="Storage\ArrayAddress.cs" />
@@ -297,6 +301,7 @@
   <ItemGroup>
     <Content Include="Ql\Gramma\gramma_license.txt" />
   </ItemGroup>
+  <ItemGroup />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <Import Project="$(SolutionDir)\.nuget\nuget.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 

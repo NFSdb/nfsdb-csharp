@@ -13,7 +13,6 @@ namespace Apaf.NFSdb.Core.Tx
         private readonly IReadContext _readCache;
         private readonly IUnsafePartitionManager _paritionManager;
         private readonly TxState _state;
-        private readonly IFileTxSupport _symbolTxSupport;
         private readonly List<IPartition> _paritions;
         private readonly List<bool> _locks;
 
@@ -22,15 +21,14 @@ namespace Apaf.NFSdb.Core.Tx
         private readonly int _partitionTtlMs;
         private PartitionTxData[] _txData;
         private readonly int _lastPartitionID;
+        private bool _isCommited;
 
         internal DeferredTransactionContext(TxState state, 
-            IFileTxSupport symbolTxSupport, 
             IUnsafePartitionManager paritionManager, 
             TxRec txRec,
             int partitionTtlMs)
         {
             _state = state;
-            _symbolTxSupport = symbolTxSupport;
             _paritionManager = paritionManager;
 
             _paritions = _state.Partitions;
@@ -88,6 +86,11 @@ namespace Apaf.NFSdb.Core.Tx
             get { return _paritions; }
         }
 
+        public void SetCommited()
+        {
+            _isCommited = true;
+        }
+
         public void AddRefsAllPartitions()
         {
             for (int i = 0; i < _paritions.Count; i++)
@@ -141,8 +144,8 @@ namespace Apaf.NFSdb.Core.Tx
 
         private PartitionTxData GetPartitionTx0(int partitionID)
         {
-            IFileTxSupport txSpt = partitionID == 0 ? _symbolTxSupport : _paritions[partitionID];
-            var data = txSpt.ReadTxLogFromPartition(partitionID == _lastPartitionID ? _txRec : null);
+            IFileTxSupport txSpt = _paritions[partitionID];
+            var data = txSpt.ReadTxLogFromPartition(ReadCache, partitionID == _lastPartitionID ? _txRec : null);
             _txData[partitionID] = data;
             return data;
         }
@@ -186,7 +189,10 @@ namespace Apaf.NFSdb.Core.Tx
         {
             RemoveRefsAllPartitions();
             _state.PartitionDataStorage = _txData;
-            _paritionManager.Recycle(_state);
+            if (_isCommited)
+            {
+                _paritionManager.Recycle(_state);
+            }
         }
     }
 }
