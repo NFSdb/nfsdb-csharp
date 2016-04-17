@@ -22,8 +22,8 @@ namespace Apaf.NFSdb.Core.Column
 {
     public interface IBinaryColumn : IRefTypeColumn, ITypedColumn<byte[]>
     {
-        byte[] GetBytes(long rowID, IReadContext readContext);
-        unsafe int GetBytes(long rowID, byte* value, int startIndex, IReadContext readContext);
+        byte[] GetBytes(long rowID, ReadContext readContext);
+        unsafe int GetBytes(long rowID, byte* value, int startIndex, ReadContext readContext);
 
         void SetBytes(long rowID, byte[] value, PartitionTxData readContext);
         unsafe void SetBytes(long rowID, byte* value, int length, PartitionTxData readContext);

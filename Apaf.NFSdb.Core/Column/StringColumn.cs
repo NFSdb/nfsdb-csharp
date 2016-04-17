@@ -30,7 +30,7 @@ namespace Apaf.NFSdb.Core.Column
         {
         }
 
-        public unsafe string GetString(long rowID, IReadContext readContext)
+        public unsafe string GetString(long rowID, ReadContext readContext)
         {
             var byteArray = GetBytes(rowID, readContext);
             if (byteArray == null)
@@ -99,7 +99,7 @@ namespace Apaf.NFSdb.Core.Column
             }
         }
 
-        public override object GetValue(long rowID, IReadContext readContext)
+        public override object GetValue(long rowID, ReadContext readContext)
         {
             return GetString(rowID, readContext);
         }
@@ -137,7 +137,7 @@ namespace Apaf.NFSdb.Core.Column
             get { return EFieldType.String; }
         }
 
-        string ITypedColumn<string>.Get(long rowID, IReadContext readContext)
+        string ITypedColumn<string>.Get(long rowID, ReadContext readContext)
         {
             return GetString(rowID, readContext);
         }

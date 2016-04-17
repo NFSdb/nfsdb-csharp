@@ -16,68 +16,73 @@
  */
 #endregion
 
-using System.Collections;
+using System;
 using Apaf.NFSdb.Core.Collections;
 using Apaf.NFSdb.Core.Column;
 
 namespace Apaf.NFSdb.Core.Storage
 {
-    public class ReadContext : IReadContext
+    public sealed class ReadContext
     {
         private byte[] _arr1;
         private byte[] _arr3;
         private ObjIntHashMap _columnNames = new ObjIntHashMap();
-        private readonly ArrayList _symbolCaches = new ArrayList();
+        private SymbolCache[][] _symbolCaches = new SymbolCache[MetadataConstants.PRE_ALLOCATED_PARTITIONS][];
 
-        public byte[] AllocateByteArray(int size)
+        public byte[] AllocateBitsetArray(int size)
         {
             return _arr1 ?? (_arr1 = new byte[size]);
         }
 
-        public byte[] AllocateByteArray2(int size)
-        {
-            return new byte[size];
-        }
-
-        public byte[] AllocateByteArray3(int size)
+        public byte[] AllocateCopyKeyBlockArray(int size)
         {
             return _arr3 != null && _arr3.Length >= size ? _arr3 : (_arr3 = new byte[size]);
         }
 
         public SymbolCache GetCache(int partitionId, int columnId, int capacity)
         {
-            if (partitionId < _symbolCaches.Count)
+            if (partitionId < _symbolCaches.Length)
             {
-                var caches = (ArrayList)_symbolCaches[partitionId];
-                if (caches != null && columnId < caches.Count)
+                var caches = _symbolCaches[partitionId];
+                if (caches != null && columnId < caches.Length)
                 {
                     SymbolCache cache;
-                    if ((cache = (SymbolCache)caches[columnId]) != null) return cache;
+                    if ((cache = caches[columnId]) != null) return cache;
                 }
             }
-            return GetCache0(partitionId, columnId, capacity);
+            return GetCacheSlow(partitionId, columnId, capacity);
         }
 
-        private SymbolCache GetCache0(int partitionId, int columnId, int capacity)
+        private SymbolCache GetCacheSlow(int partitionId, int columnId, int capacity)
         {
-            ArrayList columns;
-            if (_symbolCaches.Count <= partitionId || _symbolCaches[partitionId] == null)
+            if (_symbolCaches.Length <= partitionId)
             {
-                columns = new ArrayList();
-                _symbolCaches.SetToIndex(partitionId, columns);
-            }
-            else
-            {
-                columns = (ArrayList)_symbolCaches[partitionId];
+                 var extended = new SymbolCache[partitionId + MetadataConstants.PRE_ALLOCATED_PARTITIONS][];
+                Array.Copy(_symbolCaches, extended, _symbolCaches.Length);
+                _symbolCaches = extended;
             }
 
-            SymbolCache cache;
-            if (columns.Count <= columnId || (cache = (SymbolCache)columns[columnId]) == null)
+            SymbolCache[] columns = _symbolCaches[partitionId];
+            if (columns == null)
             {
-                cache = new SymbolCache();
-                cache.SetValueCacheCapacity(capacity);
-                columns.SetToIndex(columnId, cache);
-                return cache;
+                columns = new SymbolCache[Math.Max(columnId, MetadataConstants.PRE_ALLOCATED_COLUMNS)];
+                _symbolCaches[partitionId] = columns;
+            }
+
+            if (columns.Length <= columnId)
+            {
+                var newColumns = new SymbolCache[
+                    (columnId / MetadataConstants.PRE_ALLOCATED_COLUMNS + 1) * MetadataConstants.PRE_ALLOCATED_COLUMNS];
+                Array.Copy(columns, newColumns, columns.Length);
+                columns = newColumns;
+                _symbolCaches[partitionId] = newColumns;
+            }
+
+            var cache = columns[columnId];
+            if (cache == null)
+            {
+                cache = new SymbolCache(capacity);
+                columns[columnId] = cache;
             }
             return cache;
         }

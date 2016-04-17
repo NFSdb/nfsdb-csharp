@@ -125,7 +125,7 @@ namespace Apaf.NFSdb.Core.Storage
         public int PartitionID { get; private set; }
         public string DirectoryPath { get; private set; }
 
-        public TT Read<TT>(long rowID, IReadContext readContext)
+        public TT Read<TT>(long rowID, ReadContext readContext)
         {
             if (!_isStorageInitialized) InitializeStorage();
 
@@ -247,7 +247,7 @@ namespace Apaf.NFSdb.Core.Storage
             }
         }
 
-        public PartitionTxData ReadTxLogFromPartition(IReadContext readCache, TxRec txRec = null)
+        public PartitionTxData ReadTxLogFromPartition(ReadContext readCache, TxRec txRec = null)
         {
             if (!_isStorageInitialized) InitializeStorage();
 

@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Linq;
 using Apaf.NFSdb.Core.Storage;
 
@@ -7,7 +6,7 @@ namespace Apaf.NFSdb.Core.Tx
 {
     public class PartitionTxData
     {
-        public PartitionTxData(int columnCount, int partitionID, IReadContext readContext)
+        public PartitionTxData(int columnCount, int partitionID, ReadContext readContext)
             : this(columnCount, partitionID, DateTime.MinValue, DateTime.MaxValue, readContext)
         {
         }
@@ -17,7 +16,7 @@ namespace Apaf.NFSdb.Core.Tx
         {
         }
 
-        public PartitionTxData(int columnCount, int partitionID, DateTime startDate, DateTime endDate, IReadContext readContext)
+        public PartitionTxData(int columnCount, int partitionID, DateTime startDate, DateTime endDate, ReadContext readContext)
         {
             PartitionID = partitionID;
             StartDate = startDate;
@@ -32,11 +31,11 @@ namespace Apaf.NFSdb.Core.Tx
         public long NextRowID;
         public long LastTimestamp;
         public readonly long[] AppendOffset;
-        public readonly IList<SymbolTxData> SymbolData;
+        public readonly SymbolTxData[] SymbolData;
         public bool IsAppended;
         public readonly int PartitionID;
         public readonly DateTime StartDate;
         public readonly DateTime EndDate;
-        public readonly IReadContext ReadCache;
+        public readonly ReadContext ReadCache;
     }
 }

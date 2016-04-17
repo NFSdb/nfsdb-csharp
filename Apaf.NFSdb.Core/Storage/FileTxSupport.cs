@@ -46,7 +46,7 @@ namespace Apaf.NFSdb.Core.Storage
             _endTime = endTime;
         }
 
-        public PartitionTxData ReadTxLogFromFile(IReadContext readCache)
+        public PartitionTxData ReadTxLogFromFile(ReadContext readCache)
         {
             long nextRowID = -1L;
             string lastRowIDFilename = null;
@@ -111,7 +111,7 @@ namespace Apaf.NFSdb.Core.Storage
         }
 
 
-        public PartitionTxData ReadTxLogFromPartition(IReadContext readCache, TxRec txRec = null)
+        public PartitionTxData ReadTxLogFromPartition(ReadContext readCache, TxRec txRec = null)
         {
             if (txRec == null)
             {
@@ -120,7 +120,7 @@ namespace Apaf.NFSdb.Core.Storage
             return ReadTxLogFromFileAndTxRec(readCache, txRec);
         }
 
-        private PartitionTxData ReadTxLogFromFileAndTxRec(IReadContext readCache, TxRec txRec)
+        private PartitionTxData ReadTxLogFromFileAndTxRec(ReadContext readCache, TxRec txRec)
         {
             int symrRead = 0;
             var pd = new PartitionTxData(_metadata.FileCount, _partitionID, _startDate, _endTime, readCache);

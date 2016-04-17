@@ -30,6 +30,7 @@ namespace Apaf.NFSdb.Core.Storage
         private readonly string _folder;
         private readonly EFileAccess _access;
         private readonly int _partitionID;
+        private bool _directoryChecked;
 
         public ColumnStorage(
             IJournalMetadata metadata,
@@ -52,8 +53,25 @@ namespace Apaf.NFSdb.Core.Storage
 
         private IRawFile Open(string filename, int fileID, int columnID, EDataType dataType, int bitHint)
         {
+            if (!_directoryChecked)
+            {
+                CheckCreateDirectory();
+            }
             string fullName = Path.Combine(_folder, filename);
             return new CompositeRawFile(fullName, bitHint, _compositeFileFactory, _access, _partitionID, fileID, columnID, dataType);
+        }
+
+        private void CheckCreateDirectory()
+        {
+            _directoryChecked = true;
+            if (_access == EFileAccess.ReadWrite)
+            {
+                var directoryInfo = new DirectoryInfo(_folder);
+                if (!directoryInfo.Exists)
+                {
+                    directoryInfo.Create();
+                }
+            }
         }
 
         public void CloseFiles()
@@ -89,7 +107,13 @@ namespace Apaf.NFSdb.Core.Storage
                 var bitHint = GetBitHint(dataType, recordHint, column.HintDistinctCount, column.AvgSize);
 
                 file = Open(filename, fileID, column.ColumnID, dataType, bitHint);
-                _openedFiles[fileID] = file;
+
+                var existing = Interlocked.CompareExchange(ref _openedFiles[fileID], file, null);
+                if (existing != null)
+                {
+                    file.Dispose();
+                    return existing;
+                }
             }
             return file;
         }
@@ -127,8 +151,8 @@ namespace Apaf.NFSdb.Core.Storage
 
                 case EDataType.Symrk:
                 case EDataType.Datak:
-                    avgRecSize = 16;
-                    recordCount = MetadataConstants.HASH_FUNCTION_GROUPING_RATE * MetadataConstants.AVG_KEYBLOCKS_IN_K_FILE;
+                    avgRecSize = 8;
+                    recordCount = recordCount / columnDistinctCount;
                     break;
 
                 case EDataType.Symd:

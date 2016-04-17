@@ -16,18 +16,13 @@
  */
 #endregion
 
-using System;
 using Apaf.NFSdb.Core.Collections;
-using Apaf.NFSdb.Core.Exceptions;
 
 namespace Apaf.NFSdb.Core.Column
 {
     public class SymbolCache
     {
         private readonly ObjIntHashMap _cache2;
-        private string[] _symbolCache;
-        private int[] _cachedKeys;
-        private int _cacheCapacityBitHint;
 
         public SymbolCache()
         {
@@ -56,44 +51,7 @@ namespace Apaf.NFSdb.Core.Column
 
         public bool IsValueCached(int cacheIndex, out string value)
         {
-            // 0 is default. Increment expected value by 1 to avoid array initialization.
-            var index = cacheIndex & (_cacheCapacityBitHint - 1);
-            if (_cachedKeys[index] == cacheIndex + 1)
-            {
-                value = _symbolCache[index];
-                return true;
-            }
-            value = null;
-            return false;
-        }
-
-        public string GetCachedValue(int cacheIndex)
-        {
-            var index = cacheIndex & (_cacheCapacityBitHint - 1);
-            return _symbolCache[index];
-        }
-
-        public void SetValueCacheCapacity(int capacity)
-        {
-            _cacheCapacityBitHint = (int)Math.Floor(Math.Log(Math.Max(capacity, 16), 2.0));
-            _cacheCapacityBitHint = Math.Max(_cacheCapacityBitHint, 4);
-            capacity = 1 << _cacheCapacityBitHint;
-            if (_cachedKeys != null && _cachedKeys.Length != capacity)
-            {
-                throw new NFSdbPartitionException("Symbol cache is initialized using different capcity");
-            }
-            if (_cachedKeys == null)
-            {
-                _cachedKeys = new int[capacity];
-                _symbolCache = new string[capacity];
-            }
-        }
-
-        public void AddSymbolValue(int symRowID, string value)
-        {
-            var index = symRowID & (_cacheCapacityBitHint - 1);
-            _cachedKeys[index] = symRowID + 1;
-            _symbolCache[index] = value;
+            return _cache2.LookupValue(cacheIndex, out value);
         }
     }
 }

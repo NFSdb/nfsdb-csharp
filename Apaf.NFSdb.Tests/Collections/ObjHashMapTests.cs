@@ -1,5 +1,4 @@
-﻿using System.Management.Instrumentation;
-using Apaf.NFSdb.Core.Collections;
+﻿using Apaf.NFSdb.Core.Collections;
 using Apaf.NFSdb.Core.Column;
 using NUnit.Framework;
 
@@ -31,7 +30,6 @@ namespace Apaf.NFSdb.Tests.Collections
             }
         }
 
-
         [Test]
         public void Should_clear_prev_values()
         {
@@ -45,6 +43,26 @@ namespace Apaf.NFSdb.Tests.Collections
             for (int i = 0; i < 20; i++)
             {
                 Assert.That(map.Get("Sym_" + i), Is.EqualTo(MetadataConstants.SYMBOL_NOT_FOUND_VALUE));
+            }
+        }
+
+        [Test]
+        [Ignore]
+        public void Should_lookup_values()
+        {
+            // TODO
+            var map = new ObjIntHashMap(1024);
+            for (int i = 0; i < 2048; i++)
+            {
+                map.Put("Sym_" + i, i);
+            }
+
+            for (int i = 0; i < 2048; i++)
+            {
+                var expected = "Sym_" + i;
+                string actual;
+                map.LookupValue(i, out actual);
+                Assert.That(actual, Is.EqualTo(expected), "iteration " + i);
             }
         }
     }

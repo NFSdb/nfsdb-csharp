@@ -45,7 +45,7 @@ namespace Apaf.NFSdb.Core.Queries
         protected abstract SingleMultipleValues<T> GetAllMatchingValues(IReadTransactionContext tx);
         public abstract long GetCardinality(IJournalCore journal, IReadTransactionContext tx);
 
-        public bool IsMatch(IPartitionReader partition, IReadContext readCache, long localRowID)
+        public bool IsMatch(IPartitionReader partition, ReadContext readCache, long localRowID)
         {
             if (_columnPartition != partition.PartitionID)
             {

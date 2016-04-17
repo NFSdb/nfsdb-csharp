@@ -23,7 +23,7 @@ namespace Apaf.NFSdb.Core.Column
 {
     public interface IFieldSerializer 
     {
-        object Read(long rowID, IReadContext readContext);
+        object Read(long rowID, ReadContext readContext);
         void Write(object item, long rowID, PartitionTxData readContext);
     }
 }

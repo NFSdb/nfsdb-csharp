@@ -93,7 +93,7 @@ namespace Apaf.NFSdb.Tests.Columns
 
             public static object ReadItemPoco(ByteArray bitset,
                 IFixedWidthColumn[] fixedCols,
-                long rowid, IRefTypeColumn[] stringColumns, IReadContext readContext)
+                long rowid, IRefTypeColumn[] stringColumns, ReadContext readContext)
             {
                 var q = (QuotePoco)FormatterServices.GetUninitializedObject(typeof(QuotePoco));
                 q._timestamp = fixedCols[0].GetInt64(rowid);
@@ -306,7 +306,7 @@ namespace Apaf.NFSdb.Tests.Columns
         }
 
         public static object GenerateItem(ByteArray bitset, IFixedWidthColumn[] fixdCols,
-            long rowid, IRefTypeColumn[] stringColumns, IReadContext readContext)
+            long rowid, IRefTypeColumn[] stringColumns, ReadContext readContext)
         {
             var q = new Quote();
             if (!bitset.IsSet(0))

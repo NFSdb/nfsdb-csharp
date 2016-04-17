@@ -75,7 +75,7 @@ namespace Apaf.NFSdb.Core.Column
             _isIndexed = true;
         }
 
-        public string GetString(long rowID, IReadContext readContext)
+        public string GetString(long rowID, ReadContext readContext)
         {
             var symRowID = _data.ReadInt32(rowID * INT32_SIZE);
             if (symRowID == MetadataConstants.NULL_SYMBOL_VALUE)
@@ -100,16 +100,22 @@ namespace Apaf.NFSdb.Core.Column
             }
 
             value = _globalSymColumn.GetString(symRowID, readContext);
-            symbolCache.AddSymbolValue(symRowID, value);
+            symbolCache.SetRowID(value, symRowID);
             return value;
         }
 
         public void SetString(long rowID, string value, PartitionTxData tx)
         {
-            var key = tx.ReadCache.GetCache(_partitionID, _columnId, _cacheCapacity).GetRowID(value);
+            SetValue0(rowID, value, tx);
+        }
+
+        private void SetValue0(long rowID, string value, PartitionTxData tx)
+        {
+            var symbolCache = tx.ReadCache.GetCache(_partitionID, _columnId, _cacheCapacity);
+            var key = symbolCache.GetRowID(value);
             if (key == NOT_FOUND_VALUE)
             {
-                key = AddKey(value, tx);
+                key = AddKey(value, symbolCache, tx);
             }
 
             _data.WriteInt32(rowID*INT32_SIZE, key);
@@ -119,10 +125,10 @@ namespace Apaf.NFSdb.Core.Column
             }
         }
 
-        private int AddKey(string value, PartitionTxData tx)
+        private int AddKey(string value, SymbolCache symbolCache, PartitionTxData tx)
         {
             var hashKey = HashKey(value, _capacity);
-            var key = CheckKeyQuick(value, hashKey, tx);
+            var key = CheckKeySlow(value, hashKey, symbolCache, tx);
             if (key == NOT_FOUND_VALUE)
             {
                 var appendOffset = tx.AppendOffset[_symiFileID];
@@ -135,29 +141,29 @@ namespace Apaf.NFSdb.Core.Column
                 {
                     key = MetadataConstants.NULL_SYMBOL_VALUE;
                 }
+                symbolCache.SetRowID(value, key);
             }
-            tx.ReadCache.GetCache(_partitionID, _columnId, _cacheCapacity).SetRowID(value, key);
             return key;
         }
 
-        public object GetValue(long rowID, IReadContext readContext)
+        public object GetValue(long rowID, ReadContext readContext)
         {
             return GetString(rowID, readContext);
         }
 
         public void SetValue(long rowID, object value, PartitionTxData readContext)
         {
-            SetString(rowID, (string)value, readContext);
+            SetValue0(rowID, (string)value, readContext);
         }
 
         public int CheckKeyQuick(string value, PartitionTxData tx)
         {
             var symbolCache = tx.ReadCache.GetCache(_partitionID, _columnId, _cacheCapacity);
             var key = symbolCache.GetRowID(value);
-            if (key < 0)
+            if (key == MetadataConstants.SYMBOL_NOT_FOUND_VALUE)
             {
                 var hashKey = HashKey(value, _capacity);
-                return CheckKeyQuick(value, hashKey, tx);
+                return CheckKeySlow(value, hashKey, symbolCache, tx);
             }
             return key;
         }
@@ -172,7 +178,7 @@ namespace Apaf.NFSdb.Core.Column
             return _globalSymColumn.GetString(key, rc.ReadCache);
         }
 
-        public string GetKeyValue(int keyId, IReadContext tx)
+        public string GetKeyValue(int keyId, ReadContext tx)
         {
             var symbolCache = tx.GetCache(_partitionID, _columnId, _cacheCapacity);
             string value;
@@ -181,7 +187,7 @@ namespace Apaf.NFSdb.Core.Column
                 return value;
             }
             value = _globalSymColumn.GetString(keyId, tx);
-            symbolCache.AddSymbolValue(keyId, value);
+            symbolCache.SetRowID(value, keyId);
             return value;
         }
 
@@ -204,21 +210,25 @@ namespace Apaf.NFSdb.Core.Column
             return _datarIndex.GetCount(valueKey, tx);
         }
 
-        private int CheckKeyQuick(string value, int hasKey, PartitionTxData tx)
+        private int CheckKeySlow(string value, int hashKey, SymbolCache symbolCache, PartitionTxData tx)
         {
-            var values = _symrIndex.GetValues(hasKey, tx);
+            var values = _symrIndex.GetValues(hashKey, tx);
             foreach (var possibleKey in values)
             {
                 var key = (int) possibleKey;
-                var possibleValue = _globalSymColumn.GetString(key, tx.ReadCache);
-                if (string.Equals(value, possibleValue, StringComparison.Ordinal))
+                string possibleValue;
+                if (!symbolCache.IsValueCached(hashKey, out possibleValue))
                 {
-                    if (value == null)
+                    possibleValue = _globalSymColumn.GetString(key, tx.ReadCache);
+                    symbolCache.SetRowID(possibleValue, key);
+                    if (string.Equals(value, possibleValue, StringComparison.Ordinal))
                     {
-                        key = MetadataConstants.NULL_SYMBOL_VALUE;
+                        if (value == null)
+                        {
+                            key = MetadataConstants.NULL_SYMBOL_VALUE;
+                        }
+                        return key;
                     }
-                    tx.ReadCache.GetCache(_partitionID, _columnId, _cacheCapacity).SetRowID(value, key);
-                    return key;
                 }
             }
             return NOT_FOUND_VALUE;
@@ -244,7 +254,7 @@ namespace Apaf.NFSdb.Core.Column
         public EFieldType FieldType { get; private set; }
         public string PropertyName { get; private set; }
 
-        public string Get(long rowID, IReadContext readContext)
+        public string Get(long rowID, ReadContext readContext)
         {
             return GetString(rowID, readContext);
         }

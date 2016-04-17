@@ -40,7 +40,7 @@ namespace Apaf.NFSdb.Core.Configuration
         int ColumnCount { get; }
         string Name { get; }
 
-        IEnumerable<ColumnSource> GetPartitionColumns(int paritionID, IColumnStorage partitionStorage, PartitionConfig overrides = null);
+        ColumnSource[] GetPartitionColumns(int paritionID, IColumnStorage partitionStorage, PartitionConfig overrides = null);
 
         Func<T, DateTime> GetTimestampReader<T>();
     }

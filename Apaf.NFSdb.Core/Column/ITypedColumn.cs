@@ -4,6 +4,6 @@ namespace Apaf.NFSdb.Core.Column
 {
     public interface ITypedColumn<T>
     {
-        T Get(long rowID, IReadContext readContext);
+        T Get(long rowID, ReadContext readContext);
     }
 }

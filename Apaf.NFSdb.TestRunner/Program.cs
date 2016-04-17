@@ -17,6 +17,7 @@
 #endregion
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 
 namespace Apaf.NFSdb.TestRunner
@@ -30,7 +31,10 @@ namespace Apaf.NFSdb.TestRunner
             {
                 if (task.Name.Equals(args[0], StringComparison.OrdinalIgnoreCase))
                 {
+                    var sw = Stopwatch.StartNew();
                     task.Run();
+                    sw.Stop();
+                    Console.WriteLine("Task '{0}', elapsed time {1}", task.Name, sw.Elapsed);
                 }
             }
         }

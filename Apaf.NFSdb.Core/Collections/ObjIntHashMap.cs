@@ -5,13 +5,14 @@ namespace Apaf.NFSdb.Core.Collections
 {
     public class ObjIntHashMap : IObjIntHashMap
     {
-        private const int NoKeyValue = MetadataConstants.SYMBOL_NOT_FOUND_VALUE;
+        private const int NO_KEY_VALUE = MetadataConstants.SYMBOL_NOT_FOUND_VALUE;
         private readonly double _loadFactor;
         private string[] _keys;
         private int[] _values;
+        private int[] _valuesMap;
         private int _free;
         private int _capacity;
-        private int _nullKey = NoKeyValue;
+        private int _nullKey = NO_KEY_VALUE;
 
         public ObjIntHashMap() : this(11)
         {
@@ -27,6 +28,7 @@ namespace Apaf.NFSdb.Core.Collections
             _loadFactor = loadFactor;
             _keys = new string[capacity];
             _values = new int[capacity];
+            _valuesMap = new int[capacity];
             _free = _capacity = initialCapacity;
         }
 
@@ -38,10 +40,8 @@ namespace Apaf.NFSdb.Core.Collections
             string[] oldKeys = _keys;
             _keys = new string[newCapacity];
             _values = new int[newCapacity];
-            for (int i = 0; i < _keys.Length; i++)
-            {
-                _keys[i] = null;
-            }
+            _valuesMap = new int[newCapacity];
+            _valuesMap[0] = NO_KEY_VALUE;
 
             for (int i = oldKeys.Length; i-- > 0;)
             {
@@ -54,22 +54,42 @@ namespace Apaf.NFSdb.Core.Collections
 
         public int Get(string key)
         {
-            if (key == null) return _nullKey;
-
-            int index = (key.GetHashCode() & 0x7fffffff) % _keys.Length;
-
-            if (_keys[index] == null)
+            if (key == null)
             {
-                return NoKeyValue;
+                return _nullKey;
+            }
+            int index = (HashCode(key) & 0x7fffffff) % _keys.Length;
+
+            string val = _keys[index];
+            if (val == null)
+            {
+                return NO_KEY_VALUE;
             }
 
-            if (ReferenceEquals(_keys[index], key) || key == _keys[index])
+            if (ReferenceEquals(val, key) || key == val)
             {
                 return _values[index];
             }
 
             return Probe(key, index);
         }
+
+       private static unsafe int HashCode(string key)
+       {
+           int h = 0;
+           var len = key.Length;
+           if (len > 0)
+           {
+               fixed (char* buff = key)
+               {
+                   for (int i = 0; i < len; i++)
+                   {
+                       h = 31*h + buff[i];
+                   }
+               }
+           }
+           return h;
+       }
 
         private int Probe(string key, int index)
         {
@@ -78,7 +98,7 @@ namespace Apaf.NFSdb.Core.Collections
                 index = (index + 1)%_keys.Length;
                 if (_keys[index] == null)
                 {
-                    return NoKeyValue;
+                    return NO_KEY_VALUE;
                 }
                 if (ReferenceEquals(_keys[index], key) || key.Equals(_keys[index]))
                 {
@@ -108,16 +128,20 @@ namespace Apaf.NFSdb.Core.Collections
         {
             if (key == null)
             {
-                var exists = _nullKey == NoKeyValue;
+                var exists = _nullKey == NO_KEY_VALUE;
                 if (!exists) _nullKey = value;
                 return exists;
             }
 
-            int index = (key.GetHashCode() & 0x7fffffff)%_keys.Length;
+            int index = (HashCode(key) & 0x7fffffff)%_keys.Length;
             if (_keys[index] == null)
             {
                 _keys[index] = key;
                 _values[index] = value;
+                if (value >= 0 && value < _valuesMap.Length)
+                {
+                    _valuesMap[value] = index;
+                }
                 _free--;
                 if (_free == 0)
                 {
@@ -132,23 +156,31 @@ namespace Apaf.NFSdb.Core.Collections
 
         private int InsertKey(string key, int value)
         {
-            int index = (key.GetHashCode() & 0x7fffffff)%_keys.Length;
+            int index = (HashCode(key) & 0x7fffffff) % _keys.Length;
             if (_keys[index] == null)
             {
                 _keys[index] = key;
                 _values[index] = value;
+                if (value >= 0 && value < _valuesMap.Length)
+                {
+                    _valuesMap[value] = index;
+                }
                 _free--;
                 if (_free == 0)
                 {
                     Rehash();
                 }
-                return NoKeyValue;
+                return NO_KEY_VALUE;
             }
 
             if (ReferenceEquals(_keys[index], key) || key.Equals(_keys[index]))
             {
                 int old = _values[index];
                 _values[index] = value;
+                if (value >= 0 && value < _valuesMap.Length)
+                {
+                    _valuesMap[value] = index;
+                }
                 return old;
             }
 
@@ -164,18 +196,26 @@ namespace Apaf.NFSdb.Core.Collections
                 {
                     _keys[index] = key;
                     _values[index] = value;
+                    if (value >= 0 && value < _valuesMap.Length)
+                    {
+                        _valuesMap[value] = index;
+                    }
                     _free--;
                     if (_free == 0)
                     {
                         Rehash();
                     }
-                    return NoKeyValue;
+                    return NO_KEY_VALUE;
                 }
 
                 if (ReferenceEquals(_keys[index], key) || key.Equals(_keys[index]))
                 {
                     int old = _values[index];
                     _values[index] = value;
+                    if (value >= 0 && value < _valuesMap.Length)
+                    {
+                        _valuesMap[value] = index;
+                    }
                     return old;
                 }
             } while (true);
@@ -190,6 +230,10 @@ namespace Apaf.NFSdb.Core.Collections
                 {
                     _keys[index] = key;
                     _values[index] = value;
+                    if (value >= 0 && value < _valuesMap.Length)
+                    {
+                        _valuesMap[value] = index;
+                    }
                     _free--;
                     if (_free == 0)
                     {
@@ -216,6 +260,21 @@ namespace Apaf.NFSdb.Core.Collections
         public int Size()
         {
             return _capacity - _free;
+        }
+
+        public bool LookupValue(int key, out string value)
+        {
+            try
+            {
+                var values = _valuesMap[key];
+                value = _keys[values];
+                return Get(value) == key;
+            }
+            catch (IndexOutOfRangeException)
+            {
+            }
+            value = null;
+            return false;
         }
     }
 }

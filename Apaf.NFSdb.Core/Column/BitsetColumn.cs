@@ -40,9 +40,9 @@ namespace Apaf.NFSdb.Core.Column
             _sizeBytes = _fieldSize - ISSET_HEADER_LENGTH;
         }
 
-        public byte[] GetValue(long rowID, IReadContext readContext)
+        public byte[] GetValue(long rowID, ReadContext readContext)
         {
-            var byteArray = readContext.AllocateByteArray(_sizeBytes);
+            var byteArray = readContext.AllocateBitsetArray(_sizeBytes);
             _storage.ReadBytes(rowID * _fieldSize + ISSET_HEADER_LENGTH, 
                 byteArray, 0, _sizeBytes);
 
@@ -69,7 +69,7 @@ namespace Apaf.NFSdb.Core.Column
         public EFieldType FieldType { get; private set; }
         public string PropertyName { get; private set; }
 
-        public ByteArray Get(long rowID, IReadContext readContext)
+        public ByteArray Get(long rowID, ReadContext readContext)
         {
             return new ByteArray(GetValue(rowID, readContext));
         }

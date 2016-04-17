@@ -202,7 +202,7 @@ namespace Apaf.NFSdb.Tests.Tx
 
         public DateTime LastAppendTimestamp { get; set; }
 
-        public IReadContext ReadCache
+        public ReadContext ReadCache
         {
             get { return _readCatch; }
         }

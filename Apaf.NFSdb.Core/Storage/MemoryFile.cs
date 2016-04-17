@@ -51,27 +51,17 @@ namespace Apaf.NFSdb.Core.Storage
         {
             try
             {
-                var fi = new FileInfo(_fullName);
-                var size = 1 << _bitHint;
-
-                if (!fi.Exists)
+                if (_access == EFileAccess.ReadWrite)
                 {
-                    if (_access == EFileAccess.ReadWrite)
+                    var fi = new FileInfo(_fullName);
+                    var size = 1 << _bitHint;
+                    if (!fi.Exists)
                     {
-                        if (fi.Directory != null && !fi.Directory.Exists)
-                        {
-                            fi.Directory.Create();
-                        }
-
                         using (var newFile = File.Create(fi.FullName))
                         {
                             ProcessFileFlags(newFile.SafeFileHandle);
                             newFile.SetLength(size);
                         }
-                    }
-                    else
-                    {
-                        throw new NFSdbInvalidReadException("File {0} does not exists", _fullName);
                     }
                 }
             }
@@ -86,7 +76,7 @@ namespace Apaf.NFSdb.Core.Storage
             }
         }
 
-        
+
         public long CheckSize()
         {
             var fi = new FileInfo(_fullName);
@@ -140,12 +130,20 @@ namespace Apaf.NFSdb.Core.Storage
 
             if (_access == EFileAccess.Read)
             {
-                var fi = new FileInfo(_fullName);
-                if (size + offset > fi.Length)
+                try
+                {
+                    var fi = new FileInfo(_fullName);
+                    if (size + offset > fi.Length)
+                    {
+                        throw new NFSdbInvalidReadException(
+                            "Opening file {0} for reading with offset {1} and size {2}. File size is not big enough.",
+                            _fullName, offset, size);
+                    }
+                }
+                catch (FileNotFoundException)
                 {
                     throw new NFSdbInvalidReadException(
-                        "Opening file {0} for reading with offset {1} and size {2}. File size is not big enough.",
-                        _fullName, offset, size);
+                        "Opening file {0} for reading failed. File does not exist.", _fullName);
                 }
             }
 

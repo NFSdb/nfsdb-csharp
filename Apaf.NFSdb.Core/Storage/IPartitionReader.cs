@@ -21,7 +21,7 @@ namespace Apaf.NFSdb.Core.Storage
 
         long GetSymbolRowCount<T>(int fieldID, T value, IReadTransactionContext tx);
 
-        T Read<T>(long toLocalRowID, IReadContext readContext);
+        T Read<T>(long toLocalRowID, ReadContext readContext);
 
         IColumn ReadColumn(int columnID);
 

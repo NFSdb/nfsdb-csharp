@@ -50,7 +50,7 @@ namespace Apaf.NFSdb.Core.Column
             get { return _maxSize; }
         }
 
-        public byte[] GetBytes(long rowID, IReadContext readContext)
+        public byte[] GetBytes(long rowID, ReadContext readContext)
         {
             var beginOffset = _index.ReadInt64(rowID * MetadataConstants.STRING_INDEX_FILE_RECORD_SIZE);
             if (beginOffset == MetadataConstants.INDEX_NULL_DATA_VALUE)
@@ -68,7 +68,7 @@ namespace Apaf.NFSdb.Core.Column
             return byteArray;
         }
 
-        public unsafe int GetBytes(long rowID, byte* bytePtr, int startIndex, IReadContext readContext)
+        public unsafe int GetBytes(long rowID, byte* bytePtr, int startIndex, ReadContext readContext)
         {
             var beginOffset = _index.ReadInt64(rowID * MetadataConstants.STRING_INDEX_FILE_RECORD_SIZE);
             if (beginOffset == MetadataConstants.INDEX_NULL_DATA_VALUE)
@@ -159,7 +159,7 @@ namespace Apaf.NFSdb.Core.Column
             return isize;
         }
 
-        public virtual object GetValue(long rowID, IReadContext readContext)
+        public virtual object GetValue(long rowID, ReadContext readContext)
         {
             return GetBytes(rowID, readContext);
         }
@@ -169,7 +169,7 @@ namespace Apaf.NFSdb.Core.Column
             SetBytes(rowID, (byte[])value, readContext);
         }
 
-        public byte[] Get(long rowID, IReadContext readContext)
+        public byte[] Get(long rowID, ReadContext readContext)
         {
             return GetBytes(rowID, readContext);
         }

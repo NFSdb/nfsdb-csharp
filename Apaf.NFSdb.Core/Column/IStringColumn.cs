@@ -5,7 +5,7 @@ namespace Apaf.NFSdb.Core.Column
 {
     public interface IStringColumn : IRefTypeColumn, ITypedColumn<string>
     {
-        string GetString(long rowID, IReadContext readContext);
+        string GetString(long rowID, ReadContext readContext);
         void SetString(long rowID, string value, PartitionTxData readContext); 
     }
 }

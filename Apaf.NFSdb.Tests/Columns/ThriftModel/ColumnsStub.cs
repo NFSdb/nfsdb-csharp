@@ -92,7 +92,7 @@ namespace Apaf.NFSdb.Tests.Columns.ThriftModel
                 return GetValue<DateTime>(rowID);
             }
 
-            public string GetString(long rowID, IReadContext readContext)
+            public string GetString(long rowID, ReadContext readContext)
             {
                 return GetValue<string>(rowID);
             }
@@ -102,7 +102,7 @@ namespace Apaf.NFSdb.Tests.Columns.ThriftModel
                 SetValue(value);
             }
 
-            public object GetValue(long rowID, IReadContext readContext)
+            public object GetValue(long rowID, ReadContext readContext)
             {
                 if (FieldType == EFieldType.String
                     || FieldType == EFieldType.Symbol)
@@ -166,38 +166,38 @@ namespace Apaf.NFSdb.Tests.Columns.ThriftModel
                 get { return _value; }
             }
 
-            int ITypedColumn<int>.Get(long rowID, IReadContext readContext)
+            int ITypedColumn<int>.Get(long rowID, ReadContext readContext)
             {
                 return GetValue<int>(rowID);
             }
 
-            long ITypedColumn<long>.Get(long rowID, IReadContext readContext)
+            long ITypedColumn<long>.Get(long rowID, ReadContext readContext)
             {
                 return GetValue<long>(rowID);
             }
 
-            short ITypedColumn<short>.Get(long rowID, IReadContext readContext)
+            short ITypedColumn<short>.Get(long rowID, ReadContext readContext)
             {
                 return GetValue<short>(rowID);
             }
 
-            byte ITypedColumn<byte>.Get(long rowID, IReadContext readContext)
+            byte ITypedColumn<byte>.Get(long rowID, ReadContext readContext)
             {
                 return GetValue<byte>(rowID);
                 throw new NotImplementedException();
             }
 
-            bool ITypedColumn<bool>.Get(long rowID, IReadContext readContext)
+            bool ITypedColumn<bool>.Get(long rowID, ReadContext readContext)
             {
                 return GetValue<bool>(rowID);
             }
 
-            double ITypedColumn<double>.Get(long rowID, IReadContext readContext)
+            double ITypedColumn<double>.Get(long rowID, ReadContext readContext)
             {
                 return GetValue<double>(rowID);
             }
 
-            DateTime ITypedColumn<DateTime>.Get(long rowID, IReadContext readContext)
+            DateTime ITypedColumn<DateTime>.Get(long rowID, ReadContext readContext)
             {
                 return GetValue<DateTime>(rowID);
             }

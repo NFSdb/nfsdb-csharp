@@ -33,7 +33,7 @@ namespace Apaf.NFSdb.Core.Storage.Serializer
     public class PocoSerializerFactory : ISerializerFactory
     {
         private Type _objectType;
-        private Func<ByteArray, IFixedWidthColumn[], long, IRefTypeColumn[], IReadContext, object> _readMethod;
+        private Func<ByteArray, IFixedWidthColumn[], long, IRefTypeColumn[], ReadContext, object> _readMethod;
         private Action<object, ByteArray, IFixedWidthColumn[], long, IRefTypeColumn[], PartitionTxData> _writeMethod;
         private static readonly Guid GENERATOR_MARK_GUID = Guid.NewGuid();
         private bool _isAnonymouse;
@@ -180,14 +180,14 @@ namespace Apaf.NFSdb.Core.Storage.Serializer
 
          * */
 
-        private Func<ByteArray, IFixedWidthColumn[], long, IRefTypeColumn[], IReadContext, object> GenerateReadMethod(IList<ColumnSource> columns)
+        private Func<ByteArray, IFixedWidthColumn[], long, IRefTypeColumn[], ReadContext, object> GenerateReadMethod(IList<ColumnSource> columns)
         {
             ConstructorInfo constructor = _objectType.GetConstructor(Type.EmptyTypes);
             var isSetMethod = typeof (ByteArray).GetMethod("IsSet");
             var argTypes = new[]
             {
                 typeof (ByteArray), typeof (IFixedWidthColumn[]), 
-                typeof (long), typeof (IRefTypeColumn[]), typeof (IReadContext)
+                typeof (long), typeof (IRefTypeColumn[]), typeof (ReadContext)
             };
 
             var method = new DynamicMethod("Rd" + _objectType.GUID + GENERATOR_MARK_GUID,
@@ -279,10 +279,10 @@ namespace Apaf.NFSdb.Core.Storage.Serializer
             il.Emit(OpCodes.Ret);
 
             return (Func<ByteArray, IFixedWidthColumn[], 
-                long, IRefTypeColumn[], IReadContext, object>)
+                long, IRefTypeColumn[], ReadContext, object>)
                 method.CreateDelegate(
                     typeof(Func<ByteArray, IFixedWidthColumn[], 
-                    long, IRefTypeColumn[], IReadContext, object>));
+                    long, IRefTypeColumn[], ReadContext, object>));
         }
 
         private FieldInfo GetFieldInfo(string fieldName)

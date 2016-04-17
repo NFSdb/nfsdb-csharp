@@ -52,7 +52,7 @@ namespace Apaf.NFSdb.Tests.Columns.ThriftModel
             }
         }
 
-        public byte[] GetValue(long rowID, IReadContext read)
+        public byte[] GetValue(long rowID, ReadContext read)
         {
             return _columnByteValue;
         }
@@ -88,7 +88,7 @@ namespace Apaf.NFSdb.Tests.Columns.ThriftModel
             return bytes;
         }
 
-        public ByteArray Get(long rowID, IReadContext readContext)
+        public ByteArray Get(long rowID, ReadContext readContext)
         {
             return new ByteArray(GetValue(rowID, readContext));
         }

@@ -6,7 +6,7 @@ namespace Apaf.NFSdb.Core.Storage.Serializer
 {
     public class RecordSerializer : IFieldSerializer
     {
-        public object Read(long rowID, IReadContext readContext)
+        public object Read(long rowID, ReadContext readContext)
         {
             throw new NotSupportedException();
         }

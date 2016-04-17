@@ -255,7 +255,6 @@
     <Compile Include="Column\EFieldType.cs" />
     <Compile Include="Column\EFieldTypeExtensions.cs" />
     <Compile Include="Storage\IRawFile.cs" />
-    <Compile Include="Storage\IReadContext.cs" />
     <Compile Include="Column\MetadataConstants.cs" />
     <Compile Include="Storage\EDataType.cs" />
     <Compile Include="Storage\ColumnStorage.cs" />

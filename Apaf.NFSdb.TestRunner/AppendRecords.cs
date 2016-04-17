@@ -29,12 +29,12 @@ namespace Apaf.NFSdb.TestRunner
         public void Run()
         {
             Utils.ClearJournal<Quote>();
-            const int totalCount = (int) 20e6;
+            const int totalCount = (int) 20E6;
             Utils.ClearJournal<Quote>();
             const int increment = 1000;
             var sw1 = new Stopwatch();
-            const int count = 2;
-            const int startIndex = -2;
+            const int count = 5;
+            const int startIndex = -1;
 
             for (int i = startIndex; i < count; i++)
             {

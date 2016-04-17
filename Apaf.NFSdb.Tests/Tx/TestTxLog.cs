@@ -32,7 +32,7 @@ namespace Apaf.NFSdb.Tests.Tx
             var today = DateTime.Now.Date;
 
             return new PartitionTxData(files, 1, today.AddDays(-200),
-                today.AddDays(-200+ 1), new ReadContext());
+                today.AddDays(-200 + 1), new ReadContext());
         }
     }
 }

@@ -112,7 +112,7 @@ namespace Apaf.NFSdb.Core.Configuration
         public int? TimestampColumnID { get; private set; }
         public int? IsNullColumnID { get; private set; }
 
-        public IEnumerable<ColumnSource> GetPartitionColumns(int paritionID, IColumnStorage partitionStorage, PartitionConfig configOverride = null)
+        public ColumnSource[] GetPartitionColumns(int paritionID, IColumnStorage partitionStorage, PartitionConfig configOverride = null)
         {
             return CreateColumnsFromColumnMetadata(_columns, partitionStorage, configOverride, paritionID);
         }
@@ -246,9 +246,10 @@ namespace Apaf.NFSdb.Core.Configuration
         public int FileCount { get; private set; }
         public TimeSpan PartitionTtl { get; private set; }
 
-        private IEnumerable<ColumnSource> CreateColumnsFromColumnMetadata(IEnumerable<ColumnMetadata> columns, 
+        private ColumnSource[] CreateColumnsFromColumnMetadata(IList<ColumnMetadata> columns, 
             IColumnStorage columnStorage, PartitionConfig configOverride, int partitionID)
         {
+            var resultColumns = new ColumnSource[columns.Count];
             var recordHint = _settings.RecordHint;
             if (configOverride != null)
             {
@@ -257,9 +258,9 @@ namespace Apaf.NFSdb.Core.Configuration
             }
 
             int fileID = 0;
-            int columnID = 0;
-            foreach (var cType in columns)
+            for (int columnID = 0; columnID < columns.Count; columnID++)
             {
+                var cType = columns[columnID];
                 // Build.
                 IColumn column;
                 if (cType.ColumnType == EFieldType.String)
@@ -332,9 +333,9 @@ namespace Apaf.NFSdb.Core.Configuration
                     column = new FixedColumn(data, cType.ColumnType, GetPropertyName(cType.FileName));
                 }
 
-                columnID++;
-                yield return new ColumnSource(cType, column, fileID);
+                resultColumns[columnID] = new ColumnSource(cType, column, fileID);
             }
+            return resultColumns;
         }
 
         private IList<ColumnMetadata> ParseColumns(IEnumerable<IColumnSerializerMetadata> columnsMetadata, List<ColumnElement> columns)

@@ -166,6 +166,21 @@ namespace Apaf.NFSdb.Core.Column
         {
             // Check transaction.
             var sd = tx.SymbolData[_fileID];
+            if (sd.KeyBlockCreated)
+            {
+                long keyBlockOffset = sd.KeyBlockOffset;
+                long keyOffset = keyBlockOffset + KEY_BLOCK_HEADER_SIZE + (key + 1) * KEY_RECORD_ENTRY_SIZE;
+                if (keyOffset > keyBlockOffset + sd.KeyBlockSize)
+                {
+                    return keyOffset;
+                }
+            }
+            return ReadKeyRecordOffsetSlow(key, tx);
+        }
+
+        public long ReadKeyRecordOffsetSlow(int key, PartitionTxData tx)
+        {
+            var sd = tx.SymbolData[_fileID];
             if (!sd.KeyBlockCreated)
             {
                 CopyKeyBlock(tx);
@@ -208,7 +223,7 @@ namespace Apaf.NFSdb.Core.Column
             var currentBlockLen = sd.KeyBlockSize;
             if (currentBlockLen > 0)
             {
-                var keyBlockBuff = pd.ReadCache.AllocateByteArray3(currentBlockLen);
+                var keyBlockBuff = pd.ReadCache.AllocateCopyKeyBlockArray(currentBlockLen);
                 _kData.ReadBytes(currentBlockOffset, keyBlockBuff, 0, currentBlockLen);
                 _kData.WriteBytes(newBlockOffset, keyBlockBuff, 0, currentBlockLen);
 

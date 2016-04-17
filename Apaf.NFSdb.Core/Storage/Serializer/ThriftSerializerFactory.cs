@@ -35,11 +35,12 @@ namespace Apaf.NFSdb.Core.Storage.Serializer
     {
         private Type _objectType;
         private Func<ByteArray, IFixedWidthColumn[], long, 
-            IRefTypeColumn[], IReadContext, object> _readMethod;
+            IRefTypeColumn[], ReadContext, object> _readMethod;
 
         private Action<object, ByteArray, IFixedWidthColumn[], long,
             IRefTypeColumn[], PartitionTxData> _writeMethod;
 
+        private static readonly string METHODS_LABEL = Guid.NewGuid().ToString();
         private IList<IClassColumnSerializerMetadata> _allColumns;
 
         public IEnumerable<IColumnSerializerMetadata> Initialize(Type objectType)
@@ -203,7 +204,16 @@ namespace Apaf.NFSdb.Core.Storage.Serializer
                 typeof (object), typeof (ByteArray), typeof (IFixedWidthColumn[]),
                 typeof (long), typeof (IRefTypeColumn[]), typeof (PartitionTxData)
             };
-            var method = new DynamicMethod("WriteFromColumns" + _objectType.Name + Guid.NewGuid(), null, argTypes, GetType());
+            var methodName = "WriteFromColumns" + _objectType.Name + METHODS_LABEL;
+            var existingMethod = _objectType.GetMethod(methodName);
+            if (existingMethod != null)
+            {
+                return (Action<object, ByteArray, IFixedWidthColumn[], long, IRefTypeColumn[], PartitionTxData>)
+                    Delegate.CreateDelegate(
+                        typeof(Action<object, ByteArray, IFixedWidthColumn[], long, IRefTypeColumn[], PartitionTxData>), existingMethod);
+            }
+
+            var method = new DynamicMethod(methodName, null, argTypes, _objectType);
             ILGenerator il = method.GetILGenerator();
             il.DeclareLocal(_objectType);
             il.Emit(OpCodes.Ldarg_0);
@@ -351,7 +361,7 @@ namespace Apaf.NFSdb.Core.Storage.Serializer
 
 * */
 
-        private Func<ByteArray, IFixedWidthColumn[], long, IRefTypeColumn[], IReadContext, object> GenerateFillMethod(IList<ColumnSource> columns)
+        private Func<ByteArray, IFixedWidthColumn[], long, IRefTypeColumn[], ReadContext, object> GenerateFillMethod(IList<ColumnSource> columns)
         {
             ConstructorInfo constructor = _objectType.GetConstructor(Type.EmptyTypes);
             MethodInfo isSet = typeof(ByteArray).GetMethod("IsSet");
@@ -361,9 +371,19 @@ namespace Apaf.NFSdb.Core.Storage.Serializer
             var argTypes = new[]
             {
                 typeof (ByteArray), typeof (IFixedWidthColumn[]),
-                typeof (long), typeof (IRefTypeColumn[]), typeof (IReadContext)
+                typeof (long), typeof (IRefTypeColumn[]), typeof (ReadContext)
             };
-            var method = new DynamicMethod("ReadColumns8" + _objectType.Name + Guid.NewGuid().ToString().Substring(10),
+
+            var methodName = "ReadColumns8" + _objectType.Name + METHODS_LABEL;
+            var existingMethod = _objectType.GetMethod(methodName);
+            if (existingMethod != null)
+            {
+                return (Func<ByteArray, IFixedWidthColumn[], long, IRefTypeColumn[], ReadContext, object>)
+                Delegate.CreateDelegate(
+                    typeof(Func<ByteArray, IFixedWidthColumn[], long, IRefTypeColumn[], ReadContext, object>), existingMethod);
+            }
+
+            var method = new DynamicMethod(methodName,
                 MethodAttributes.Static | MethodAttributes.Public, CallingConventions.Standard,
                 _objectType, argTypes, _objectType, true);
 
@@ -424,9 +444,9 @@ namespace Apaf.NFSdb.Core.Storage.Serializer
             il.Emit(OpCodes.Ldloc_0);
             il.Emit(OpCodes.Ret);
 
-            return (Func<ByteArray, IFixedWidthColumn[], long, IRefTypeColumn[], IReadContext, object>)
+            return (Func<ByteArray, IFixedWidthColumn[], long, IRefTypeColumn[], ReadContext, object>)
                 method.CreateDelegate(
-                    typeof(Func<ByteArray, IFixedWidthColumn[], long, IRefTypeColumn[], IReadContext, object>));
+                    typeof(Func<ByteArray, IFixedWidthColumn[], long, IRefTypeColumn[], ReadContext, object>));
         }
 
         private static FieldInfo GetIssetFieldInfo(Type issetType, IColumnSerializerMetadata field)

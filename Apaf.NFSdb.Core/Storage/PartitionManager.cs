@@ -28,7 +28,6 @@ using Apaf.NFSdb.Core.Configuration;
 using Apaf.NFSdb.Core.Exceptions;
 using Apaf.NFSdb.Core.Server;
 using Apaf.NFSdb.Core.Tx;
-using Apaf.NFSdb.Core.Writes;
 
 namespace Apaf.NFSdb.Core.Storage
 {
@@ -42,13 +41,12 @@ namespace Apaf.NFSdb.Core.Storage
         private readonly ConcurrentDictionary<DateTime, Lazy<IPartition>> _partitions = new ConcurrentDictionary<DateTime, Lazy<IPartition>>();
         private readonly ConcurrentQueue<IPartition> _allPartitions = new ConcurrentQueue<IPartition>();
         private readonly JournalSettings _settings;
-        // private readonly ColumnStorage _symbolStorage;
-        // private readonly FileTxSupport _symbolTxSupport;
         private readonly CompositeRawFile _txLogFile;
         private readonly ITxLog _txLog;
         private ITransactionContext _lastTransactionLog;
         private readonly ConcurrentBag<TxState> _resuableTxState = new ConcurrentBag<TxState>();
         private const int RESERVED_PARTITION_COUNT = 10;
+        private bool _directoryChecked;
 
         private TxRec _lastTxRec;
 
@@ -167,6 +165,11 @@ namespace Apaf.NFSdb.Core.Storage
         public ITransactionContext ReadTxLog(int partitionTtlMs)
         {
             // _tx file.
+            if (!_directoryChecked)
+            {
+                CheckCreateDirectory();
+            }
+
             if (_lastTxRec == null || Access != EFileAccess.ReadWrite)
             {
                 _lastTxRec = _txLog.Get();
@@ -188,6 +191,18 @@ namespace Apaf.NFSdb.Core.Storage
             return tx;
         }
 
+        private void CheckCreateDirectory()
+        {
+            _directoryChecked = true;
+            if (Access == EFileAccess.ReadWrite)
+            {
+                var directoryInfo = new DirectoryInfo(_settings.DefaultPath);
+                if (!directoryInfo.Exists)
+                {
+                    directoryInfo.Create();
+                }
+            }
+        }
         private TxState GetTxState()
         {
             TxState state;

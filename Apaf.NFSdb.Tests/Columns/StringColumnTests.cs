@@ -27,7 +27,7 @@ namespace Apaf.NFSdb.Tests.Columns
     [TestFixture]
     public class StringColumnTests
     {
-        private IReadContext _readerContext;
+        private ReadContext _readerContext;
 
         [TestCase("bla bla", 122)]
         [TestCase("bla bla", 256)]

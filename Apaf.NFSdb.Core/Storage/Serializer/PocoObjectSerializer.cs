@@ -14,12 +14,12 @@ namespace Apaf.NFSdb.Core.Storage.Serializer
         private readonly IBitsetColumn _issetColumn;
         private readonly IRefTypeColumn[] _stringColumns;
 
-        private readonly Func<ByteArray, IFixedWidthColumn[], long, IRefTypeColumn[], IReadContext, object> _readMethod;
+        private readonly Func<ByteArray, IFixedWidthColumn[], long, IRefTypeColumn[], ReadContext, object> _readMethod;
         private readonly Action<object, ByteArray, IFixedWidthColumn[], long, IRefTypeColumn[], PartitionTxData>
             _writeMethod;
 
         public PocoObjectSerializer(IEnumerable<ColumnSource> columns, 
-            Func<ByteArray, IFixedWidthColumn[], long, IRefTypeColumn[], IReadContext, object> readMethod,
+            Func<ByteArray, IFixedWidthColumn[], long, IRefTypeColumn[], ReadContext, object> readMethod,
             Action<object, ByteArray, IFixedWidthColumn[], long, IRefTypeColumn[], PartitionTxData> writeMethod)
         {
             var allColumns = columns.ToArray();
@@ -48,7 +48,7 @@ namespace Apaf.NFSdb.Core.Storage.Serializer
             _writeMethod = writeMethod;
         }
 
-        public object Read(long rowID, IReadContext readContext)
+        public object Read(long rowID, ReadContext readContext)
         {
             if (_issetColumn != null)
             {
@@ -65,10 +65,10 @@ namespace Apaf.NFSdb.Core.Storage.Serializer
 
         public void Write(object item, long rowID, PartitionTxData pd)
         {
-            IReadContext readCache = pd.ReadCache;
+            ReadContext readCache = pd.ReadCache;
             if (_issetColumn != null)
             {
-                byte[] bitSetAddress = readCache.AllocateByteArray(_bitsetColSize);
+                byte[] bitSetAddress = readCache.AllocateBitsetArray(_bitsetColSize);
                 var byteArray = new ByteArray(bitSetAddress);
                 _writeMethod(item, byteArray, _fixedColumns, rowID, _stringColumns, pd);
                 _issetColumn.SetValue(rowID, bitSetAddress, pd);

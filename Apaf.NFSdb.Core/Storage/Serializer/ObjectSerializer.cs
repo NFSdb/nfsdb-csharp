@@ -33,7 +33,7 @@ namespace Apaf.NFSdb.Core.Storage.Serializer
         private readonly int _bitsetColSize;
 
         private readonly Func<ByteArray, IFixedWidthColumn[], long,
-            IRefTypeColumn[], IReadContext, object> _fillItemMethod;
+            IRefTypeColumn[], ReadContext, object> _fillItemMethod;
 
         private readonly IFixedWidthColumn[] _fixedColumns;
         private readonly IBitsetColumn _issetColumn;
@@ -43,7 +43,7 @@ namespace Apaf.NFSdb.Core.Storage.Serializer
             IRefTypeColumn[], PartitionTxData> _writeMethod;
 
         public ObjectSerializer(IEnumerable<ColumnSource> columns, 
-            Func<ByteArray, IFixedWidthColumn[], long, IRefTypeColumn[], IReadContext, object> readMethod,
+            Func<ByteArray, IFixedWidthColumn[], long, IRefTypeColumn[], ReadContext, object> readMethod,
             Action<object, ByteArray, IFixedWidthColumn[], long, IRefTypeColumn[], PartitionTxData> writeMethod)
         {
             var allColumns = columns.ToArray();
@@ -71,7 +71,7 @@ namespace Apaf.NFSdb.Core.Storage.Serializer
             _bitsetColSize = _issetColumn.GetByteSize();
         }
 
-        public object Read(long rowID, IReadContext readContext)
+        public object Read(long rowID, ReadContext readContext)
         {
             var bitSetAddress = _issetColumn.GetValue(rowID, readContext);
             var byteArray = new ByteArray(bitSetAddress);
@@ -81,7 +81,7 @@ namespace Apaf.NFSdb.Core.Storage.Serializer
         public void Write(object item, long rowID, PartitionTxData tx)
         {
             var readCache = tx.ReadCache;
-            var bitSetAddress = readCache.AllocateByteArray(_bitsetColSize);
+            var bitSetAddress = readCache.AllocateBitsetArray(_bitsetColSize);
             var byteArray = new ByteArray(bitSetAddress);
             _writeMethod(item, byteArray, _fixedColumns, rowID, _refTypeColumns, tx);
             _issetColumn.SetValue(rowID, bitSetAddress, tx);

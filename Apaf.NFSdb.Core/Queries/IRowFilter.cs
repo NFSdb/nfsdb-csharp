@@ -23,7 +23,7 @@ namespace Apaf.NFSdb.Core.Queries
 {
     public interface IRowFilter : IPartitionFilter
     {
-        bool IsMatch(IPartitionReader partition, IReadContext tx, long localRowID);
+        bool IsMatch(IPartitionReader partition, ReadContext tx, long localRowID);
         long GetCardinality(IJournalCore journal, IReadTransactionContext tx);
     }
 }

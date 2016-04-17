@@ -16,6 +16,7 @@
  */
 #endregion
 using System;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading;
@@ -93,6 +94,7 @@ namespace Apaf.NFSdb.Core.Storage
             Filename = fileName;
             _pointersArray = LongAllocate(INITIAL_PARTS_COLLECTION_SIZE);
             _pointersArrayLen = INITIAL_PARTS_COLLECTION_SIZE;
+            _pointersArrayFixedLen = INITIAL_PARTS_COLLECTION_SIZE;
         }
 
         private static byte** LongAllocate(int size)
@@ -200,7 +202,7 @@ namespace Apaf.NFSdb.Core.Storage
 
         public byte* GetBufferCore(long bufferIndex, long offset)
         {
-            if (bufferIndex < _pointersArrayLen)
+            if (_pointersArrayLen < _pointersArrayFixedLen && bufferIndex < _pointersArrayLen)
             {
                 var view = _buffers[bufferIndex];
                 if (view != null)
@@ -252,7 +254,7 @@ namespace Apaf.NFSdb.Core.Storage
 
                     Thread.MemoryBarrier();
                     _pointersArrayLen = newLen;
-                    _pointersArrayFixedLen = newLen - 1;
+                    _pointersArrayFixedLen = newLen;
                     _buffers = newBuffers;
 
                     Marshal.FreeHGlobal((IntPtr) oldPtrArray);
@@ -263,30 +265,33 @@ namespace Apaf.NFSdb.Core.Storage
                 long bufferOffset = bufferIndex*bufferSize;
 
                 IRawFilePart view;
-
-                var maxSize = _compositeFile.CheckSize();
-                if (Access == EFileAccess.Read && bufferOffset + bufferSize > maxSize)
+                if (Access == EFileAccess.Read)
                 {
-                    if (maxSize < bufferOffset)
+                    var maxSize = _compositeFile.CheckSize();
+                    if (bufferOffset + bufferSize > maxSize)
                     {
-                        // Only last buffer can be incompletely mapped.
-                        // The file should be re-mapped on higher level.
-                        throw new NFSdbInvalidReadException(
-                            "Attempt to read chunk in the middle of the file '{0}' with mismatched offset. File size {1}, buffer offset {2}.",
-                            Filename, maxSize, bufferOffset);
-                    }
+                        if (maxSize < bufferOffset)
+                        {
+                            // Only last buffer can be incompletely mapped.
+                            // The file should be re-mapped on higher level.
+                            throw new NFSdbInvalidReadException(
+                                "Attempt to read chunk in the middle of the file '{0}' with mismatched offset. File size {1}, buffer offset {2}.",
+                                Filename, maxSize, bufferOffset);
+                        }
 
-                    if (_incompleteBufferMapped)
-                    {
-                        // Only last buffer can be incompletely mapped.
-                        // The file should be re-mapped on higher level.
-                        throw new NFSdbInvalidReadException(
-                            "Attempt to read file '{0}' at {1}. Only one incomplete buffer allowed.",
-                            Filename, bufferOffset + offset);
-                    }
+                        if (_incompleteBufferMapped)
+                        {
+                            // Only last buffer can be incompletely mapped.
+                            // The file should be re-mapped on higher level.
+                            throw new NFSdbInvalidReadException(
+                                "Attempt to read file '{0}' at {1}. Only one incomplete buffer allowed.",
+                                Filename, bufferOffset + offset);
+                        }
 
-                    bufferSize = (int) (maxSize - bufferOffset);
-                    _incompleteBufferMapped = true;
+                        bufferSize = (int) (maxSize - bufferOffset);
+                        _incompleteBufferMapped = true;
+                        _pointersArrayFixedLen = bufferIndex;
+                    }
                 }
                 view = _compositeFile.CreateViewAccessor(bufferOffset, bufferSize);
 

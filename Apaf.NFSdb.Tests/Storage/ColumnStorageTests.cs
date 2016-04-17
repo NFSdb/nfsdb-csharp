@@ -101,8 +101,8 @@ namespace Apaf.NFSdb.Tests.Storage
         }
 
         // Datak
-        [TestCase(1000, 50, 100, EDataType.Datak, Result = 11)]
-        [TestCase((int)1E6, (int)1E6, (int)1E6, EDataType.Datak, Result = 11)]
+        [TestCase(1000, 50, 100, EDataType.Datak, Result = 8)]
+        [TestCase((int)1E6, (int)1E6, (int)1E6, EDataType.Datak, Result = 8)]
 
         // Datar
         [TestCase((int)1E6, (int)1E6, 100, EDataType.Datar, Result = 20)]
@@ -114,7 +114,7 @@ namespace Apaf.NFSdb.Tests.Storage
         [TestCase(100, (int)1E6, 16, EDataType.Symd, Result = 23)]
 
         // Symrk
-        [TestCase((int)1E6, (int)1E6, (int)1E6, EDataType.Symrk, Result = 11)]
+        [TestCase((int)1E6, (int)1E6, (int)1E6, EDataType.Symrk, Result = 8)]
 
         // Symrr
         [TestCase((int)2E6, 100, 16, EDataType.Symrr, Result = MetadataConstants.MIN_FILE_BIT_HINT_NON_DATA)]

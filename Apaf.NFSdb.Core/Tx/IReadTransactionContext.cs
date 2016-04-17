@@ -24,7 +24,7 @@ namespace Apaf.NFSdb.Core.Tx
 {
     public interface IReadTransactionContext : IDisposable
     {
-        IReadContext ReadCache { get; }
+        ReadContext ReadCache { get; }
         PartitionTxData GetPartitionTx();
         PartitionTxData GetPartitionTx(int partitionId);
         PartitionTxData SetCurrentPartition(int partitionID);

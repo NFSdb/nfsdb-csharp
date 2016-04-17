@@ -10,7 +10,7 @@ namespace Apaf.NFSdb.Core.Tx
     public class DeferredTransactionContext : ITransactionContext
     {
         private const int RESERVED_PARTITION_COUNT = 10;
-        private readonly IReadContext _readCache;
+        private readonly ReadContext _readCache;
         private readonly IUnsafePartitionManager _paritionManager;
         private readonly TxState _state;
         private readonly List<IPartition> _paritions;
@@ -45,7 +45,7 @@ namespace Apaf.NFSdb.Core.Tx
             LastAppendTimestamp = txRec != null ? DateUtils.UnixTimestampToDateTime(txRec.LastPartitionTimestamp) : DateTime.MinValue;
         }
 
-        public IReadContext ReadCache
+        public ReadContext ReadCache
         {
             get { return _readCache; }
         }

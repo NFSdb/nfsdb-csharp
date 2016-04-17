@@ -121,7 +121,7 @@ namespace Apaf.NFSdb.Core.Queries
 
         private List<long> GetAllLatestByIndexedSymbolByKeys(IEnumerable<PartitionRowIDRange> partitions, IReadTransactionContext tx)
         {
-            var allKeys = tx.ReadCache.AllocateStringHash();
+            var allKeys = new ObjIntHashMap();
             var latestRowIDs = new List<long>();
 
             foreach (var part in partitions)

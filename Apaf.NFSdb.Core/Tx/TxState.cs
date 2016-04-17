@@ -6,7 +6,7 @@ namespace Apaf.NFSdb.Core.Tx
     public class TxState
     {
         public PartitionTxData[] PartitionDataStorage;
-        public IReadContext ReadContext;
+        public ReadContext ReadContext;
         public List<IPartition> Partitions;
         public List<bool> Locks;
     }
